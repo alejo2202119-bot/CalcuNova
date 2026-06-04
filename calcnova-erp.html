@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CalcNova ERP</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js" onerror="var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';document.head.appendChild(s)"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
@@ -356,7 +356,8 @@
   <div class="drop-zone" id="drop-zone">
     <span class="drop-icon">📂</span>
     <div class="drop-title">Arrastra tu archivo aquí o haz clic para seleccionar</div>
-    <div class="drop-sub">Soporta .xlsx y .csv · Columnas detectadas automáticamente</div>
+    <div class="drop-sub">Soporta .xlsx, .xls y .csv · Columnas detectadas automáticamente</div>
+    <div style="margin-top:8px;font-size:11px;color:var(--muted)">Columnas reconocidas: <span style="color:var(--dim)">Nombre · Cantidad · Precio · Peso · CBM · SKU · Categoría</span></div>
     <button class="btn-import" id="btn-select">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
       Seleccionar Archivo
@@ -620,10 +621,55 @@ function updateClock(){const d=new Date();document.getElementById('clock').textC
 let products=[];
 function loadProds(){try{products=JSON.parse(localStorage.getItem(LS_PRODS)||'[]');}catch(_){products=[];}}
 function saveProds(){try{localStorage.setItem(LS_PRODS,JSON.stringify(products));}catch(_){}}
-const COL_MAP={name:['product','name','nombre','producto','item','descripcion','description'],qty:['qty','cantidad','quantity','units','unidades','cant','pcs'],price:['price','precio','unit price','cost','costo','price cny','precio yuan'],weight:['weight','peso','wgt','kg','weight kg','gross weight'],cbm:['cbm','volume','volumen','vol','m3','m³'],sku:['sku','code','código','codigo','ref','reference','item code'],category:['category','categoría','categoria','type','tipo','cat']};
-function detectCols(headers){const map={};headers.forEach((h,i)=>{const n=String(h).toLowerCase().trim().replace(/[_\-]/g,' ');for(const[f,aliases]of Object.entries(COL_MAP)){if(map[f]!==undefined)continue;if(aliases.some(a=>n===a||n.includes(a)))map[f]=i;}});return map;}
+const COL_MAP={
+  name:['product name','product','nombre producto','nombre','descripcion','description','item name','item','articulo','artículo','mercancia','mercancía','goods','detalle','concepto','producto','denominacion','denominación'],
+  qty:['quantity','cantidad','qty','units','unidades','cant','pcs','pieces','amount','total units','unidad','num','número','numero','nro'],
+  price:['unit price','precio unitario','precio unit','price cny','precio yuan','unit cost','costo unitario','precio','price','cost','costo','valor unit','valor','cny','rmb','¥','p.unit'],
+  weight:['gross weight','net weight','peso bruto','peso neto','weight kg','peso kg','weight','peso','wgt','g.w.','g.w','n.w.','n.w','gw','nw','kg'],
+  cbm:['cbm/unit','cbm per unit','m3/unit','volume','volumen','cbm','vol','m3','m³','cubic','cubico','cúbico'],
+  sku:['product code','item code','part number','part no','código producto','codigo producto','sku','code','código','codigo','ref','reference','modelo','art','id','clave'],
+  category:['category','categoría','categoria','type','tipo','cat','linea','línea','grupo','group','clase','class','familia']
+};
+function detectCols(headers){
+  const map={};
+  headers.forEach((h,i)=>{
+    const n=String(h).toLowerCase().trim().replace(/[\-_\.]/g,' ').replace(/\s+/g,' ');
+    if(!n)return;
+    for(const[f,aliases]of Object.entries(COL_MAP)){
+      if(map[f]!==undefined)continue;
+      if(aliases.some(a=>n===a||n.startsWith(a+' ')||n.endsWith(' '+a)||n.includes(a)))map[f]=i;
+    }
+  });
+  return map;
+}
 function parseCSV(text){const lines=[];let cur='',inQ=false;for(let i=0;i<text.length;i++){const ch=text[i];if(ch==='"'){inQ=!inQ;}else if((ch==='\n'||ch==='\r')&&!inQ){if(cur.trim())lines.push(cur);cur='';if(ch==='\r'&&text[i+1]==='\n')i++;}else{cur+=ch;}}if(cur.trim())lines.push(cur);if(lines.length<2)throw new Error('Archivo vacío o sin datos');const delim=lines[0].includes(';')?';':',';const split=row=>{const cells=[];let cell='';let q=false;for(const ch of row){if(ch==='"'){q=!q;}else if(ch===delim&&!q){cells.push(cell.trim());cell='';}else{cell+=ch;}}return[...cells,cell.trim()];};const headers=split(lines[0]);return{headers,colMap:detectCols(headers),rows:lines.slice(1).map(split)};}
-function parseExcel(buf){const wb=XLSX.read(buf,{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];const data=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});if(data.length<2)throw new Error('Archivo vacío');const headers=data[0].map(String);return{headers,colMap:detectCols(headers),rows:data.slice(1)};}
+function parseExcel(buf){
+  const wb=XLSX.read(buf,{type:'array',cellDates:true,raw:false});
+  if(!wb.SheetNames.length)throw new Error('Archivo sin hojas de cálculo');
+  // Use first non-empty sheet
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  const data=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false});
+  if(!data.length)throw new Error('Hoja vacía');
+  // Find best header row among first 6 rows (skip titles/logos)
+  let hRow=0,bestScore=0;
+  for(let i=0;i<Math.min(6,data.length);i++){
+    const row=data[i];
+    if(!row||!row.some(c=>String(c??'').trim()))continue;
+    const score=Object.keys(detectCols(row.map(String))).length;
+    if(score>bestScore){bestScore=score;hRow=i;}
+    if(score>=3)break;
+  }
+  const headers=data[hRow].map(String);
+  const colMap=detectCols(headers);
+  // Filter out completely empty rows
+  const rows=data.slice(hRow+1).filter(r=>Array.isArray(r)&&r.some(c=>String(c??'').trim()));
+  if(!rows.length)throw new Error('Sin filas de datos debajo del encabezado');
+  if(!Object.keys(colMap).length){
+    const found=headers.filter(h=>String(h).trim()).slice(0,6).join(', ');
+    throw new Error(`No se reconocieron columnas. Encabezados encontrados: ${found||'(ninguno)'}. Renombra al menos una columna a: Nombre, Cantidad, Precio, Peso, CBM o SKU`);
+  }
+  return{headers,colMap,rows};
+}
 function rowsToProducts(rows,colMap){const skuSet=new Set(products.map(p=>p.sku).filter(Boolean).map(s=>s.toLowerCase()));let added=0,dupes=0;const prods=[];for(const row of rows){if(row.every(c=>String(c).trim()===''))continue;const get=f=>{const i=colMap[f];return i!==undefined?String(row[i]??'').trim():'';};const getN=f=>{const i=colMap[f];if(i===undefined)return 0;const v=parseFloat(String(row[i]).replace(/\s/g,'').replace(',','.'));return(isFinite(v)&&v>=0)?v:0;};const skuVal=get('sku');if(skuVal&&skuSet.has(skuVal.toLowerCase())){dupes++;continue;}const p={id:'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),name:get('name')||'Producto sin nombre',sku:skuVal,qty:getN('qty')||1,price:getN('price'),weight:getN('weight'),cbm:getN('cbm'),category:get('category')};prods.push(p);if(skuVal)skuSet.add(skuVal.toLowerCase());added++;}return{prods,added,dupes};}
 
 /* ═══════ PASO 3: CÁLCULOS ═══════ */
@@ -936,22 +982,48 @@ function renderHistory(){const list=document.getElementById('history-list');try{
 function showToast(msg,type='ok'){const el=document.getElementById('toast');el.textContent=msg;el.className=`toast t${type} show`;clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),3500);}
 function setImportStatus(s,msg){const el=document.getElementById('import-status');el.className=`import-status ${s}`;el.textContent=msg;el.hidden=false;}
 async function handleFile(file){
-  if(!file)return;const ext=file.name.split('.').pop().toLowerCase();
-  if(!['xlsx','xls','csv'].includes(ext)){showToast('Formato no soportado. Usa .xlsx o .csv','err');return;}
-  if(file.size>10*1024*1024)showToast(`Archivo grande (${(file.size/1048576).toFixed(1)} MB), puede tardar...`,'wrn');
+  if(!file)return;
+  const ext=file.name.split('.').pop().toLowerCase();
+  if(!['xlsx','xls','csv'].includes(ext)){
+    showToast('Formato no soportado. Usa .xlsx, .xls o .csv','err');
+    setImportStatus('err','❌ Formato no soportado. Usa .xlsx, .xls o .csv');
+    return;
+  }
+  if(file.size>15*1024*1024){showToast('Archivo muy grande (máx. 15 MB)','err');return;}
+  if(file.size>5*1024*1024)showToast(`Archivo grande (${(file.size/1048576).toFixed(1)} MB), procesando...`,'wrn');
   setImportStatus('loading','⏳ Procesando...');
   try{
     let parsed;
-    if(ext==='csv'){parsed=parseCSV(await file.text());}
-    else{if(typeof XLSX==='undefined')throw new Error('Librería Excel no cargada');parsed=parseExcel(await file.arrayBuffer());}
-    if(!parsed.rows.length)throw new Error('Sin filas de datos');
+    if(ext==='csv'){
+      parsed=parseCSV(await file.text());
+    } else {
+      // Wait up to 4s for XLSX to load
+      let attempts=0;
+      while(typeof XLSX==='undefined'&&attempts<8){await new Promise(r=>setTimeout(r,500));attempts++;}
+      if(typeof XLSX==='undefined')throw new Error('Librería Excel no cargó. Verifica tu conexión a internet y recarga la página');
+      parsed=parseExcel(await file.arrayBuffer());
+    }
+    const detectedCols=Object.keys(parsed.colMap);
     const{prods,added,dupes}=rowsToProducts(parsed.rows,parsed.colMap);
-    if(added===0){setImportStatus('warn',`⚠️ SKUs duplicados (${dupes})`);showToast('SKUs duplicados, nada importado','wrn');return;}
+    if(added===0&&dupes>0){
+      setImportStatus('warn',`⚠️ ${dupes} fila${dupes!==1?'s':''} omitida${dupes!==1?'s':''} (SKUs duplicados)`);
+      showToast('Todos los SKUs ya existen, nada importado','wrn');
+      return;
+    }
+    if(added===0){
+      setImportStatus('err','❌ No se pudieron importar filas. Verifica que el archivo tiene datos.');
+      return;
+    }
     products.push(...prods);saveProds();addHistory(file.name,added);recalcAll();
     let msg=`✅ ${added} producto${added!==1?'s':''} importado${added!==1?'s':''}`;
     if(dupes>0)msg+=` · ${dupes} duplicado${dupes!==1?'s':''} omitido${dupes!==1?'s':''}`;
-    setImportStatus('ok',msg);showToast(msg,'ok');
-  }catch(err){setImportStatus('err',`❌ ${err.message}`);showToast(`Error: ${err.message}`,'err');}
+    msg+=` · Columnas: ${detectedCols.join(', ')}`;
+    setImportStatus('ok',msg);showToast(`✅ ${added} productos importados`,'ok');
+  }catch(err){
+    setImportStatus('err',`❌ ${err.message}`);
+    showToast(`Error: ${err.message}`,'err');
+    console.error('[CalcNova import]',err);
+  }
   document.getElementById('file-input').value='';
 }
 const dropZone=document.getElementById('drop-zone'),fileInput=document.getElementById('file-input');
