@@ -332,7 +332,7 @@
     <div class="route-diagram">
       <div class="route-node"><div class="route-flag">🇨🇳</div><div class="route-name">China</div><div class="route-cost" id="route-china">¥ —</div></div>
       <div class="route-arrow"><div class="arrow-line"></div><div class="arrow-label">Flete marítimo</div><div class="arrow-label" id="route-flete" style="color:var(--green)">$ —</div></div>
-      <div class="route-node"><div class="route-flag">🚢</div><div class="route-name">Puerto 🇨🇴</div><div class="route-cost" id="route-bvta">$ —</div></div>
+      <div class="route-node"><div class="route-flag">🚢</div><div class="route-name" id="route-puerto-name">Buenaventura 🇨🇴</div><div class="route-cost" id="route-bvta">$ —</div></div>
       <div class="route-arrow"><div class="arrow-line"></div><div class="arrow-label">Transporte</div><div class="arrow-label" id="route-transport-col" style="color:var(--green)">$ —</div></div>
       <div class="route-node"><div class="route-flag">🚚</div><div class="route-name">Cúcuta 🇨🇴</div><div class="route-cost" id="route-cucuta">COP —</div></div>
       <div class="route-arrow"><div class="arrow-line"></div><div class="arrow-label">Frontera</div><div class="arrow-label" id="route-frontera" style="color:var(--green)">—</div></div>
@@ -378,7 +378,7 @@
       </div>
       <div>
         <div class="cfg-group-title">Gastos Colombia (COP)</div>
-        <div class="inp-row"><label class="inp-lbl">Transporte Bvta-Cúcuta</label><div class="inp-wrap"><span class="inp-unit">$</span><input class="cfg-input" type="number" min="0" step="50000" data-field="transportCOL" value="800000"></div></div>
+        <div class="inp-row"><label class="inp-lbl" id="transport-col-lbl">Transporte Bvta-Cúcuta</label><div class="inp-wrap"><span class="inp-unit">$</span><input class="cfg-input" type="number" min="0" step="50000" data-field="transportCOL" value="950000"></div></div>
         <div class="inp-row"><label class="inp-lbl">Aduanas</label><div class="inp-wrap"><span class="inp-unit">$</span><input class="cfg-input" type="number" min="0" step="50000" data-field="customsCOL" value="500000"></div></div>
       </div>
       <div>
@@ -444,6 +444,15 @@
 <div class="page">
 
   <div class="st">Simulador de Contenedor</div>
+
+  <!-- Port selector -->
+  <div style="font-size:11px;font-weight:700;color:var(--dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px"><span style="display:inline-block;width:3px;height:12px;background:var(--gold);border-radius:2px"></span>Puerto de Llegada 🇨🇴</div>
+  <div class="container-types" style="margin-bottom:24px">
+    <label class="ctype-lbl"><input type="radio" name="port" value="buenaventura" checked onchange="onPortChange()"><div class="ctype-card"><div class="ctype-name">🚢 Buenaventura</div><div class="ctype-spec">Pacífico · 1.100 km · $350 fees</div></div></label>
+    <label class="ctype-lbl"><input type="radio" name="port" value="barranquilla" onchange="onPortChange()"><div class="ctype-card"><div class="ctype-name">⚓ Barranquilla</div><div class="ctype-spec">Caribe · 470 km · $280 fees</div></div></label>
+    <label class="ctype-lbl"><input type="radio" name="port" value="cartagena" onchange="onPortChange()"><div class="ctype-card"><div class="ctype-name">🏰 Cartagena</div><div class="ctype-spec">Caribe · 600 km · $300 fees</div></div></label>
+  </div>
+  <div id="port-info-bar" style="display:flex;align-items:center;gap:12px;padding:10px 16px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);border-radius:10px;margin-bottom:20px;font-size:12px;color:var(--gold)"><span id="port-info-text">🚢 Puerto Buenaventura seleccionado — Gastos portuarios: $350 USD · Transporte a Cúcuta: $950.000 COP</span></div>
 
   <!-- Container type selector -->
   <div class="container-types">
@@ -579,7 +588,7 @@ function saveRateCache(k,v){try{const s=JSON.parse(localStorage.getItem(LS_RATES
 function loadRateCache(k){try{return(JSON.parse(localStorage.getItem(LS_RATES)||'{}')||{})[k]||null;}catch(_){return null;}}
 
 /* ═══════ CONFIG ═══════ */
-const DEF_CFG={freight:2000,insurance:500,portFees:300,bankCommission:1,transportCOL:800000,customsCOL:500000,transportVEN:50000,iva:16,operatingVEN:100000,marginWholesale:30,marginRetail:50};
+const DEF_CFG={freight:2000,insurance:500,portFees:350,bankCommission:1,transportCOL:950000,customsCOL:500000,transportVEN:50000,iva:16,operatingVEN:100000,marginWholesale:30,marginRetail:50,selectedPort:'buenaventura'};
 function loadCfg(){try{return{...DEF_CFG,...JSON.parse(localStorage.getItem(LS_CFG)||'{}')};}catch(_){return{...DEF_CFG};}}
 function saveCfg(c){try{localStorage.setItem(LS_CFG,JSON.stringify(c));}catch(_){}}
 function initCfgInputs(){const c=loadCfg();document.querySelectorAll('.cfg-input[data-field]').forEach(el=>{if(c[el.dataset.field]!==undefined)el.value=c[el.dataset.field];});}
@@ -698,6 +707,8 @@ function renderDashboard(){
 /* ═══════ RENDER ROUTE ═══════ */
 function renderRoute(){
   const cfg=loadCfg();
+  const port=PORTS[getSelectedPort()]||PORTS.buenaventura;
+  const portNameEl=document.getElementById('route-puerto-name');if(portNameEl)portNameEl.textContent=`${port.name} 🇨🇴`;
   const totalYuan=products.reduce((s,p)=>s+(p.qty||0)*(p.price||0),0);
   const calcs=calcAllProducts();
   const totalCostVES=calcs.reduce((s,c)=>s+(c.totalCostVES||0),0);
@@ -756,6 +767,21 @@ const CTYPES={
   '40ft':{cbm:67,weight:25000,freight:2000},
   'consolidada':null
 };
+const PORTS={
+  buenaventura:{name:'Buenaventura',emoji:'🚢',portFees:350,transportCOL:950000,desc:'Pacífico · 1.100 km a Cúcuta'},
+  barranquilla: {name:'Barranquilla', emoji:'⚓',portFees:280,transportCOL:650000,desc:'Caribe · 470 km a Cúcuta'},
+  cartagena:    {name:'Cartagena',    emoji:'🏰',portFees:300,transportCOL:700000,desc:'Caribe · 600 km a Cúcuta'}
+};
+function getSelectedPort(){return document.querySelector('input[name="port"]:checked')?.value||'buenaventura';}
+function onPortChange(){
+  const key=getSelectedPort();const port=PORTS[key];if(!port)return;
+  const cfg=loadCfg();cfg.portFees=port.portFees;cfg.transportCOL=port.transportCOL;cfg.selectedPort=key;saveCfg(cfg);
+  const pfI=document.querySelector('.cfg-input[data-field="portFees"]');const tcI=document.querySelector('.cfg-input[data-field="transportCOL"]');
+  if(pfI)pfI.value=port.portFees;if(tcI)tcI.value=port.transportCOL;
+  const lbl=document.getElementById('transport-col-lbl');if(lbl)lbl.textContent=`Transporte ${port.name}-Cúcuta`;
+  const infoEl=document.getElementById('port-info-text');if(infoEl)infoEl.textContent=`${port.emoji} Puerto ${port.name} — ${port.desc} · Gastos portuarios: $${port.portFees} USD · Transporte: $${Number(port.transportCOL).toLocaleString('es-CO')} COP`;
+  recalcAll();showToast(`${port.emoji} Puerto ${port.name} seleccionado`,'ok');
+}
 let selectedProds=new Set();
 
 function getContainerSpecs(){
@@ -953,6 +979,15 @@ function loadDemo(){
 /* ═══════ INIT ═══════ */
 initCfgInputs();
 loadProds();
+// Restore saved port selection
+(function(){
+  const k=(loadCfg().selectedPort)||'buenaventura';
+  const r=document.querySelector(`input[name="port"][value="${k}"]`);
+  if(r)r.checked=true;
+  const port=PORTS[k]||PORTS.buenaventura;
+  const lbl=document.getElementById('transport-col-lbl');if(lbl)lbl.textContent=`Transporte ${port.name}-Cúcuta`;
+  const infoEl=document.getElementById('port-info-text');if(infoEl)infoEl.textContent=`${port.emoji} Puerto ${port.name} — ${port.desc} · Gastos portuarios: $${port.portFees} USD · Transporte: $${Number(port.transportCOL).toLocaleString('es-CO')} COP`;
+})();
 recalcAll();
 updateClock();setInterval(updateClock,1000);
 updateRates();setInterval(updateRates,5*60*1000);
