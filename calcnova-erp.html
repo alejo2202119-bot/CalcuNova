@@ -644,13 +644,13 @@ function detectCols(headers){
 }
 function parseCSV(text){const lines=[];let cur='',inQ=false;for(let i=0;i<text.length;i++){const ch=text[i];if(ch==='"'){inQ=!inQ;}else if((ch==='\n'||ch==='\r')&&!inQ){if(cur.trim())lines.push(cur);cur='';if(ch==='\r'&&text[i+1]==='\n')i++;}else{cur+=ch;}}if(cur.trim())lines.push(cur);if(lines.length<2)throw new Error('Archivo vacío o sin datos');const delim=lines[0].includes(';')?';':',';const split=row=>{const cells=[];let cell='';let q=false;for(const ch of row){if(ch==='"'){q=!q;}else if(ch===delim&&!q){cells.push(cell.trim());cell='';}else{cell+=ch;}}return[...cells,cell.trim()];};const headers=split(lines[0]);return{headers,colMap:detectCols(headers),rows:lines.slice(1).map(split)};}
 function parseExcel(buf){
-  const wb=XLSX.read(buf,{type:'array',cellDates:true,raw:false});
+  const wb=XLSX.read(buf,{type:'array'});
   if(!wb.SheetNames.length)throw new Error('Archivo sin hojas de cálculo');
-  // Use first non-empty sheet
   const ws=wb.Sheets[wb.SheetNames[0]];
-  const data=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false});
+  // raw:true (default) returns numbers as numbers — never use raw:false (formats as string)
+  const data=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
   if(!data.length)throw new Error('Hoja vacía');
-  // Find best header row among first 6 rows (skip titles/logos)
+  // Find best header row among first 6 rows (skip title/logo rows)
   let hRow=0,bestScore=0;
   for(let i=0;i<Math.min(6,data.length);i++){
     const row=data[i];
@@ -660,17 +660,17 @@ function parseExcel(buf){
     if(score>=3)break;
   }
   const headers=data[hRow].map(String);
-  const colMap=detectCols(headers);
-  // Filter out completely empty rows
-  const rows=data.slice(hRow+1).filter(r=>Array.isArray(r)&&r.some(c=>String(c??'').trim()));
-  if(!rows.length)throw new Error('Sin filas de datos debajo del encabezado');
-  if(!Object.keys(colMap).length){
-    const found=headers.filter(h=>String(h).trim()).slice(0,6).join(', ');
-    throw new Error(`No se reconocieron columnas. Encabezados encontrados: ${found||'(ninguno)'}. Renombra al menos una columna a: Nombre, Cantidad, Precio, Peso, CBM o SKU`);
+  let colMap=detectCols(headers);
+  // Fallback: if nothing detected, map by position (col0=name, col1=qty, col2=price, col3=weight, col4=cbm, col5=sku)
+  if(!Object.keys(colMap).length&&headers.length>0){
+    const pos=['name','qty','price','weight','cbm','sku'];
+    headers.forEach((_,i)=>{if(i<pos.length)colMap[pos[i]]=i;});
   }
+  const rows=data.slice(hRow+1).filter(r=>Array.isArray(r)&&r.some(c=>String(c??'').trim()));
+  if(!rows.length)throw new Error('Sin filas de datos. Verifica que el archivo no está vacío.');
   return{headers,colMap,rows};
 }
-function rowsToProducts(rows,colMap){const skuSet=new Set(products.map(p=>p.sku).filter(Boolean).map(s=>s.toLowerCase()));let added=0,dupes=0;const prods=[];for(const row of rows){if(row.every(c=>String(c).trim()===''))continue;const get=f=>{const i=colMap[f];return i!==undefined?String(row[i]??'').trim():'';};const getN=f=>{const i=colMap[f];if(i===undefined)return 0;const v=parseFloat(String(row[i]).replace(/\s/g,'').replace(',','.'));return(isFinite(v)&&v>=0)?v:0;};const skuVal=get('sku');if(skuVal&&skuSet.has(skuVal.toLowerCase())){dupes++;continue;}const p={id:'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),name:get('name')||'Producto sin nombre',sku:skuVal,qty:getN('qty')||1,price:getN('price'),weight:getN('weight'),cbm:getN('cbm'),category:get('category')};prods.push(p);if(skuVal)skuSet.add(skuVal.toLowerCase());added++;}return{prods,added,dupes};}
+function rowsToProducts(rows,colMap){const skuSet=new Set(products.map(p=>p.sku).filter(Boolean).map(s=>s.toLowerCase()));let added=0,dupes=0;const prods=[];for(const row of rows){if(row.every(c=>String(c).trim()===''))continue;const get=f=>{const i=colMap[f];return i!==undefined?String(row[i]??'').trim():'';};const getN=f=>{const i=colMap[f];if(i===undefined)return 0;const raw=row[i];if(typeof raw==='number')return(isFinite(raw)&&raw>=0)?raw:0;const s=String(raw??'').trim();const v=parseFloat(s.replace(/[^\d.,-]/g,'').replace(/\.(?=.*\.)/g,'').replace(',','.'));return(isFinite(v)&&v>=0)?v:0;};const skuVal=get('sku');if(skuVal&&skuSet.has(skuVal.toLowerCase())){dupes++;continue;}const p={id:'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),name:get('name')||'Producto sin nombre',sku:skuVal,qty:getN('qty')||1,price:getN('price'),weight:getN('weight'),cbm:getN('cbm'),category:get('category')};prods.push(p);if(skuVal)skuSet.add(skuVal.toLowerCase());added++;}return{prods,added,dupes};}
 
 /* ═══════ PASO 3: CÁLCULOS ═══════ */
 function calcAllProducts(){if(!products.length)return[];const cfg=loadCfg();const{yuanPerUsd:yR,copPerUsd:cR,vesPerUsd:vR}=liveRates;const totalBW=products.reduce((s,p)=>s+(p.qty||0)*(p.weight||0),0);const useEq=totalBW===0;return products.map(p=>{const noRates=!yR||!cR||!vR;if(noRates)return{id:p.id,unitCostVES:null,priceWholesale:null,priceRetail:null,marginWholesalePct:null,roi:null,channel:'—',alert:null,totalCostVES:null};const bw=(p.qty||0)*(p.weight||0);const wR=useEq?1/products.length:(bw/totalBW);const costBaseUSD=(p.qty||0)*(p.price||0)/yR;const costComm=costBaseUSD*(1+cfg.bankCommission/100);const maritime=(cfg.freight+cfg.insurance+cfg.portFees)*wR;const costMarUSD=costComm+maritime;const costCOP=costMarUSD*cR;const colCost=(cfg.transportCOL+cfg.customsCOL)*wR;const costColCOP=costCOP+colCost;const vPerC=vR/cR;const costVES=costColCOP*vPerC;const venCost=(cfg.transportVEN+cfg.operatingVEN)*wR;const costPreIVA=costVES+venCost;const totalCostVES=costPreIVA*(1+cfg.iva/100);const qty=Math.max(p.qty||1,1);const unitCostVES=totalCostVES/qty;const pw=unitCostVES*(1+cfg.marginWholesale/100);const pr=unitCostVES*(1+cfg.marginRetail/100);const mwP=pw>0?(pw-unitCostVES)/pw*100:0;const mrP=pr>0?(pr-unitCostVES)/pr*100:0;const roi=unitCostVES>0?(pw-unitCostVES)/unitCostVES*100:0;const channel=(p.qty||0)>50&&mwP>25?'MAYOR':mrP>40?'DETAL':'AMBOS';let alert=null;if(roi>50)alert={icon:'🔥',title:'Producto estrella',sub:`ROI ${fmt(roi,1)}%`};else if(mrP>60)alert={icon:'💎',title:'Excelente detal',sub:`Margen ${fmt(mrP,1)}%`};else if((p.qty||0)>100&&mwP>25)alert={icon:'📦',title:'Ideal mayorista',sub:`${p.qty} uds`};else if(roi>0&&roi<10)alert={icon:'⚠️',title:'Baja rentabilidad',sub:`ROI ${fmt(roi,1)}%`};return{id:p.id,unitCostVES:isFinite(unitCostVES)?unitCostVES:null,priceWholesale:isFinite(pw)?pw:null,priceRetail:isFinite(pr)?pr:null,marginWholesalePct:isFinite(mwP)?mwP:null,roi:isFinite(roi)?roi:null,channel,alert,totalCostVES:isFinite(totalCostVES)?totalCostVES:null};});}
