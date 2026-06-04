@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CalcNova ERP</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -22,7 +23,6 @@
       --text: #E2E8F0;
       --text-dim: #94A3B8;
       --radius: 16px;
-      --radius-sm: 10px;
     }
 
     body {
@@ -30,262 +30,189 @@
       color: var(--text);
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
       min-height: 100vh;
-      padding: 24px 16px 48px;
+      padding: 24px 16px 64px;
     }
 
     /* ── Header ── */
     header {
-      max-width: 960px;
-      margin: 0 auto 32px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      flex-wrap: wrap;
+      max-width: 960px; margin: 0 auto 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; flex-wrap: wrap;
     }
-
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
+    .logo { display: flex; align-items: center; gap: 10px; }
     .logo-icon {
-      width: 40px;
-      height: 40px;
+      width: 40px; height: 40px;
       background: linear-gradient(135deg, var(--green), #059669);
       border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
+      display: flex; align-items: center; justify-content: center; font-size: 20px;
     }
-
-    .logo-text {
-      font-size: 22px;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-    }
-
-    .logo-text span {
-      color: var(--green);
-    }
-
-    .logo-sub {
-      font-size: 11px;
-      color: var(--muted);
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-    }
-
-    .header-time {
-      text-align: right;
-      font-size: 12px;
-      color: var(--text-dim);
-      line-height: 1.6;
-    }
-
-    .header-time strong {
-      display: block;
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--text);
-      letter-spacing: 0.5px;
-    }
+    .logo-text { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+    .logo-text span { color: var(--green); }
+    .logo-sub { font-size: 11px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; }
+    .header-time { text-align: right; font-size: 12px; color: var(--text-dim); line-height: 1.6; }
+    .header-time strong { display: block; font-size: 16px; font-weight: 600; color: var(--text); letter-spacing: 0.5px; }
 
     /* ── Section title ── */
     .section-title {
-      max-width: 960px;
-      margin: 0 auto 16px;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-dim);
-      letter-spacing: 1.8px;
-      text-transform: uppercase;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      max-width: 960px; margin: 0 auto 16px;
+      font-size: 13px; font-weight: 600; color: var(--text-dim);
+      letter-spacing: 1.8px; text-transform: uppercase;
+      display: flex; align-items: center; gap: 8px;
     }
-
     .section-title::before {
-      content: '';
-      display: inline-block;
-      width: 3px;
-      height: 14px;
-      background: var(--green);
-      border-radius: 2px;
+      content: ''; display: inline-block;
+      width: 3px; height: 14px; background: var(--green); border-radius: 2px;
     }
 
-    /* ── Rates grid ── */
+    /* ── PASO 1: Tasas ── */
     .rates-grid {
-      max-width: 960px;
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-      gap: 16px;
+      max-width: 960px; margin: 0 auto;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px;
     }
-
-    /* ── Rate card ── */
     .rate-card {
-      background: var(--surface);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 20px;
-      position: relative;
-      overflow: hidden;
+      background: var(--surface); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 20px; position: relative; overflow: hidden;
       transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
-
-    .rate-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
-    }
-
+    .rate-card:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(0,0,0,0.35); }
     .rate-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 2px;
-      background: linear-gradient(90deg, var(--green), transparent);
-      opacity: 0.6;
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, var(--green), transparent); opacity: 0.6;
     }
-
-    .rate-card.gold-accent::before {
-      background: linear-gradient(90deg, var(--gold), transparent);
-    }
-
-    /* card header */
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 14px;
-    }
-
-    .card-label {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--text-dim);
-      letter-spacing: 1px;
-      text-transform: uppercase;
-    }
-
-    .card-source {
-      font-size: 10px;
-      color: var(--muted);
-      margin-top: 2px;
-    }
-
+    .rate-card.gold-accent::before { background: linear-gradient(90deg, var(--gold), transparent); }
+    .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+    .card-label { font-size: 11px; font-weight: 600; color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase; }
+    .card-source { font-size: 10px; color: var(--muted); margin-top: 2px; }
     .refresh-btn {
-      width: 28px;
-      height: 28px;
-      background: rgba(148, 163, 184, 0.08);
-      border: 1px solid var(--border);
-      border-radius: 7px;
-      color: var(--text-dim);
-      cursor: pointer;
-      font-size: 13px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.15s, color 0.15s;
-      flex-shrink: 0;
+      width: 28px; height: 28px; background: rgba(148,163,184,0.08);
+      border: 1px solid var(--border); border-radius: 7px; color: var(--text-dim);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s, color 0.15s; flex-shrink: 0;
     }
-
-    .refresh-btn:hover {
-      background: var(--green-dim);
-      color: var(--green);
-      border-color: rgba(16, 185, 129, 0.3);
-    }
-
-    .refresh-btn.spinning svg {
-      animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    /* card body */
-    .rate-value {
-      font-size: 26px;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-      color: var(--text);
-      line-height: 1.1;
-      min-height: 32px;
-    }
-
+    .refresh-btn:hover { background: var(--green-dim); color: var(--green); border-color: rgba(16,185,129,0.3); }
+    .refresh-btn.spinning svg { animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .rate-value { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; color: var(--text); line-height: 1.1; min-height: 32px; }
     .rate-value.loading-pulse {
       background: linear-gradient(90deg, var(--surface-solid) 25%, rgba(100,116,139,0.2) 50%, var(--surface-solid) 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.4s infinite;
-      border-radius: 6px;
-      width: 70%;
-      height: 32px;
-      color: transparent;
+      background-size: 200% 100%; animation: shimmer 1.4s infinite;
+      border-radius: 6px; width: 70%; height: 32px; color: transparent;
     }
-
-    @keyframes shimmer {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
-    }
-
-    .rate-sub {
-      font-size: 12px;
-      color: var(--text-dim);
-      margin-top: 4px;
-    }
-
-    /* status badge */
-    .status-row {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin-top: 14px;
-    }
-
-    .status-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-
-    .status-dot.ok    { background: var(--green); box-shadow: 0 0 6px var(--green); }
-    .status-dot.err   { background: var(--red); }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    .rate-sub { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+    .status-row { display: flex; align-items: center; gap: 6px; margin-top: 14px; }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .status-dot.ok     { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .status-dot.err    { background: var(--red); }
     .status-dot.loading { background: var(--gold); animation: blink 1s ease infinite; }
+    @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+    .status-text { font-size: 10px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rate-card.has-error { border-color: rgba(239,68,68,0.2); }
 
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50%  { opacity: 0.3; }
+    /* ── PASO 2: Importador ── */
+    .import-section { max-width: 960px; margin: 36px auto 0; }
+    .drop-zone {
+      background: var(--surface); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border: 2px dashed rgba(148,163,184,0.2); border-radius: var(--radius);
+      padding: 40px 24px; text-align: center; cursor: pointer;
+      transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
     }
-
-    .status-text {
-      font-size: 10px;
-      color: var(--muted);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    .drop-zone:hover { border-color: rgba(16,185,129,0.4); background: rgba(16,185,129,0.03); }
+    .drop-zone.drag-over { border-color: var(--green); background: rgba(16,185,129,0.06); box-shadow: 0 0 0 3px rgba(16,185,129,0.15); }
+    .drop-icon { font-size: 36px; display: block; margin-bottom: 10px; }
+    .drop-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 5px; }
+    .drop-sub { font-size: 12px; color: var(--text-dim); margin-bottom: 18px; }
+    .btn-import {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: var(--green); color: #0F172A;
+      font-size: 13px; font-weight: 700; padding: 9px 20px;
+      border: none; border-radius: 8px; cursor: pointer; transition: opacity 0.15s;
     }
-
-    /* error state tint */
-    .rate-card.has-error {
-      border-color: rgba(239, 68, 68, 0.2);
+    .btn-import:hover { opacity: 0.87; }
+    .import-status {
+      margin-top: 10px; font-size: 12px; font-weight: 500;
+      padding: 8px 14px; border-radius: 8px; display: inline-block;
     }
+    .import-status.ok   { background: var(--green-dim); color: var(--green); }
+    .import-status.err  { background: var(--red-dim); color: var(--red); }
+    .import-status.loading, .import-status.warn { background: var(--gold-dim); color: var(--gold); }
 
-    /* ── Footer ── */
-    footer {
-      max-width: 960px;
-      margin: 40px auto 0;
-      text-align: center;
-      font-size: 11px;
-      color: var(--muted);
+    /* ── PASO 2: Tabla ── */
+    .products-section { max-width: 960px; margin: 28px auto 0; }
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
+    .section-left  { display: flex; align-items: center; gap: 10px; }
+    .count-badge { background: var(--green-dim); color: var(--green); font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 20px; }
+    .btn-clear {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: transparent; color: var(--red); border: 1px solid rgba(239,68,68,0.25);
+      font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 8px;
+      cursor: pointer; transition: background 0.15s;
     }
+    .btn-clear:hover { background: var(--red-dim); }
+    .table-wrap {
+      background: var(--surface); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
+    }
+    .table-scroll { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 780px; white-space: nowrap; }
+    thead th {
+      background: rgba(15,23,42,0.5); padding: 11px 14px; text-align: left;
+      font-size: 10px; font-weight: 700; color: var(--muted);
+      letter-spacing: 1.2px; text-transform: uppercase; border-bottom: 1px solid var(--border);
+    }
+    thead th.r { text-align: right; }
+    tbody tr { border-bottom: 1px solid rgba(148,163,184,0.06); transition: background 0.1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(255,255,255,0.02); }
+    tbody td { padding: 9px 14px; vertical-align: middle; }
+    .rc { text-align: right; font-variant-numeric: tabular-nums; }
+    .dc { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .editable {
+      display: inline-block; padding: 3px 6px; border-radius: 5px;
+      border: 1px solid transparent; cursor: text; outline: none; color: var(--text);
+      transition: border-color 0.15s, background 0.15s; min-width: 30px; max-width: 200px;
+    }
+    .editable:hover { border-color: var(--border); background: rgba(148,163,184,0.05); }
+    .editable:focus { border-color: var(--green); background: rgba(16,185,129,0.07); }
+    .editable.n { text-align: right; font-variant-numeric: tabular-nums; }
+    .del-btn {
+      width: 28px; height: 28px; border: 1px solid var(--border); border-radius: 7px;
+      cursor: pointer; background: transparent; color: var(--muted);
+      display: inline-flex; align-items: center; justify-content: center;
+      transition: background 0.15s, color 0.15s;
+    }
+    .del-btn:hover { background: var(--red-dim); color: var(--red); border-color: rgba(239,68,68,0.3); }
+    tfoot td {
+      font-weight: 700; color: var(--green);
+      background: rgba(16,185,129,0.05); border-top: 1px solid rgba(16,185,129,0.15);
+      padding: 12px 14px;
+    }
+    .empty-state { padding: 48px 24px; text-align: center; }
+    .empty-icon  { font-size: 40px; margin-bottom: 10px; }
+    .empty-title { font-size: 14px; font-weight: 600; color: var(--text-dim); }
+    .empty-sub   { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    @keyframes fadeInUp { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+    .fi { animation: fadeInUp 0.18s ease both; }
 
-    /* ── Responsive ── */
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(70px);
+      background: var(--surface-solid); border: 1px solid var(--border); color: var(--text);
+      padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 500;
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      transition: transform 0.28s ease, opacity 0.28s ease;
+      opacity: 0; z-index: 9999; max-width: 90vw;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    .toast.tok  { border-color: rgba(16,185,129,0.35); }
+    .toast.terr { border-color: rgba(239,68,68,0.35); }
+    .toast.twrn { border-color: rgba(245,158,11,0.35); }
+
+    footer { max-width: 960px; margin: 40px auto 0; text-align: center; font-size: 11px; color: var(--muted); }
+
     @media (max-width: 480px) {
       .rates-grid { grid-template-columns: 1fr; }
       .rate-value { font-size: 22px; }
@@ -294,6 +221,7 @@
 </head>
 <body>
 
+  <!-- ── Header ── -->
   <header>
     <div class="logo">
       <div class="logo-icon">⚡</div>
@@ -308,173 +236,193 @@
     </div>
   </header>
 
+  <!-- ── PASO 1: Tasas ── -->
   <div class="section-title">Mercados &amp; Divisas</div>
-
   <div class="rates-grid">
 
-    <!-- Yuan / USD -->
     <div class="rate-card" id="card-yuan">
       <div class="card-header">
-        <div>
-          <div class="card-label">🇨🇳 Yuan / USD</div>
-          <div class="card-source">open.er-api.com</div>
-        </div>
+        <div><div class="card-label">🇨🇳 Yuan / USD</div><div class="card-source">open.er-api.com</div></div>
         <button class="refresh-btn" onclick="refreshSingle('yuan')" title="Actualizar">
-          <svg id="ico-yuan" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="23 4 23 10 17 10"/><path d="M20.49 15A9 9 0 1 1 5.64 5.64L23 4"/>
-          </svg>
+          <svg id="ico-yuan" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15A9 9 0 1 1 5.64 5.64L23 4"/></svg>
         </button>
       </div>
       <div class="rate-value loading-pulse" id="val-yuan">&nbsp;</div>
       <div class="rate-sub" id="sub-yuan">Cargando...</div>
-      <div class="status-row">
-        <div class="status-dot loading" id="dot-yuan"></div>
-        <div class="status-text" id="txt-yuan">Conectando...</div>
-      </div>
+      <div class="status-row"><div class="status-dot loading" id="dot-yuan"></div><div class="status-text" id="txt-yuan">Conectando...</div></div>
     </div>
 
-    <!-- USD / COP -->
     <div class="rate-card gold-accent" id="card-cop">
       <div class="card-header">
-        <div>
-          <div class="card-label">🇨🇴 USD / COP TRM</div>
-          <div class="card-source">api.frankfurter.app</div>
-        </div>
+        <div><div class="card-label">🇨🇴 USD / COP TRM</div><div class="card-source">api.frankfurter.app</div></div>
         <button class="refresh-btn" onclick="refreshSingle('cop')" title="Actualizar">
-          <svg id="ico-cop" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="23 4 23 10 17 10"/><path d="M20.49 15A9 9 0 1 1 5.64 5.64L23 4"/>
-          </svg>
+          <svg id="ico-cop" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15A9 9 0 1 1 5.64 5.64L23 4"/></svg>
         </button>
       </div>
       <div class="rate-value loading-pulse" id="val-cop">&nbsp;</div>
       <div class="rate-sub" id="sub-cop">Cargando...</div>
-      <div class="status-row">
-        <div class="status-dot loading" id="dot-cop"></div>
-        <div class="status-text" id="txt-cop">Conectando...</div>
-      </div>
+      <div class="status-row"><div class="status-dot loading" id="dot-cop"></div><div class="status-text" id="txt-cop">Conectando...</div></div>
     </div>
 
-    <!-- USD / VES BCV -->
     <div class="rate-card" id="card-bcv">
       <div class="card-header">
-        <div>
-          <div class="card-label">🇻🇪 USD / VES BCV</div>
-          <div class="card-source">vzla.io API</div>
-        </div>
+        <div><div class="card-label">🇻🇪 USD / VES BCV</div><div class="card-source">vzla.io API</div></div>
         <button class="refresh-btn" onclick="refreshSingle('bcv')" title="Actualizar">
-          <svg id="ico-bcv" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="23 4 23 10 17 10"/><path d="M20.49 15A9 9 0 1 1 5.64 5.64L23 4"/>
-          </svg>
+          <svg id="ico-bcv" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15A9 9 0 1 1 5.64 5.64L23 4"/></svg>
         </button>
       </div>
       <div class="rate-value loading-pulse" id="val-bcv">&nbsp;</div>
       <div class="rate-sub" id="sub-bcv">Cargando...</div>
-      <div class="status-row">
-        <div class="status-dot loading" id="dot-bcv"></div>
-        <div class="status-text" id="txt-bcv">Conectando...</div>
-      </div>
+      <div class="status-row"><div class="status-dot loading" id="dot-bcv"></div><div class="status-text" id="txt-bcv">Conectando...</div></div>
     </div>
 
-    <!-- Binance USDT / VES -->
     <div class="rate-card gold-accent" id="card-binance">
       <div class="card-header">
-        <div>
-          <div class="card-label">🟡 USDT / VES Binance</div>
-          <div class="card-source">Referencia P2P</div>
-        </div>
+        <div><div class="card-label">🟡 USDT / VES Binance</div><div class="card-source">Referencia P2P</div></div>
         <button class="refresh-btn" onclick="refreshSingle('binance')" title="Actualizar">
-          <svg id="ico-binance" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="23 4 23 10 17 10"/><path d="M20.49 15A9 9 0 1 1 5.64 5.64L23 4"/>
-          </svg>
+          <svg id="ico-binance" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15A9 9 0 1 1 5.64 5.64L23 4"/></svg>
         </button>
       </div>
       <div class="rate-value loading-pulse" id="val-binance">&nbsp;</div>
       <div class="rate-sub" id="sub-binance">Cargando...</div>
-      <div class="status-row">
-        <div class="status-dot loading" id="dot-binance"></div>
-        <div class="status-text" id="txt-binance">Conectando...</div>
-      </div>
+      <div class="status-row"><div class="status-dot loading" id="dot-binance"></div><div class="status-text" id="txt-binance">Conectando...</div></div>
     </div>
 
   </div>
 
-  <footer>
-    CalcNova ERP · Tasas actualizadas cada 5 minutos · Datos de referencia, no financieros
-  </footer>
+  <!-- ── PASO 2: Importador ── -->
+  <div class="import-section">
+    <div class="section-title" style="max-width:100%;margin-bottom:16px;">Importar Productos</div>
+    <div class="drop-zone" id="drop-zone">
+      <span class="drop-icon">📂</span>
+      <div class="drop-title">Arrastra tu archivo aquí o haz clic para seleccionar</div>
+      <div class="drop-sub">Soporta .xlsx y .csv · Columnas detectadas automáticamente</div>
+      <button class="btn-import" id="btn-select">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        Seleccionar Archivo
+      </button>
+      <input type="file" id="file-input" accept=".xlsx,.xls,.csv" style="display:none">
+    </div>
+    <div id="import-status" class="import-status" hidden></div>
+  </div>
+
+  <!-- ── PASO 2: Tabla de Productos ── -->
+  <div class="products-section">
+    <div class="section-header">
+      <div class="section-left">
+        <div class="section-title" style="max-width:100%;margin:0;">Productos Importados</div>
+        <span class="count-badge" id="prod-count">0</span>
+      </div>
+      <button class="btn-clear" onclick="clearAll()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+        </svg>
+        Limpiar todo
+      </button>
+    </div>
+    <div class="table-wrap">
+      <div id="prod-empty" class="empty-state">
+        <div class="empty-icon">📋</div>
+        <div class="empty-title">Sin productos importados</div>
+        <div class="empty-sub">Importa un archivo Excel o CSV para comenzar</div>
+      </div>
+      <div class="table-scroll" id="prod-table-wrap" hidden>
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre</th><th>SKU</th>
+              <th class="r">Cant.</th><th class="r">Precio ¥</th>
+              <th class="r">Peso kg</th><th class="r">CBM m³</th>
+              <th class="r">Subtotal ¥</th><th class="r">Subtotal $</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="prod-tbody"></tbody>
+          <tfoot>
+            <tr>
+              <td colspan="2">TOTAL &mdash; <span id="total-count" style="font-size:11px;opacity:.7">0 productos</span></td>
+              <td class="rc" id="total-qty">—</td>
+              <td>—</td><td>—</td><td>—</td>
+              <td class="rc" id="total-cny">—</td>
+              <td class="rc" id="total-usd">—</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <footer>CalcNova ERP · Tasas actualizadas cada 5 minutos · Datos de referencia, no financieros</footer>
+  <div id="toast" class="toast"></div>
 
   <script>
-    /* ── Utils ── */
-    const fmt = (n, dec = 2) =>
+    /* ══ UTILS ══ */
+    const fmt = (n, d = 2) =>
       (isFinite(n) && n !== null && n !== undefined)
-        ? Number(n).toLocaleString('es-VE', { minimumFractionDigits: dec, maximumFractionDigits: dec })
+        ? Number(n).toLocaleString('es-VE', { minimumFractionDigits: d, maximumFractionDigits: d })
         : null;
 
-    const now = () => new Date().toLocaleString('es-VE', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    const nowStr = () => new Date().toLocaleString('es-VE', {
+      day:'2-digit', month:'2-digit', year:'numeric',
+      hour:'2-digit', minute:'2-digit', second:'2-digit'
     });
 
-    const LS_KEY = 'calcnova_rates_v1';
+    const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-    function saveCache(key, val) {
-      try {
-        const store = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
-        store[key] = { val, ts: Date.now() };
-        localStorage.setItem(LS_KEY, JSON.stringify(store));
-      } catch (_) {}
+    const LS_RATES = 'calcnova_rates_v1';
+    const LS_PRODS = 'calcnova_products_v1';
+
+    function saveRateCache(k, v) {
+      try { const s = JSON.parse(localStorage.getItem(LS_RATES)||'{}'); s[k]={val:v,ts:Date.now()}; localStorage.setItem(LS_RATES,JSON.stringify(s)); } catch(_){}
+    }
+    function loadRateCache(k) {
+      try { return (JSON.parse(localStorage.getItem(LS_RATES)||'{}')||{})[k]||null; } catch(_){ return null; }
     }
 
-    function loadCache(key) {
-      try {
-        const store = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
-        return store[key] || null;
-      } catch (_) { return null; }
-    }
+    /* ══ PASO 1: TASAS ══ */
+    const liveRates = { yuanPerUsd: null };
 
-    /* ── Fetch with timeout ── */
-    async function fetchRate(url, timeoutMs = 5000) {
+    async function fetchRate(url, ms = 5000) {
       const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+      const t = setTimeout(() => ctrl.abort(), ms);
       try {
-        const res = await fetch(url, { signal: ctrl.signal });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return await res.json();
-      } finally {
-        clearTimeout(timer);
-      }
+        const r = await fetch(url, { signal: ctrl.signal });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return await r.json();
+      } finally { clearTimeout(t); }
     }
 
-    /* ── DOM helpers ── */
     function setLoading(id) {
-      const val = document.getElementById(`val-${id}`);
-      val.classList.add('loading-pulse');
-      val.innerHTML = '&nbsp;';
+      const v = document.getElementById(`val-${id}`);
+      v.classList.add('loading-pulse'); v.innerHTML = '&nbsp;';
       document.getElementById(`sub-${id}`).textContent = 'Actualizando...';
       setDot(id, 'loading', 'Conectando...');
-      const btn = document.getElementById(`ico-${id}`);
-      if (btn) btn.closest('.refresh-btn').classList.add('spinning');
+      const b = document.getElementById(`ico-${id}`);
+      if (b) b.closest('.refresh-btn').classList.add('spinning');
       document.getElementById(`card-${id}`).classList.remove('has-error');
     }
 
     function setOk(id, display, sub) {
-      const val = document.getElementById(`val-${id}`);
-      val.classList.remove('loading-pulse');
-      val.textContent = display;
+      const v = document.getElementById(`val-${id}`);
+      v.classList.remove('loading-pulse'); v.textContent = display;
       document.getElementById(`sub-${id}`).textContent = sub || '';
-      setDot(id, 'ok', `Actualizado ${now()}`);
+      setDot(id, 'ok', `Actualizado ${nowStr()}`);
       stopSpin(id);
     }
 
-    function setError(id, fallback) {
-      const val = document.getElementById(`val-${id}`);
-      val.classList.remove('loading-pulse');
+    function setErr(id, fallback) {
+      const v = document.getElementById(`val-${id}`);
+      v.classList.remove('loading-pulse');
       if (fallback) {
-        val.textContent = fallback.val;
+        v.textContent = fallback.val;
         const age = Math.round((Date.now() - fallback.ts) / 60000);
         setDot(id, 'err', `Error · Último valor: hace ${age} min`);
         document.getElementById(`sub-${id}`).textContent = 'Dato en caché';
       } else {
-        val.textContent = 'Sin datos';
+        v.textContent = 'Sin datos';
         setDot(id, 'err', 'Sin conexión y sin caché');
         document.getElementById(`sub-${id}`).textContent = '—';
       }
@@ -483,100 +431,371 @@
     }
 
     function setDot(id, state, text) {
-      const dot = document.getElementById(`dot-${id}`);
-      dot.className = `status-dot ${state}`;
+      document.getElementById(`dot-${id}`).className = `status-dot ${state}`;
       document.getElementById(`txt-${id}`).textContent = text;
     }
-
     function stopSpin(id) {
-      const btn = document.getElementById(`ico-${id}`);
-      if (btn) btn.closest('.refresh-btn').classList.remove('spinning');
+      const b = document.getElementById(`ico-${id}`);
+      if (b) b.closest('.refresh-btn').classList.remove('spinning');
     }
 
-    /* ── Fetchers ── */
     async function fetchYuan() {
-      const id = 'yuan';
-      setLoading(id);
+      const id = 'yuan'; setLoading(id);
       try {
         const data = await fetchRate('https://open.er-api.com/v6/latest/USD');
         const rate = data?.rates?.CNY;
         if (!isFinite(rate)) throw new Error('Dato inválido');
+        liveRates.yuanPerUsd = rate;
         const display = `1 USD = ${fmt(rate, 4)} CNY`;
-        saveCache(id, display);
-        setOk(id, display, `Yuan por dólar · 1 CNY = ${fmt(1 / rate, 4)} USD`);
-      } catch (e) {
-        setError(id, loadCache(id));
-      }
+        saveRateCache(id, display);
+        setOk(id, display, `Yuan por dólar · 1 CNY = ${fmt(1/rate, 4)} USD`);
+        updateTotals(); // refresh USD column with new rate
+      } catch (e) { setErr(id, loadRateCache(id)); }
     }
 
     async function fetchCOP() {
-      const id = 'cop';
-      setLoading(id);
+      const id = 'cop'; setLoading(id);
       try {
         const data = await fetchRate('https://api.frankfurter.app/latest?from=USD&to=COP');
         const rate = data?.rates?.COP;
         if (!isFinite(rate)) throw new Error('Dato inválido');
         const display = `1 USD = ${fmt(rate, 2)} COP`;
-        saveCache(id, display);
+        saveRateCache(id, display);
         setOk(id, display, `TRM referencial · ${data?.date || ''}`);
-      } catch (e) {
-        setError(id, loadCache(id));
-      }
+      } catch (e) { setErr(id, loadRateCache(id)); }
     }
 
     async function fetchBCV() {
-      const id = 'bcv';
-      setLoading(id);
+      const id = 'bcv'; setLoading(id);
       try {
         const data = await fetchRate('https://docs.vzla.io/es/api/v2/rates/bcv/');
-        /* La API puede devolver: { usd: 36.5, ... } o { rates: { USD: ... } } */
         const rate = data?.usd ?? data?.rates?.USD ?? data?.USD ?? data?.data?.usd;
         if (!isFinite(rate)) throw new Error('Dato inválido');
         const display = `1 USD = ${fmt(rate, 2)} VES`;
-        saveCache(id, display);
-        setOk(id, display, `Tasa BCV oficial`);
-      } catch (e) {
-        setError(id, loadCache(id));
-      }
+        saveRateCache(id, display);
+        setOk(id, display, 'Tasa BCV oficial');
+      } catch (e) { setErr(id, loadRateCache(id)); }
     }
 
     async function fetchBinance() {
-      const id = 'binance';
-      setLoading(id);
-      /* Demo fijo: 2850 VES por USDT */
+      const id = 'binance'; setLoading(id);
       await new Promise(r => setTimeout(r, 300));
       const rate = 2850;
       const display = `1 USDT = ${fmt(rate, 2)} VES`;
-      saveCache(id, display);
+      saveRateCache(id, display);
       setOk(id, display, 'Referencia P2P · Demo');
     }
 
-    /* ── Refresh individual ── */
     const refreshers = { yuan: fetchYuan, cop: fetchCOP, bcv: fetchBCV, binance: fetchBinance };
+    async function refreshSingle(id) { await (refreshers[id] || (() => {}))(); }
+    async function updateRates() { await Promise.allSettled([fetchYuan(), fetchCOP(), fetchBCV(), fetchBinance()]); }
 
-    async function refreshSingle(id) {
-      await (refreshers[id] || (() => {}))();
-    }
-
-    /* ── Update all ── */
-    async function updateRates() {
-      await Promise.allSettled([fetchYuan(), fetchCOP(), fetchBCV(), fetchBinance()]);
-    }
-
-    /* ── Clock ── */
     function updateClock() {
       const d = new Date();
       document.getElementById('clock').textContent =
-        d.toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        d.toLocaleTimeString('es-VE', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
       document.getElementById('date-display').textContent =
-        d.toLocaleDateString('es-VE', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+        d.toLocaleDateString('es-VE', { weekday:'short', day:'2-digit', month:'short', year:'numeric' });
     }
 
-    /* ── Init ── */
-    updateClock();
-    setInterval(updateClock, 1000);
-    updateRates();
-    setInterval(updateRates, 5 * 60 * 1000);
+    /* ══ PASO 2: IMPORTADOR & TABLA ══ */
+    let products = [];
+
+    function loadProducts() {
+      try { products = JSON.parse(localStorage.getItem(LS_PRODS) || '[]'); }
+      catch (_) { products = []; }
+    }
+    function saveProducts() {
+      try { localStorage.setItem(LS_PRODS, JSON.stringify(products)); } catch (_) {}
+    }
+
+    /* Column detection */
+    const COL_MAP = {
+      name:     ['product','name','nombre','producto','item','descripcion','description','articulo','artículo'],
+      qty:      ['qty','cantidad','quantity','units','unidades','cant','pcs','pieces','piezas'],
+      price:    ['price','precio','unit price','cost','costo','price cny','precio yuan','unit cost','precio unitario'],
+      weight:   ['weight','peso','wgt','kg','weight kg','gross weight','net weight'],
+      cbm:      ['cbm','volume','volumen','vol','m3','m³'],
+      sku:      ['sku','code','código','codigo','ref','reference','part','item code','id'],
+      category: ['category','categoría','categoria','type','tipo','cat']
+    };
+
+    function detectCols(headers) {
+      const map = {};
+      headers.forEach((h, i) => {
+        const n = String(h).toLowerCase().trim().replace(/[_\-]/g,' ');
+        for (const [field, aliases] of Object.entries(COL_MAP)) {
+          if (map[field] !== undefined) continue;
+          if (aliases.some(a => n === a || n.includes(a))) map[field] = i;
+        }
+      });
+      return map;
+    }
+
+    /* CSV parser */
+    function parseCSV(text) {
+      const lines = []; let cur = '', inQ = false;
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        if (ch === '"') { inQ = !inQ; }
+        else if ((ch === '\n' || ch === '\r') && !inQ) {
+          if (cur.trim()) lines.push(cur); cur = '';
+          if (ch === '\r' && text[i+1] === '\n') i++;
+        } else { cur += ch; }
+      }
+      if (cur.trim()) lines.push(cur);
+      if (lines.length < 2) throw new Error('Archivo vacío o sin filas de datos');
+
+      const delim = lines[0].includes(';') ? ';' : ',';
+      const split = row => {
+        const cells = []; let cell = ''; let q = false;
+        for (const ch of row) {
+          if (ch === '"') { q = !q; }
+          else if (ch === delim && !q) { cells.push(cell.trim()); cell = ''; }
+          else { cell += ch; }
+        }
+        return [...cells, cell.trim()];
+      };
+      const headers = split(lines[0]);
+      return { headers, colMap: detectCols(headers), rows: lines.slice(1).map(split) };
+    }
+
+    /* Excel parser */
+    function parseExcel(buffer) {
+      const wb = XLSX.read(buffer, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      if (data.length < 2) throw new Error('Archivo vacío o sin filas de datos');
+      const headers = data[0].map(String);
+      return { headers, colMap: detectCols(headers), rows: data.slice(1) };
+    }
+
+    /* Rows → products */
+    function rowsToProducts(rows, colMap) {
+      const skuSet = new Set(products.map(p => p.sku).filter(Boolean).map(s => s.toLowerCase()));
+      let added = 0, dupes = 0;
+      const prods = [];
+
+      for (const row of rows) {
+        if (row.every(c => String(c).trim() === '')) continue;
+
+        const get = f => { const i = colMap[f]; return i !== undefined ? String(row[i] ?? '').trim() : ''; };
+        const getN = f => {
+          const i = colMap[f];
+          if (i === undefined) return 0;
+          const v = parseFloat(String(row[i]).replace(/\s/g,'').replace(',','.'));
+          return (isFinite(v) && v >= 0) ? v : 0;
+        };
+
+        const skuVal = get('sku');
+        if (skuVal && skuSet.has(skuVal.toLowerCase())) { dupes++; continue; }
+
+        const p = {
+          id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+          name: get('name') || 'Producto sin nombre',
+          sku: skuVal,
+          qty: getN('qty') || 1,
+          price: getN('price'),
+          weight: getN('weight'),
+          cbm: getN('cbm'),
+          category: get('category')
+        };
+        prods.push(p);
+        if (skuVal) skuSet.add(skuVal.toLowerCase());
+        added++;
+      }
+      return { prods, added, dupes };
+    }
+
+    /* Render full table */
+    function renderTable() {
+      const tbody   = document.getElementById('prod-tbody');
+      const emptyEl = document.getElementById('prod-empty');
+      const tblWrp  = document.getElementById('prod-table-wrap');
+      document.getElementById('prod-count').textContent = products.length;
+
+      if (products.length === 0) { emptyEl.hidden = false; tblWrp.hidden = true; return; }
+      emptyEl.hidden = true; tblWrp.hidden = false;
+
+      const rate = liveRates.yuanPerUsd;
+
+      tbody.innerHTML = products.map(p => {
+        const subCNY = (p.qty || 0) * (p.price || 0);
+        const subUSD = (rate && isFinite(rate) && subCNY) ? subCNY / rate : null;
+        return `<tr class="fi" data-id="${p.id}">
+          <td><span class="editable"   data-f="name"   data-id="${p.id}" contenteditable="true" spellcheck="false">${esc(p.name)}</span></td>
+          <td><span class="editable"   data-f="sku"    data-id="${p.id}" contenteditable="true" spellcheck="false">${esc(p.sku)}</span></td>
+          <td><span class="editable n" data-f="qty"    data-id="${p.id}" contenteditable="true" spellcheck="false">${fmt(p.qty,2)??'0'}</span></td>
+          <td><span class="editable n" data-f="price"  data-id="${p.id}" contenteditable="true" spellcheck="false">${fmt(p.price,4)??'0'}</span></td>
+          <td><span class="editable n" data-f="weight" data-id="${p.id}" contenteditable="true" spellcheck="false">${fmt(p.weight,3)??'0'}</span></td>
+          <td><span class="editable n" data-f="cbm"    data-id="${p.id}" contenteditable="true" spellcheck="false">${fmt(p.cbm,4)??'0'}</span></td>
+          <td class="rc">${fmt(subCNY,2)??'0'} ¥</td>
+          <td class="${subUSD!==null?'rc':'dc'}">${subUSD!==null?fmt(subUSD,2)+' $':'—'}</td>
+          <td>
+            <button class="del-btn" onclick="deleteProduct('${p.id}')" title="Eliminar">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                <path d="M10 11v6M14 11v6"/>
+                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+              </svg>
+            </button>
+          </td>
+        </tr>`;
+      }).join('');
+
+      updateTotals();
+    }
+
+    /* Update only the totals row (called after rate update or cell edit) */
+    function updateTotals() {
+      if (products.length === 0) return;
+      const rate = liveRates.yuanPerUsd;
+      let totQty = 0, totCNY = 0, totUSD = 0, hasUSD = false;
+      for (const p of products) {
+        totQty += p.qty || 0;
+        const sub = (p.qty || 0) * (p.price || 0);
+        totCNY += sub;
+        if (rate && isFinite(rate)) { totUSD += sub / rate; hasUSD = true; }
+      }
+      document.getElementById('total-count').textContent = `${products.length} producto${products.length!==1?'s':''}`;
+      document.getElementById('total-qty').textContent = fmt(totQty,2) ?? '0';
+      document.getElementById('total-cny').textContent = (fmt(totCNY,2) ?? '0') + ' ¥';
+      document.getElementById('total-usd').textContent = hasUSD ? (fmt(totUSD,2) ?? '0') + ' $' : '—';
+
+      /* also refresh USD subtotal cells without full re-render */
+      if (hasUSD) {
+        products.forEach(p => {
+          const row = document.querySelector(`tr[data-id="${p.id}"]`);
+          if (!row) return;
+          const sub = (p.qty||0)*(p.price||0);
+          const usd = sub / rate;
+          const tds = row.querySelectorAll('td');
+          tds[7].textContent = fmt(usd,2) + ' $';
+          tds[7].className = 'rc';
+        });
+      }
+    }
+
+    /* Edit cells via contenteditable */
+    document.getElementById('prod-tbody').addEventListener('blur', e => {
+      const el = e.target;
+      if (!el.classList.contains('editable')) return;
+      const { f, id } = el.dataset;
+      const prod = products.find(p => p.id === id);
+      if (!prod) return;
+
+      const raw = el.textContent.trim();
+      const numFields = ['qty','price','weight','cbm'];
+
+      if (numFields.includes(f)) {
+        const n = parseFloat(raw.replace(/[^\d.,-]/g,'').replace(',','.'));
+        if (isFinite(n) && n >= 0) prod[f] = n;
+        const dec = { qty:2, price:4, weight:3, cbm:4 }[f] || 2;
+        el.textContent = fmt(prod[f], dec) ?? '0';
+
+        /* update subtotal cells for this row without full re-render */
+        const row = el.closest('tr');
+        if (row) {
+          const subCNY = (prod.qty||0) * (prod.price||0);
+          const rate = liveRates.yuanPerUsd;
+          const subUSD = (rate && isFinite(rate)) ? subCNY / rate : null;
+          const tds = row.querySelectorAll('td');
+          tds[6].textContent = (fmt(subCNY,2) ?? '0') + ' ¥';
+          tds[7].textContent = subUSD !== null ? fmt(subUSD,2)+' $' : '—';
+          tds[7].className = subUSD !== null ? 'rc' : 'dc';
+        }
+        updateTotals();
+      } else {
+        prod[f] = raw || (f === 'name' ? 'Producto sin nombre' : '');
+        el.textContent = prod[f];
+      }
+
+      saveProducts();
+    }, true);
+
+    function deleteProduct(id) {
+      products = products.filter(p => p.id !== id);
+      saveProducts(); renderTable();
+    }
+
+    function clearAll() {
+      if (!products.length) return;
+      if (!confirm('¿Eliminar todos los productos de la tabla?')) return;
+      products = []; saveProducts(); renderTable();
+      showToast('Tabla vaciada', 'ok');
+    }
+
+    /* Toast */
+    function showToast(msg, type = 'ok') {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = `toast t${type} show`;
+      clearTimeout(el._tid);
+      el._tid = setTimeout(() => el.classList.remove('show'), 3500);
+    }
+
+    /* Import status */
+    function setImportStatus(state, msg) {
+      const el = document.getElementById('import-status');
+      el.className = `import-status ${state}`; el.textContent = msg; el.hidden = false;
+    }
+
+    /* Handle file */
+    async function handleFile(file) {
+      if (!file) return;
+      const ext = file.name.split('.').pop().toLowerCase();
+      if (!['xlsx','xls','csv'].includes(ext)) {
+        showToast('Formato no soportado. Usa .xlsx o .csv', 'err'); return;
+      }
+      if (file.size > 10 * 1024 * 1024) showToast(`Archivo grande (${(file.size/1048576).toFixed(1)} MB), puede tardar...`, 'wrn');
+
+      setImportStatus('loading', '⏳ Procesando...');
+      try {
+        let parsed;
+        if (ext === 'csv') {
+          parsed = parseCSV(await file.text());
+        } else {
+          if (typeof XLSX === 'undefined') throw new Error('Librería Excel no cargada, recarga la página');
+          parsed = parseExcel(await file.arrayBuffer());
+        }
+        if (!parsed.rows.length) throw new Error('No se encontraron filas de datos');
+
+        const { prods, added, dupes } = rowsToProducts(parsed.rows, parsed.colMap);
+
+        if (added === 0) {
+          setImportStatus('warn', `⚠️ Todos los SKU ya existen (${dupes} duplicado${dupes!==1?'s':''})`);
+          showToast('SKUs duplicados, nada importado', 'wrn'); return;
+        }
+
+        products.push(...prods); saveProducts(); renderTable();
+        let msg = `✅ ${added} producto${added!==1?'s':''} importado${added!==1?'s':''}`;
+        if (dupes > 0) msg += ` · ${dupes} duplicado${dupes!==1?'s':''} omitido${dupes!==1?'s':''}`;
+        setImportStatus('ok', msg); showToast(msg, 'ok');
+      } catch (err) {
+        setImportStatus('err', `❌ ${err.message}`);
+        showToast(`Error: ${err.message}`, 'err');
+      }
+      document.getElementById('file-input').value = '';
+    }
+
+    /* Drop zone wiring */
+    const dropZone  = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    dropZone.addEventListener('click', () => fileInput.click());
+    document.getElementById('btn-select').addEventListener('click', e => { e.stopPropagation(); fileInput.click(); });
+    fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+    dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', e => { if (!dropZone.contains(e.relatedTarget)) dropZone.classList.remove('drag-over'); });
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault(); dropZone.classList.remove('drag-over');
+      if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+    });
+
+    /* ══ INIT ══ */
+    loadProducts(); renderTable();
+    updateClock(); setInterval(updateClock, 1000);
+    updateRates(); setInterval(updateRates, 5 * 60 * 1000);
   </script>
 </body>
 </html>
