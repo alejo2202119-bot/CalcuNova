@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CalcNova ERP</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0F172A;
+      --surface: rgba(30, 41, 59, 0.7);
+      --surface-solid: #1E293B;
+      --border: rgba(148, 163, 184, 0.12);
+      --green: #10B981;
+      --green-dim: rgba(16, 185, 129, 0.15);
+      --gold: #F59E0B;
+      --gold-dim: rgba(245, 158, 11, 0.15);
+      --red: #EF4444;
+      --red-dim: rgba(239, 68, 68, 0.12);
+      --muted: #64748B;
+      --text: #E2E8F0;
+      --text-dim: #94A3B8;
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      padding: 24px 16px 48px;
+    }
+
+    /* ── Header ── */
+    header {
+      max-width: 960px;
+      margin: 0 auto 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--green), #059669);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .logo-text {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .logo-text span {
+      color: var(--green);
+    }
+
+    .logo-sub {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    .header-time {
+      text-align: right;
+      font-size: 12px;
+      color: var(--text-dim);
+      line-height: 1.6;
+    }
+
+    .header-time strong {
+      display: block;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: 0.5px;
+    }
+
+    /* ── Section title ── */
+    .section-title {
+      max-width: 960px;
+      margin: 0 auto 16px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-dim);
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title::before {
+      content: '';
+      display: inline-block;
+      width: 3px;
+      height: 14px;
+      background: var(--green);
+      border-radius: 2px;
+    }
+
+    /* ── Rates grid ── */
+    .rates-grid {
+      max-width: 960px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 16px;
+    }
+
+    /* ── Rate card ── */
+    .rate-card {
+      background: var(--surface);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .rate-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+    }
+
+    .rate-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--green), transparent);
+      opacity: 0.6;
+    }
+
+    .rate-card.gold-accent::before {
+      background: linear-gradient(90deg, var(--gold), transparent);
+    }
+
+    /* card header */
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 14px;
+    }
+
+    .card-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-dim);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .card-source {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .refresh-btn {
+      width: 28px;
+      height: 28px;
+      background: rgba(148, 163, 184, 0.08);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, color 0.15s;
+      flex-shrink: 0;
+    }
+
+    .refresh-btn:hover {
+      background: var(--green-dim);
+      color: var(--green);
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+
+    .refresh-btn.spinning svg {
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* card body */
+    .rate-value {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: var(--text);
+      line-height: 1.1;
+      min-height: 32px;
+    }
+
+    .rate-value.loading-pulse {
+      background: linear-gradient(90deg, var(--surface-solid) 25%, rgba(100,116,139,0.2) 50%, var(--surface-solid) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 6px;
+      width: 70%;
+      height: 32px;
+      color: transparent;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .rate-sub {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    /* status badge */
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 14px;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .status-dot.ok    { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .status-dot.err   { background: var(--red); }
+    .status-dot.loading { background: var(--gold); animation: blink 1s ease infinite; }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%  { opacity: 0.3; }
+    }
+
+    .status-text {
+      font-size: 10px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* error state tint */
+    .rate-card.has-error {
+      border-color: rgba(239, 68, 68, 0.2);
+    }
+
+    /* ── Footer ── */
+    footer {
+      max-width: 960px;
+      margin: 40px auto 0;
+      text-align: center;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 480px) {
+      .rates-grid { grid-template-columns: 1fr; }
+      .rate-value { font-size: 22px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">
+      <div class="logo-icon">⚡</div>
+      <div>
+        <div class="logo-text">Calc<span>Nova</span></div>
+        <div class="logo-sub">ERP · Tasas en Vivo</div>
+      </div>
+    </div>
+    <div class="header-time">
+      <strong id="clock">--:--:--</strong>
+      <span id="date-display">--/--/----</span>
+    </div>
+  </header>
+
+  <div class="section-title">Mercados &amp; Divisas</div>
+
+  <div class="rates-grid">
+
+    <!-- Yuan / USD -->
+    <div class="rate-card" id="card-yuan">
+      <div class="card-header">
+        <div>
+          <div class="card-label">🇨🇳 Yuan / USD</div>
+          <div class="card-source">open.er-api.com</div>
+        </div>
+        <button class="refresh-btn" onclick="refreshSingle('yuan')" title="Actualizar">
+          <svg id="ico-yuan" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"/><path d="M20.49 15A9 9 0 1 1 5.64 5.64L23 4"/>
+          </svg>
+        </button>
+      </div>
+      <div class="rate-value loading-pulse" id="val-yuan">&nbsp;</div>
+      <div class="rate-sub" id="sub-yuan">Cargando...</div>
+      <div class="status-row">
+        <div class="status-dot loading" id="dot-yuan"></div>
+        <div class="status-text" id="txt-yuan">Conectando...</div>
+      </div>
+    </div>
+
+    <!-- USD / COP -->
+    <div class="rate-card gold-accent" id="card-cop">
+      <div class="card-header">
+        <div>
+          <div class="card-label">🇨🇴 USD / COP TRM</div>
+          <div class="card-source">api.frankfurter.app</div>
+        </div>
+        <button class="refresh-btn" onclick="refreshSingle('cop')" title="Actualizar">
+          <svg id="ico-cop" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"/><path d="M20.49 15A9 9 0 1 1 5.64 5.64L23 4"/>
+          </svg>
+        </button>
+      </div>
+      <div class="rate-value loading-pulse" id="val-cop">&nbsp;</div>
+      <div class="rate-sub" id="sub-cop">Cargando...</div>
+      <div class="status-row">
+        <div class="status-dot loading" id="dot-cop"></div>
+        <div class="status-text" id="txt-cop">Conectando...</div>
+      </div>
+    </div>
+
+    <!-- USD / VES BCV -->
+    <div class="rate-card" id="card-bcv">
+      <div class="card-header">
+        <div>
+          <div class="card-label">🇻🇪 USD / VES BCV</div>
+          <div class="card-source">vzla.io API</div>
+        </div>
+        <button class="refresh-btn" onclick="refreshSingle('bcv')" title="Actualizar">
+          <svg id="ico-bcv" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"/><path d="M20.49 15A9 9 0 1 1 5.64 5.64L23 4"/>
+          </svg>
+        </button>
+      </div>
+      <div class="rate-value loading-pulse" id="val-bcv">&nbsp;</div>
+      <div class="rate-sub" id="sub-bcv">Cargando...</div>
+      <div class="status-row">
+        <div class="status-dot loading" id="dot-bcv"></div>
+        <div class="status-text" id="txt-bcv">Conectando...</div>
+      </div>
+    </div>
+
+    <!-- Binance USDT / VES -->
+    <div class="rate-card gold-accent" id="card-binance">
+      <div class="card-header">
+        <div>
+          <div class="card-label">🟡 USDT / VES Binance</div>
+          <div class="card-source">Referencia P2P</div>
+        </div>
+        <button class="refresh-btn" onclick="refreshSingle('binance')" title="Actualizar">
+          <svg id="ico-binance" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"/><path d="M20.49 15A9 9 0 1 1 5.64 5.64L23 4"/>
+          </svg>
+        </button>
+      </div>
+      <div class="rate-value loading-pulse" id="val-binance">&nbsp;</div>
+      <div class="rate-sub" id="sub-binance">Cargando...</div>
+      <div class="status-row">
+        <div class="status-dot loading" id="dot-binance"></div>
+        <div class="status-text" id="txt-binance">Conectando...</div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    CalcNova ERP · Tasas actualizadas cada 5 minutos · Datos de referencia, no financieros
+  </footer>
+
+  <script>
+    /* ── Utils ── */
+    const fmt = (n, dec = 2) =>
+      (isFinite(n) && n !== null && n !== undefined)
+        ? Number(n).toLocaleString('es-VE', { minimumFractionDigits: dec, maximumFractionDigits: dec })
+        : null;
+
+    const now = () => new Date().toLocaleString('es-VE', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+
+    const LS_KEY = 'calcnova_rates_v1';
+
+    function saveCache(key, val) {
+      try {
+        const store = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+        store[key] = { val, ts: Date.now() };
+        localStorage.setItem(LS_KEY, JSON.stringify(store));
+      } catch (_) {}
+    }
+
+    function loadCache(key) {
+      try {
+        const store = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+        return store[key] || null;
+      } catch (_) { return null; }
+    }
+
+    /* ── Fetch with timeout ── */
+    async function fetchRate(url, timeoutMs = 5000) {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+      try {
+        const res = await fetch(url, { signal: ctrl.signal });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    /* ── DOM helpers ── */
+    function setLoading(id) {
+      const val = document.getElementById(`val-${id}`);
+      val.classList.add('loading-pulse');
+      val.innerHTML = '&nbsp;';
+      document.getElementById(`sub-${id}`).textContent = 'Actualizando...';
+      setDot(id, 'loading', 'Conectando...');
+      const btn = document.getElementById(`ico-${id}`);
+      if (btn) btn.closest('.refresh-btn').classList.add('spinning');
+      document.getElementById(`card-${id}`).classList.remove('has-error');
+    }
+
+    function setOk(id, display, sub) {
+      const val = document.getElementById(`val-${id}`);
+      val.classList.remove('loading-pulse');
+      val.textContent = display;
+      document.getElementById(`sub-${id}`).textContent = sub || '';
+      setDot(id, 'ok', `Actualizado ${now()}`);
+      stopSpin(id);
+    }
+
+    function setError(id, fallback) {
+      const val = document.getElementById(`val-${id}`);
+      val.classList.remove('loading-pulse');
+      if (fallback) {
+        val.textContent = fallback.val;
+        const age = Math.round((Date.now() - fallback.ts) / 60000);
+        setDot(id, 'err', `Error · Último valor: hace ${age} min`);
+        document.getElementById(`sub-${id}`).textContent = 'Dato en caché';
+      } else {
+        val.textContent = 'Sin datos';
+        setDot(id, 'err', 'Sin conexión y sin caché');
+        document.getElementById(`sub-${id}`).textContent = '—';
+      }
+      document.getElementById(`card-${id}`).classList.add('has-error');
+      stopSpin(id);
+    }
+
+    function setDot(id, state, text) {
+      const dot = document.getElementById(`dot-${id}`);
+      dot.className = `status-dot ${state}`;
+      document.getElementById(`txt-${id}`).textContent = text;
+    }
+
+    function stopSpin(id) {
+      const btn = document.getElementById(`ico-${id}`);
+      if (btn) btn.closest('.refresh-btn').classList.remove('spinning');
+    }
+
+    /* ── Fetchers ── */
+    async function fetchYuan() {
+      const id = 'yuan';
+      setLoading(id);
+      try {
+        const data = await fetchRate('https://open.er-api.com/v6/latest/USD');
+        const rate = data?.rates?.CNY;
+        if (!isFinite(rate)) throw new Error('Dato inválido');
+        const display = `1 USD = ${fmt(rate, 4)} CNY`;
+        saveCache(id, display);
+        setOk(id, display, `Yuan por dólar · 1 CNY = ${fmt(1 / rate, 4)} USD`);
+      } catch (e) {
+        setError(id, loadCache(id));
+      }
+    }
+
+    async function fetchCOP() {
+      const id = 'cop';
+      setLoading(id);
+      try {
+        const data = await fetchRate('https://api.frankfurter.app/latest?from=USD&to=COP');
+        const rate = data?.rates?.COP;
+        if (!isFinite(rate)) throw new Error('Dato inválido');
+        const display = `1 USD = ${fmt(rate, 2)} COP`;
+        saveCache(id, display);
+        setOk(id, display, `TRM referencial · ${data?.date || ''}`);
+      } catch (e) {
+        setError(id, loadCache(id));
+      }
+    }
+
+    async function fetchBCV() {
+      const id = 'bcv';
+      setLoading(id);
+      try {
+        const data = await fetchRate('https://docs.vzla.io/es/api/v2/rates/bcv/');
+        /* La API puede devolver: { usd: 36.5, ... } o { rates: { USD: ... } } */
+        const rate = data?.usd ?? data?.rates?.USD ?? data?.USD ?? data?.data?.usd;
+        if (!isFinite(rate)) throw new Error('Dato inválido');
+        const display = `1 USD = ${fmt(rate, 2)} VES`;
+        saveCache(id, display);
+        setOk(id, display, `Tasa BCV oficial`);
+      } catch (e) {
+        setError(id, loadCache(id));
+      }
+    }
+
+    async function fetchBinance() {
+      const id = 'binance';
+      setLoading(id);
+      /* Demo fijo: 2850 VES por USDT */
+      await new Promise(r => setTimeout(r, 300));
+      const rate = 2850;
+      const display = `1 USDT = ${fmt(rate, 2)} VES`;
+      saveCache(id, display);
+      setOk(id, display, 'Referencia P2P · Demo');
+    }
+
+    /* ── Refresh individual ── */
+    const refreshers = { yuan: fetchYuan, cop: fetchCOP, bcv: fetchBCV, binance: fetchBinance };
+
+    async function refreshSingle(id) {
+      await (refreshers[id] || (() => {}))();
+    }
+
+    /* ── Update all ── */
+    async function updateRates() {
+      await Promise.allSettled([fetchYuan(), fetchCOP(), fetchBCV(), fetchBinance()]);
+    }
+
+    /* ── Clock ── */
+    function updateClock() {
+      const d = new Date();
+      document.getElementById('clock').textContent =
+        d.toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      document.getElementById('date-display').textContent =
+        d.toLocaleDateString('es-VE', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    /* ── Init ── */
+    updateClock();
+    setInterval(updateClock, 1000);
+    updateRates();
+    setInterval(updateRates, 5 * 60 * 1000);
+  </script>
+</body>
+</html>
