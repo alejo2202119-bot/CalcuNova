@@ -370,31 +370,62 @@
   <div class="st" style="margin-top:28px">Configuración Financiera</div>
   <div class="glass" id="config-wrap">
     <div class="config-grid">
+      <!-- Col 1: Gastos internacionales USD -->
       <div>
-        <div class="cfg-group-title">Gastos USD (contenedor)</div>
-        <div class="inp-row"><label class="inp-lbl">Flete marítimo</label><div class="inp-wrap"><span class="inp-unit">$</span><input class="cfg-input" type="number" min="0" step="100" data-field="freight" value="2000"></div></div>
-        <div class="inp-row"><label class="inp-lbl">Seguro</label><div class="inp-wrap"><span class="inp-unit">$</span><input class="cfg-input" type="number" min="0" step="50" data-field="insurance" value="500"></div></div>
-        <div class="inp-row"><label class="inp-lbl">Gastos portuarios</label><div class="inp-wrap"><span class="inp-unit">$</span><input class="cfg-input" type="number" min="0" step="50" data-field="portFees" value="300"></div></div>
-        <div class="inp-row"><label class="inp-lbl">Comisión bancaria</label><div class="inp-wrap"><span class="inp-unit">%</span><input class="cfg-input" type="number" min="0" max="100" step="0.1" data-field="bankCommission" value="1"></div></div>
+        <div class="cfg-group-title">⚓ Internacionales (USD)</div>
+        <div class="inp-row"><label class="inp-lbl">Flete marítimo (total contenedor)</label><div class="inp-wrap"><span class="inp-unit">$</span><input class="cfg-input" type="number" min="0" step="100" data-field="freight" value="0"></div></div>
+        <div class="inp-row"><label class="inp-lbl">Seguro marítimo</label><div class="inp-wrap"><span class="inp-unit">$</span><input class="cfg-input" type="number" min="0" step="50" data-field="insurance" value="0"></div></div>
+        <div class="inp-row"><label class="inp-lbl">Gastos portuarios (llegada)</label><div class="inp-wrap"><span class="inp-unit">$</span><input class="cfg-input" type="number" min="0" step="50" data-field="portFees" value="0"></div></div>
+        <div class="inp-row"><label class="inp-lbl">Comisión bancaria</label><div class="inp-wrap"><span class="inp-unit">%</span><input class="cfg-input" type="number" min="0" max="100" step="0.1" data-field="bankCommission" value="0"></div></div>
       </div>
+      <!-- Col 2: Gastos Colombia COP -->
       <div>
-        <div class="cfg-group-title">Gastos Colombia (COP)</div>
-        <div class="inp-row"><label class="inp-lbl" id="transport-col-lbl">Transporte Bvta-Cúcuta</label><div class="inp-wrap"><span class="inp-unit">$</span><input class="cfg-input" type="number" min="0" step="50000" data-field="transportCOL" value="950000"></div></div>
-        <div class="inp-row"><label class="inp-lbl">Aduanas</label><div class="inp-wrap"><span class="inp-unit">$</span><input class="cfg-input" type="number" min="0" step="50000" data-field="customsCOL" value="500000"></div></div>
+        <div class="cfg-group-title">🇨🇴 Colombia (COP)</div>
+        <div class="inp-row"><label class="inp-lbl" id="transport-col-lbl">Transporte Puerto → Cúcuta</label><div class="inp-wrap"><span class="inp-unit">COP</span><input class="cfg-input" type="number" min="0" step="50000" data-field="transportCOL" value="0"></div></div>
+        <div class="inp-row"><label class="inp-lbl">Aduanas / trámites Colombia</label><div class="inp-wrap"><span class="inp-unit">COP</span><input class="cfg-input" type="number" min="0" step="50000" data-field="customsCOL" value="0"></div></div>
+        <div class="inp-row"><label class="inp-lbl">Costos extra Colombia</label><div class="inp-wrap"><span class="inp-unit">COP</span><input class="cfg-input" type="number" min="0" step="50000" data-field="extraCOL" value="0"></div></div>
       </div>
+      <!-- Col 3: Gastos Venezuela VES -->
       <div>
-        <div class="cfg-group-title">Gastos Venezuela (VES)</div>
-        <div class="inp-row"><label class="inp-lbl">Transporte Cúcuta-Táchira</label><div class="inp-wrap"><span class="inp-unit">Bs</span><input class="cfg-input" type="number" min="0" step="10000" data-field="transportVEN" value="50000"></div></div>
-        <div class="inp-row"><label class="inp-lbl">IVA</label><div class="inp-wrap"><span class="inp-unit">%</span><input class="cfg-input" type="number" min="0" max="100" step="1" data-field="iva" value="16"></div></div>
-        <div class="inp-row"><label class="inp-lbl">Gastos operativos</label><div class="inp-wrap"><span class="inp-unit">Bs</span><input class="cfg-input" type="number" min="0" step="10000" data-field="operatingVEN" value="100000"></div></div>
+        <div class="cfg-group-title">🇻🇪 Venezuela (VES / %)</div>
+        <div class="inp-row"><label class="inp-lbl">Arancel importación Venezuela</label><div class="inp-wrap"><span class="inp-unit">%</span><input class="cfg-input" type="number" min="0" max="200" step="0.5" data-field="tariffVEN" value="0"></div></div>
+        <div class="inp-row"><label class="inp-lbl">Gastos de nacionalización</label><div class="inp-wrap"><span class="inp-unit">Bs</span><input class="cfg-input" type="number" min="0" step="10000" data-field="nationalizationVEN" value="0"></div></div>
+        <div class="inp-row"><label class="inp-lbl">Transporte Cúcuta → S. Cristóbal</label><div class="inp-wrap"><span class="inp-unit">Bs</span><input class="cfg-input" type="number" min="0" step="10000" data-field="transportVEN" value="0"></div></div>
+        <div class="inp-row"><label class="inp-lbl">Gastos operativos Venezuela</label><div class="inp-wrap"><span class="inp-unit">Bs</span><input class="cfg-input" type="number" min="0" step="10000" data-field="operatingVEN" value="0"></div></div>
+        <div class="inp-row"><label class="inp-lbl">IVA Venezuela (ley)</label><div class="inp-wrap"><span class="inp-unit">%</span><input class="cfg-input" type="number" min="0" max="100" step="1" data-field="iva" value="16"></div></div>
       </div>
+      <!-- Col 4: Márgenes y distribución -->
       <div>
-        <div class="cfg-group-title">Márgenes de Precio</div>
-        <div class="inp-row"><label class="inp-lbl">Margen mayorista</label><div class="inp-wrap"><span class="inp-unit">%</span><input class="cfg-input" type="number" min="0" max="500" step="5" data-field="marginWholesale" value="30"></div></div>
-        <div class="inp-row"><label class="inp-lbl">Margen detal</label><div class="inp-wrap"><span class="inp-unit">%</span><input class="cfg-input" type="number" min="0" max="500" step="5" data-field="marginRetail" value="50"></div></div>
+        <div class="cfg-group-title">📊 Márgenes y Distribución</div>
+        <div class="inp-row"><label class="inp-lbl">Margen mayorista</label><div class="inp-wrap"><span class="inp-unit">%</span><input class="cfg-input" type="number" min="0" max="1000" step="5" data-field="marginWholesale" value="0"></div></div>
+        <div class="inp-row"><label class="inp-lbl">Margen detal</label><div class="inp-wrap"><span class="inp-unit">%</span><input class="cfg-input" type="number" min="0" max="1000" step="5" data-field="marginRetail" value="0"></div></div>
+        <div class="inp-row">
+          <label class="inp-lbl">Distribuir gastos por</label>
+          <select class="cfg-input" style="border-radius:7px;padding:7px 9px;flex:1" data-field="distribution" id="dist-select" onchange="onDistChange(this.value)">
+            <option value="weight">⚖️ Peso kg (recomendado)</option>
+            <option value="cbm">📦 Volumen CBM</option>
+            <option value="value">💰 Valor USD</option>
+            <option value="equal">🟰 Igual por producto</option>
+          </select>
+        </div>
       </div>
     </div>
   </div>
+
+  <!-- Customs file -->
+  <div class="st" style="margin-top:28px">Archivo de Aduana Venezuela <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0">(Opcional · extrae aranceles automáticamente)</span></div>
+  <div class="drop-zone" id="customs-drop-zone" style="padding:16px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+    <span style="font-size:24px">🛃</span>
+    <div style="flex:1;min-width:200px">
+      <div class="drop-title" style="font-size:13px">Subir planilla de aduana venezolana</div>
+      <div class="drop-sub" style="margin-bottom:0">El sistema detecta automáticamente el % de arancel e importación · .xlsx / .csv</div>
+    </div>
+    <button class="btn-import" id="btn-customs" style="padding:8px 16px;white-space:nowrap">
+      🛃 Seleccionar Archivo
+    </button>
+    <input type="file" id="customs-input" accept=".xlsx,.xls,.csv" style="display:none">
+  </div>
+  <div id="customs-status" class="import-status" hidden></div>
 
   <!-- Products table -->
   <div class="products-header" style="margin-top:28px">
@@ -589,10 +620,25 @@ function saveRateCache(k,v){try{const s=JSON.parse(localStorage.getItem(LS_RATES
 function loadRateCache(k){try{return(JSON.parse(localStorage.getItem(LS_RATES)||'{}')||{})[k]||null;}catch(_){return null;}}
 
 /* ═══════ CONFIG ═══════ */
-const DEF_CFG={freight:2000,insurance:500,portFees:350,bankCommission:1,transportCOL:950000,customsCOL:500000,transportVEN:50000,iva:16,operatingVEN:100000,marginWholesale:30,marginRetail:50,selectedPort:'buenaventura'};
+/* Todos los costos operativos en 0 — el usuario los ingresa manualmente.
+   Solo iva:16 es fijo por ley venezolana. */
+const DEF_CFG={
+  freight:0, insurance:0, portFees:0, bankCommission:0,
+  transportCOL:0, customsCOL:0, extraCOL:0,
+  tariffVEN:0, nationalizationVEN:0, transportVEN:0, operatingVEN:0,
+  iva:16,
+  marginWholesale:0, marginRetail:0,
+  distribution:'weight', selectedPort:'buenaventura'
+};
 function loadCfg(){try{return{...DEF_CFG,...JSON.parse(localStorage.getItem(LS_CFG)||'{}')};}catch(_){return{...DEF_CFG};}}
 function saveCfg(c){try{localStorage.setItem(LS_CFG,JSON.stringify(c));}catch(_){}}
-function initCfgInputs(){const c=loadCfg();document.querySelectorAll('.cfg-input[data-field]').forEach(el=>{if(c[el.dataset.field]!==undefined)el.value=c[el.dataset.field];});}
+function initCfgInputs(){
+  const c=loadCfg();
+  document.querySelectorAll('.cfg-input[data-field]').forEach(el=>{
+    const val=c[el.dataset.field];
+    if(val!==undefined&&val!==null)el.value=val;
+  });
+}
 document.getElementById('config-wrap').addEventListener('input',e=>{
   const el=e.target;if(!el.classList.contains('cfg-input'))return;
   const f=el.dataset.field;if(!f)return;
@@ -673,7 +719,116 @@ function parseExcel(buf){
 function rowsToProducts(rows,colMap){const skuSet=new Set(products.map(p=>p.sku).filter(Boolean).map(s=>s.toLowerCase()));let added=0,dupes=0;const prods=[];for(const row of rows){if(row.every(c=>String(c).trim()===''))continue;const get=f=>{const i=colMap[f];return i!==undefined?String(row[i]??'').trim():'';};const getN=f=>{const i=colMap[f];if(i===undefined)return 0;const raw=row[i];if(typeof raw==='number')return(isFinite(raw)&&raw>=0)?raw:0;const s=String(raw??'').trim();const v=parseFloat(s.replace(/[^\d.,-]/g,'').replace(/\.(?=.*\.)/g,'').replace(',','.'));return(isFinite(v)&&v>=0)?v:0;};const skuVal=get('sku');if(skuVal&&skuSet.has(skuVal.toLowerCase())){dupes++;continue;}const p={id:'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),name:get('name')||'Producto sin nombre',sku:skuVal,qty:getN('qty')||1,price:getN('price'),weight:getN('weight'),cbm:getN('cbm'),category:get('category')};prods.push(p);if(skuVal)skuSet.add(skuVal.toLowerCase());added++;}return{prods,added,dupes};}
 
 /* ═══════ PASO 3: CÁLCULOS ═══════ */
-function calcAllProducts(){if(!products.length)return[];const cfg=loadCfg();const{yuanPerUsd:yR,copPerUsd:cR,vesPerUsd:vR}=liveRates;const totalBW=products.reduce((s,p)=>s+(p.qty||0)*(p.weight||0),0);const useEq=totalBW===0;return products.map(p=>{const noRates=!yR||!cR||!vR;if(noRates)return{id:p.id,unitCostVES:null,priceWholesale:null,priceRetail:null,marginWholesalePct:null,roi:null,channel:'—',alert:null,totalCostVES:null};const bw=(p.qty||0)*(p.weight||0);const wR=useEq?1/products.length:(bw/totalBW);const costBaseUSD=(p.qty||0)*(p.price||0)/yR;const costComm=costBaseUSD*(1+cfg.bankCommission/100);const maritime=(cfg.freight+cfg.insurance+cfg.portFees)*wR;const costMarUSD=costComm+maritime;const costCOP=costMarUSD*cR;const colCost=(cfg.transportCOL+cfg.customsCOL)*wR;const costColCOP=costCOP+colCost;const vPerC=vR/cR;const costVES=costColCOP*vPerC;const venCost=(cfg.transportVEN+cfg.operatingVEN)*wR;const costPreIVA=costVES+venCost;const totalCostVES=costPreIVA*(1+cfg.iva/100);const qty=Math.max(p.qty||1,1);const unitCostVES=totalCostVES/qty;const pw=unitCostVES*(1+cfg.marginWholesale/100);const pr=unitCostVES*(1+cfg.marginRetail/100);const mwP=pw>0?(pw-unitCostVES)/pw*100:0;const mrP=pr>0?(pr-unitCostVES)/pr*100:0;const roi=unitCostVES>0?(pw-unitCostVES)/unitCostVES*100:0;const channel=(p.qty||0)>50&&mwP>25?'MAYOR':mrP>40?'DETAL':'AMBOS';let alert=null;if(roi>50)alert={icon:'🔥',title:'Producto estrella',sub:`ROI ${fmt(roi,1)}%`};else if(mrP>60)alert={icon:'💎',title:'Excelente detal',sub:`Margen ${fmt(mrP,1)}%`};else if((p.qty||0)>100&&mwP>25)alert={icon:'📦',title:'Ideal mayorista',sub:`${p.qty} uds`};else if(roi>0&&roi<10)alert={icon:'⚠️',title:'Baja rentabilidad',sub:`ROI ${fmt(roi,1)}%`};return{id:p.id,unitCostVES:isFinite(unitCostVES)?unitCostVES:null,priceWholesale:isFinite(pw)?pw:null,priceRetail:isFinite(pr)?pr:null,marginWholesalePct:isFinite(mwP)?mwP:null,roi:isFinite(roi)?roi:null,channel,alert,totalCostVES:isFinite(totalCostVES)?totalCostVES:null};});}
+function calcAllProducts(){
+  if(!products.length)return[];
+  const cfg=loadCfg();
+  const{yuanPerUsd:yR,copPerUsd:cR,vesPerUsd:vR}=liveRates;
+  const noRates=!yR||!cR||!vR;
+  const n=products.length;
+  const ZERO={id:'',unitCostVES:null,priceWholesale:null,priceRetail:null,
+              marginWholesalePct:null,roi:null,channel:'—',alert:null,
+              totalCostVES:null,totalUSD:null,totalCOP:null};
+
+  /* ── Totales para distribución proporcional ── */
+  const totWeight=products.reduce((s,p)=>s+(p.qty||0)*(p.weight||0),0);
+  const totCBM   =products.reduce((s,p)=>s+(p.qty||0)*(p.cbm   ||0),0);
+  const totValCNY=products.reduce((s,p)=>s+(p.qty||0)*(p.price ||0),0);
+  const dist=cfg.distribution||'weight';
+
+  function wRatio(p){
+    /* Proporción del producto respecto al lote (para distribuir gastos fijos) */
+    if(dist==='weight'){const w=(p.qty||0)*(p.weight||0);return totWeight>0?w/totWeight:1/n;}
+    if(dist==='cbm')   {const c=(p.qty||0)*(p.cbm   ||0);return totCBM>0   ?c/totCBM   :1/n;}
+    if(dist==='value') {const v=(p.qty||0)*(p.price ||0);return totValCNY>0?v/totValCNY:1/n;}
+    return 1/n; // equal
+  }
+
+  return products.map(p=>{
+    if(noRates)return{...ZERO,id:p.id};
+    try{
+      const qty=Math.max(p.qty||1,1);
+      const wR =wRatio(p);
+
+      /* ═══ ETAPA 1: China → USD (producto) ═══
+         Solo el costo del producto en CNY convertido a USD.
+         Comisión bancaria se aplica sobre el valor en USD. */
+      const prodCNY =(p.qty||0)*(p.price||0);          // total CNY
+      const prodUSD = prodCNY / yR;                    // CNY → USD
+      const bankFee = prodUSD * (cfg.bankCommission||0) / 100;
+      const subtotalUSD = prodUSD + bankFee;            // producto + comisión
+
+      /* ═══ ETAPA 2: Costos marítimos internacionales (USD) ═══
+         Flete, seguro y gastos portuarios distribuidos por proporción. */
+      const freightShare  = (cfg.freight  ||0) * wR;
+      const insuranceShare= (cfg.insurance||0) * wR;
+      const portShare     = (cfg.portFees ||0) * wR;
+      const totalUSD = subtotalUSD + freightShare + insuranceShare + portShare;
+
+      /* ═══ ETAPA 3: Colombia (USD → COP + costos COP) ═══
+         Convertir todo lo acumulado en USD a COP, luego sumar gastos locales. */
+      const baseCOP        = totalUSD * cR;             // USD → COP
+      const transportShare = (cfg.transportCOL     ||0) * wR;
+      const customsShare   = (cfg.customsCOL        ||0) * wR;
+      const extraColShare  = (cfg.extraCOL          ||0) * wR;
+      const totalCOP = baseCOP + transportShare + customsShare + extraColShare;
+
+      /* ═══ ETAPA 4: Venezuela — conversión y aranceles ═══
+         Convertir COP → VES usando tasa cruzada (vesPerUSD / copPerUSD).
+         Luego aplicar arancel venezolano sobre el costo CIF convertido. */
+      const vesPerCOP   = vR / cR;                      // tasa cruzada COP→VES
+      const baseVES     = totalCOP * vesPerCOP;         // costo puesto en frontera VES
+      const tariffVES   = baseVES * (cfg.tariffVEN||0) / 100;  // arancel %
+
+      /* ═══ ETAPA 5: Costos internos Venezuela (VES) ═══
+         Nacionalización, transporte y operativos. Distribuidos por proporción. */
+      const nationalShare  = (cfg.nationalizationVEN||0) * wR;
+      const transportVENsh = (cfg.transportVEN       ||0) * wR;
+      const operatingShare = (cfg.operatingVEN       ||0) * wR;
+
+      const totalPreIVA = baseVES + tariffVES + nationalShare + transportVENsh + operatingShare;
+
+      /* ═══ ETAPA 6: IVA Venezuela 16% ═══
+         Aplicado sobre el total acumulado antes de IVA. */
+      const totalCostVES = totalPreIVA * (1 + (cfg.iva||16) / 100);
+
+      /* ═══ Precios y rentabilidad ═══ */
+      const unitCostVES = totalCostVES / qty;
+      const pw = unitCostVES * (1 + (cfg.marginWholesale||0) / 100);
+      const pr = unitCostVES * (1 + (cfg.marginRetail   ||0) / 100);
+
+      /* Márgenes sobre precio de venta */
+      const mwP = pw > 0 ? (pw - unitCostVES) / pw * 100 : 0;
+      const mrP = pr > 0 ? (pr - unitCostVES) / pr * 100 : 0;
+      /* ROI sobre costo */
+      const roi = unitCostVES > 0 ? (pw - unitCostVES) / unitCostVES * 100 : 0;
+
+      const channel = (p.qty||0)>50 && mwP>25 ? 'MAYOR' : mrP>40 ? 'DETAL' : 'AMBOS';
+      let alert=null;
+      if(roi>50)      alert={icon:'🔥',title:'Producto estrella',sub:`ROI ${fmt(roi,1)}%`};
+      else if(mrP>60) alert={icon:'💎',title:'Excelente detal',  sub:`Margen ${fmt(mrP,1)}%`};
+      else if((p.qty||0)>100&&mwP>25) alert={icon:'📦',title:'Ideal mayorista',sub:`${p.qty} uds`};
+      else if(roi>0&&roi<10) alert={icon:'⚠️',title:'Baja rentabilidad',sub:`ROI ${fmt(roi,1)}%`};
+
+      /* Función de seguridad: si cualquier resultado es NaN/Infinity → null */
+      const safe=v=>isFinite(v)?v:null;
+      return{
+        id:p.id,
+        totalUSD         :safe(totalUSD),
+        totalCOP         :safe(totalCOP),
+        totalCostVES     :safe(totalCostVES),
+        unitCostVES      :safe(unitCostVES),
+        priceWholesale   :safe(pw),
+        priceRetail      :safe(pr),
+        marginWholesalePct:safe(mwP),
+        roi              :safe(roi),
+        channel, alert
+      };
+    }catch(e){
+      console.error('[CalcNova calc]',p.name,e);
+      return{...ZERO,id:p.id};
+    }
+  });
+}
 
 let chartDirty=true,chartInst=null;
 function recalcAll(){renderTable();renderDashboard();renderRoute();if(document.getElementById('tab-productos').classList.contains('active')){renderChart();}else{chartDirty=true;}renderAlerts();renderSimulator();renderExportStatus();}
@@ -754,19 +909,51 @@ function renderDashboard(){
 function renderRoute(){
   const cfg=loadCfg();
   const port=PORTS[getSelectedPort()]||PORTS.buenaventura;
-  const portNameEl=document.getElementById('route-puerto-name');if(portNameEl)portNameEl.textContent=`${port.name} 🇨🇴`;
+  const portNameEl=document.getElementById('route-puerto-name');
+  if(portNameEl)portNameEl.textContent=`${port.name} 🇨🇴`;
+
   const totalYuan=products.reduce((s,p)=>s+(p.qty||0)*(p.price||0),0);
   const calcs=calcAllProducts();
-  const totalCostVES=calcs.reduce((s,c)=>s+(c.totalCostVES||0),0);
-  document.getElementById('route-china').textContent=totalYuan>0?`¥ ${fmt(totalYuan,0)}`:'¥ —';
-  document.getElementById('route-flete').textContent=`$ ${fmt(cfg.freight,0)} USD`;
-  document.getElementById('route-bvta').textContent=`$ ${fmt(cfg.portFees,0)} USD`;
-  document.getElementById('route-transport-col').textContent=`$${fmt(cfg.transportCOL,0)} COP`;
-  document.getElementById('route-cucuta').textContent=`$${fmt(cfg.customsCOL,0)} COP`;
-  document.getElementById('route-frontera').textContent='Cruce';
-  document.getElementById('route-tachira').textContent=`Bs ${fmt(cfg.transportVEN,0)}`;
-  document.getElementById('route-iva').textContent=`IVA ${cfg.iva}%`;
-  document.getElementById('route-ve').textContent=totalCostVES>0?`Bs ${fmt(totalCostVES,0)}`:'Bs —';
+  const totalUSD =calcs.reduce((s,c)=>s+(c.totalUSD||0),0);
+  const totalCOP =calcs.reduce((s,c)=>s+(c.totalCOP||0),0);
+  const totalVES =calcs.reduce((s,c)=>s+(c.totalCostVES||0),0);
+
+  /* China: costo total en Yuan */
+  document.getElementById('route-china').textContent=
+    totalYuan>0?`¥ ${fmt(totalYuan,0)}`:'¥ —';
+
+  /* Flete marítimo: flete + seguro en USD */
+  const fleTotal=(cfg.freight||0)+(cfg.insurance||0);
+  document.getElementById('route-flete').textContent=
+    fleTotal>0?`$ ${fmt(fleTotal,0)} USD`:'—';
+
+  /* Puerto Colombia: gastos portuarios + costo acumulado USD */
+  document.getElementById('route-bvta').textContent=
+    cfg.portFees>0?`$ ${fmt(cfg.portFees,0)} USD`:'$ —';
+
+  /* Transporte Puerto→Cúcuta */
+  document.getElementById('route-transport-col').textContent=
+    cfg.transportCOL>0?`${fmt(cfg.transportCOL,0)} COP`:'—';
+
+  /* Cúcuta: aduanas Colombia */
+  document.getElementById('route-cucuta').textContent=
+    cfg.customsCOL>0?`${fmt(cfg.customsCOL,0)} COP`:'—';
+
+  /* Frontera: arancel Venezuela */
+  document.getElementById('route-frontera').textContent=
+    cfg.tariffVEN>0?`Arancel ${cfg.tariffVEN}%`:'Frontera';
+
+  /* San Antonio: transporte + nacionalización VES */
+  const venFixed=(cfg.transportVEN||0)+(cfg.nationalizationVEN||0);
+  document.getElementById('route-tachira').textContent=
+    venFixed>0?`Bs ${fmt(venFixed,0)}`:'Bs —';
+
+  /* IVA */
+  document.getElementById('route-iva').textContent=`IVA ${cfg.iva||16}%`;
+
+  /* Venezuela final: costo total VES */
+  document.getElementById('route-ve').textContent=
+    totalVES>0?`Bs ${fmt(totalVES,0)}`:'Bs —';
 }
 
 /* ═══════ RENDER CHART ═══════ */
@@ -813,19 +1000,21 @@ const CTYPES={
   '40ft':{cbm:67,weight:25000,freight:2000},
   'consolidada':null
 };
+/* Los puertos definen la RUTA logística, no costos automáticos.
+   El usuario ingresa sus propios costos reales en la configuración. */
 const PORTS={
-  buenaventura:{name:'Buenaventura',emoji:'🚢',portFees:350,transportCOL:950000,desc:'Pacífico · 1.100 km a Cúcuta'},
-  barranquilla: {name:'Barranquilla', emoji:'⚓',portFees:280,transportCOL:650000,desc:'Caribe · 470 km a Cúcuta'},
-  cartagena:    {name:'Cartagena',    emoji:'🏰',portFees:300,transportCOL:700000,desc:'Caribe · 600 km a Cúcuta'}
+  buenaventura:{name:'Buenaventura',emoji:'🚢',note:'Pacífico · 1.100 km a Cúcuta'},
+  barranquilla: {name:'Barranquilla', emoji:'⚓',note:'Caribe · 470 km a Cúcuta'},
+  cartagena:    {name:'Cartagena',    emoji:'🏰',note:'Caribe · 600 km a Cúcuta'}
 };
 function getSelectedPort(){return document.querySelector('input[name="port"]:checked')?.value||'buenaventura';}
 function onPortChange(){
   const key=getSelectedPort();const port=PORTS[key];if(!port)return;
-  const cfg=loadCfg();cfg.portFees=port.portFees;cfg.transportCOL=port.transportCOL;cfg.selectedPort=key;saveCfg(cfg);
-  const pfI=document.querySelector('.cfg-input[data-field="portFees"]');const tcI=document.querySelector('.cfg-input[data-field="transportCOL"]');
-  if(pfI)pfI.value=port.portFees;if(tcI)tcI.value=port.transportCOL;
-  const lbl=document.getElementById('transport-col-lbl');if(lbl)lbl.textContent=`Transporte ${port.name}-Cúcuta`;
-  const infoEl=document.getElementById('port-info-text');if(infoEl)infoEl.textContent=`${port.emoji} Puerto ${port.name} — ${port.desc} · Gastos portuarios: $${port.portFees} USD · Transporte: $${Number(port.transportCOL).toLocaleString('es-CO')} COP`;
+  const cfg=loadCfg();cfg.selectedPort=key;saveCfg(cfg);
+  const lbl=document.getElementById('transport-col-lbl');
+  if(lbl)lbl.textContent=`Transporte ${port.name} → Cúcuta`;
+  const infoEl=document.getElementById('port-info-text');
+  if(infoEl)infoEl.textContent=`${port.emoji} Puerto ${port.name} — ${port.note} · Ingresa los costos reales en Configuración Financiera`;
   recalcAll();showToast(`${port.emoji} Puerto ${port.name} seleccionado`,'ok');
 }
 let selectedProds=new Set();
@@ -1034,31 +1223,110 @@ dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.a
 dropZone.addEventListener('dragleave',e=>{if(!dropZone.contains(e.relatedTarget))dropZone.classList.remove('drag-over');});
 dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.classList.remove('drag-over');if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0]);});
 
+/* ═══════ DISTRIBUTION METHOD ═══════ */
+function onDistChange(val){
+  const cfg=loadCfg();cfg.distribution=val;saveCfg(cfg);recalcAll();
+  showToast(`Distribución: ${{'weight':'Peso','cbm':'CBM','value':'Valor','equal':'Igual'}[val]||val}`,'ok');
+}
+
+/* ═══════ CUSTOMS FILE (ADUANA VENEZUELA) ═══════ */
+function setCustomsStatus(s,msg){const el=document.getElementById('customs-status');if(!el)return;el.className=`import-status ${s}`;el.textContent=msg;el.hidden=false;}
+async function handleCustomsFile(file){
+  if(!file)return;
+  const ext=file.name.split('.').pop().toLowerCase();
+  if(!['xlsx','xls','csv'].includes(ext)){setCustomsStatus('err','❌ Usa .xlsx o .csv para el archivo de aduana');return;}
+  setCustomsStatus('loading','⏳ Analizando archivo de aduana...');
+  try{
+    let rows=[];
+    if(ext==='csv'){
+      const text=await file.text();
+      const lines=text.split(/\r?\n/).filter(l=>l.trim());
+      const delim=lines[0]?.includes(';')?';':',';
+      rows=lines.map(l=>l.split(delim).map(c=>c.trim().replace(/^"|"$/g,'')));
+    }else{
+      let att=0;while(typeof XLSX==='undefined'&&att<6){await new Promise(r=>setTimeout(r,500));att++;}
+      if(typeof XLSX==='undefined')throw new Error('Librería Excel no cargada');
+      const wb=XLSX.read(await file.arrayBuffer(),{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+    }
+    /* Buscar % de arancel: busca celdas con keywords y extrae el número adyacente */
+    const keys=['arancel','tarifa','tasa aduanal','tasa','impuesto','ad valorem','duty','rate'];
+    let found=null;
+    for(const row of rows){
+      for(let i=0;i<row.length;i++){
+        const cell=String(row[i]||'').toLowerCase().trim();
+        if(keys.some(k=>cell.includes(k))){
+          /* Buscar valor numérico en la misma celda o la siguiente */
+          const same=String(row[i]||'').match(/[\d]+[.,]?[\d]*/);
+          const next=i+1<row.length?String(row[i+1]||'').replace('%','').trim():null;
+          const candidates=[same?same[0]:null,next].filter(Boolean);
+          for(const c of candidates){
+            const v=parseFloat(c.replace(',','.'));
+            if(isFinite(v)&&v>=0&&v<=200){found=v;break;}
+          }
+        }
+        if(found!==null)break;
+      }
+      if(found!==null)break;
+    }
+    if(found!==null){
+      const cfg=loadCfg();cfg.tariffVEN=found;saveCfg(cfg);
+      const el=document.querySelector('.cfg-input[data-field="tariffVEN"]');
+      if(el)el.value=found;
+      recalcAll();
+      setCustomsStatus('ok',`✅ Arancel ${found}% detectado y aplicado automáticamente`);
+      showToast(`Arancel ${found}% aplicado desde aduana`,'ok');
+    }else{
+      setCustomsStatus('warn','⚠️ Archivo procesado — No se detectó el % automáticamente. Ingrésalo manualmente en "Arancel importación Venezuela".');
+    }
+  }catch(e){setCustomsStatus('err',`❌ ${e.message}`);}
+  document.getElementById('customs-input').value='';
+}
+(function(){
+  const cd=document.getElementById('customs-drop-zone');
+  const ci=document.getElementById('customs-input');
+  if(!cd||!ci)return;
+  cd.addEventListener('click',()=>ci.click());
+  document.getElementById('btn-customs')?.addEventListener('click',e=>{e.stopPropagation();ci.click();});
+  ci.addEventListener('change',e=>{if(e.target.files[0])handleCustomsFile(e.target.files[0]);});
+  cd.addEventListener('dragover',e=>{e.preventDefault();cd.classList.add('drag-over');});
+  cd.addEventListener('dragleave',e=>{if(!cd.contains(e.relatedTarget))cd.classList.remove('drag-over');});
+  cd.addEventListener('drop',e=>{e.preventDefault();cd.classList.remove('drag-over');if(e.dataTransfer.files[0])handleCustomsFile(e.dataTransfer.files[0]);});
+})();
+
 /* ═══════ DEMO DATA ═══════ */
 function loadDemo(){
-  if(products.length&&!confirm('¿Reemplazar productos actuales con datos demo?'))return;
+  if(products.length&&!confirm('¿Reemplazar productos actuales con datos demo?\n(Los costos logísticos debes ingresarlos tú manualmente)'))return;
+  /* Precios en CNY (yuan) tal como vienen de proveedores chinos */
   products=[
-    {id:'d1',name:'Ventilador 16" Torre',sku:'VEN-001',qty:100,price:35,weight:1.8,cbm:0.008,category:'Electro'},
-    {id:'d2',name:'Hervidor Eléctrico 1.8L',sku:'HER-002',qty:60,price:28,weight:1.2,cbm:0.005,category:'Electro'},
-    {id:'d3',name:'Plancha de Vapor Pro',sku:'PLA-003',qty:80,price:22,weight:0.9,cbm:0.003,category:'Electro'},
-    {id:'d4',name:'Mochila Escolar 30L',sku:'MOC-004',qty:200,price:15,weight:0.5,cbm:0.003,category:'Moda'},
-    {id:'d5',name:'Cargador USB-C 65W',sku:'CAR-005',qty:500,price:8,weight:0.1,cbm:0.0005,category:'Accesorios'},
-    {id:'d6',name:'Audífonos Bluetooth',sku:'AUD-006',qty:120,price:45,weight:0.3,cbm:0.002,category:'Electro'},
+    {id:'d1',name:'Ventilador 16" Torre',     sku:'VEN-001',qty:100,price:35,  weight:1.8, cbm:0.0080,category:'Electro'},
+    {id:'d2',name:'Hervidor Eléctrico 1.8L',  sku:'HER-002',qty:60, price:28,  weight:1.2, cbm:0.0050,category:'Electro'},
+    {id:'d3',name:'Plancha de Vapor Pro',      sku:'PLA-003',qty:80, price:22,  weight:0.9, cbm:0.0030,category:'Electro'},
+    {id:'d4',name:'Mochila Escolar 30L',       sku:'MOC-004',qty:200,price:15,  weight:0.5, cbm:0.0030,category:'Moda'},
+    {id:'d5',name:'Cargador USB-C 65W',        sku:'CAR-005',qty:500,price:8,   weight:0.1, cbm:0.0005,category:'Accesorios'},
+    {id:'d6',name:'Audífonos Bluetooth 5.0',   sku:'AUD-006',qty:120,price:45,  weight:0.3, cbm:0.0020,category:'Electro'},
   ];
-  saveProds();recalcAll();showTab('productos');showToast('✅ Datos demo cargados — ve a Productos','ok');
+  saveProds();recalcAll();showTab('productos');
+  showToast('✅ Productos demo cargados — ingresa los costos logísticos para ver precios reales','ok');
 }
 
 /* ═══════ INIT ═══════ */
 initCfgInputs();
 loadProds();
-// Restore saved port selection
+// Restore port + distribution selections
 (function(){
-  const k=(loadCfg().selectedPort)||'buenaventura';
+  const c=loadCfg();
+  // Puerto
+  const k=c.selectedPort||'buenaventura';
   const r=document.querySelector(`input[name="port"][value="${k}"]`);
   if(r)r.checked=true;
   const port=PORTS[k]||PORTS.buenaventura;
-  const lbl=document.getElementById('transport-col-lbl');if(lbl)lbl.textContent=`Transporte ${port.name}-Cúcuta`;
-  const infoEl=document.getElementById('port-info-text');if(infoEl)infoEl.textContent=`${port.emoji} Puerto ${port.name} — ${port.desc} · Gastos portuarios: $${port.portFees} USD · Transporte: $${Number(port.transportCOL).toLocaleString('es-CO')} COP`;
+  const lbl=document.getElementById('transport-col-lbl');
+  if(lbl)lbl.textContent=`Transporte ${port.name} → Cúcuta`;
+  const infoEl=document.getElementById('port-info-text');
+  if(infoEl)infoEl.textContent=`${port.emoji} Puerto ${port.name} — ${port.note} · Ingresa los costos reales en Configuración Financiera`;
+  // Distribución (initCfgInputs ya lo setea porque dist-select tiene data-field)
 })();
 recalcAll();
 updateClock();setInterval(updateClock,1000);
