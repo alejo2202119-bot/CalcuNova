@@ -6,251 +6,353 @@
   <title>CalcNova ERP</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --bg: #0F172A; --surface: rgba(30,41,59,0.7); --surface-solid: #1E293B;
-      --border: rgba(148,163,184,0.12); --green: #10B981; --green-dim: rgba(16,185,129,0.15);
-      --gold: #F59E0B; --gold-dim: rgba(245,158,11,0.15); --red: #EF4444;
-      --red-dim: rgba(239,68,68,0.12); --muted: #64748B; --text: #E2E8F0;
-      --text-dim: #94A3B8; --radius: 16px;
-    }
-    body { background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui,sans-serif; min-height:100vh; padding:24px 16px 64px; }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--bg:#0F172A;--surface:rgba(30,41,59,.7);--solid:#1E293B;--border:rgba(148,163,184,.12);--green:#10B981;--gdim:rgba(16,185,129,.15);--gold:#F59E0B;--ydim:rgba(245,158,11,.15);--red:#EF4444;--rdim:rgba(239,68,68,.12);--muted:#64748B;--text:#E2E8F0;--dim:#94A3B8;--r:16px}
+    body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;padding-bottom:60px}
 
-    /* Header */
-    header { max-width:960px; margin:0 auto 32px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
-    .logo { display:flex; align-items:center; gap:10px; }
-    .logo-icon { width:40px; height:40px; background:linear-gradient(135deg,var(--green),#059669); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; }
-    .logo-text { font-size:22px; font-weight:700; letter-spacing:-0.5px; }
-    .logo-text span { color:var(--green); }
-    .logo-sub { font-size:11px; color:var(--muted); letter-spacing:1.5px; text-transform:uppercase; }
-    .header-time { text-align:right; font-size:12px; color:var(--text-dim); line-height:1.6; }
-    .header-time strong { display:block; font-size:16px; font-weight:600; color:var(--text); }
+    /* ── Header ── */
+    .top-bar{background:rgba(15,23,42,.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+    header{max-width:1100px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .logo{display:flex;align-items:center;gap:10px}
+    .logo-icon{width:38px;height:38px;background:linear-gradient(135deg,var(--green),#059669);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
+    .logo-text{font-size:20px;font-weight:700;letter-spacing:-.5px}.logo-text span{color:var(--green)}
+    .logo-sub{font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase}
+    .header-right{display:flex;align-items:center;gap:16px}
+    .header-time{text-align:right;font-size:11px;color:var(--dim);line-height:1.6}
+    .header-time strong{display:block;font-size:15px;font-weight:600;color:var(--text)}
 
-    /* Section title */
-    .section-title { max-width:960px; margin:0 auto 16px; font-size:13px; font-weight:600; color:var(--text-dim); letter-spacing:1.8px; text-transform:uppercase; display:flex; align-items:center; gap:8px; }
-    .section-title::before { content:''; display:inline-block; width:3px; height:14px; background:var(--green); border-radius:2px; }
+    /* ── Nav tabs ── */
+    .main-nav{max-width:1100px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:4px;border-bottom:1px solid var(--border)}
+    .nav-tab{display:flex;align-items:center;gap:6px;padding:12px 16px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;transition:color .15s,border-color .15s;white-space:nowrap}
+    .nav-tab:hover{color:var(--text)}
+    .nav-tab.active{color:var(--green);border-bottom-color:var(--green)}
+    .hamburger{display:none;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--dim);padding:8px;cursor:pointer;margin-left:auto}
+    .mob-nav{display:none;flex-direction:column;background:var(--solid);border-bottom:1px solid var(--border)}
+    .mob-nav.open{display:flex}
+    .mob-nav .nav-tab{border-bottom:1px solid var(--border);border-right:none;padding:14px 20px}
+    @media(max-width:640px){.main-nav .nav-tab{display:none}.hamburger{display:flex}}
 
-    /* Rates */
-    .rates-grid { max-width:960px; margin:0 auto; display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:16px; }
-    .rate-card { background:var(--surface); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border:1px solid var(--border); border-radius:var(--radius); padding:20px; position:relative; overflow:hidden; transition:transform .2s,box-shadow .2s; }
-    .rate-card:hover { transform:translateY(-2px); box-shadow:0 12px 40px rgba(0,0,0,.35); }
-    .rate-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,var(--green),transparent); opacity:.6; }
-    .rate-card.gold-accent::before { background:linear-gradient(90deg,var(--gold),transparent); }
-    .card-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; }
-    .card-label { font-size:11px; font-weight:600; color:var(--text-dim); letter-spacing:1px; text-transform:uppercase; }
-    .card-source { font-size:10px; color:var(--muted); margin-top:2px; }
-    .refresh-btn { width:28px; height:28px; background:rgba(148,163,184,.08); border:1px solid var(--border); border-radius:7px; color:var(--text-dim); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .15s,color .15s; flex-shrink:0; }
-    .refresh-btn:hover { background:var(--green-dim); color:var(--green); border-color:rgba(16,185,129,.3); }
-    .refresh-btn.spinning svg { animation:spin .8s linear infinite; }
-    @keyframes spin { to { transform:rotate(360deg); } }
-    .rate-value { font-size:26px; font-weight:700; letter-spacing:-.5px; color:var(--text); line-height:1.1; min-height:32px; }
-    .rate-value.loading-pulse { background:linear-gradient(90deg,var(--surface-solid) 25%,rgba(100,116,139,.2) 50%,var(--surface-solid) 75%); background-size:200% 100%; animation:shimmer 1.4s infinite; border-radius:6px; width:70%; height:32px; color:transparent; }
-    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
-    .rate-sub { font-size:12px; color:var(--text-dim); margin-top:4px; }
-    .status-row { display:flex; align-items:center; gap:6px; margin-top:14px; }
-    .status-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
-    .status-dot.ok { background:var(--green); box-shadow:0 0 6px var(--green); }
-    .status-dot.err { background:var(--red); }
-    .status-dot.loading { background:var(--gold); animation:blink 1s ease infinite; }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
-    .status-text { font-size:10px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .rate-card.has-error { border-color:rgba(239,68,68,.2); }
+    /* ── Page wrapper ── */
+    .page{max-width:1100px;margin:0 auto;padding:28px 20px}
 
-    /* KPI Dashboard */
-    .kpi-section { max-width:960px; margin:32px auto 0; }
-    .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; }
-    .kpi-card { background:var(--surface); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border:1px solid var(--border); border-radius:var(--radius); padding:20px; position:relative; overflow:hidden; }
-    .kpi-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,var(--green),transparent); opacity:.5; }
-    .kpi-icon { font-size:22px; margin-bottom:8px; }
-    .kpi-lbl { font-size:11px; font-weight:600; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-bottom:6px; }
-    .kpi-val { font-size:22px; font-weight:700; color:var(--text); letter-spacing:-.5px; }
-    .kpi-sub { font-size:11px; color:var(--text-dim); margin-top:3px; }
+    /* ── Tab transitions ── */
+    .tab-content{display:none}
+    .tab-content.active{display:block;animation:tabIn .25s ease}
+    @keyframes tabIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
-    /* Config section */
-    .config-section { max-width:960px; margin:32px auto 0; }
-    .config-wrap { background:var(--surface); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border:1px solid var(--border); border-radius:var(--radius); padding:24px; }
-    .config-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:20px 28px; }
-    .cfg-group-title { font-size:10px; font-weight:700; color:var(--text-dim); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--border); }
-    .inp-row { margin-bottom:10px; }
-    .inp-lbl { font-size:11px; color:var(--muted); display:block; margin-bottom:4px; }
-    .inp-wrap { display:flex; }
-    .inp-unit { background:rgba(100,116,139,.1); border:1px solid var(--border); border-right:none; border-radius:7px 0 0 7px; padding:7px 10px; font-size:11px; color:var(--muted); white-space:nowrap; }
-    .cfg-input { flex:1; min-width:0; background:rgba(15,23,42,.5); border:1px solid var(--border); border-radius:0 7px 7px 0; color:var(--text); font-size:13px; padding:7px 10px; outline:none; transition:border-color .15s; }
-    .cfg-input:focus { border-color:var(--green); }
+    /* ── Section title ── */
+    .st{font-size:13px;font-weight:600;color:var(--dim);letter-spacing:1.8px;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:16px}
+    .st::before{content:'';display:inline-block;width:3px;height:14px;background:var(--green);border-radius:2px}
 
-    /* Importer */
-    .import-section { max-width:960px; margin:36px auto 0; }
-    .drop-zone { background:var(--surface); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border:2px dashed rgba(148,163,184,.2); border-radius:var(--radius); padding:40px 24px; text-align:center; cursor:pointer; transition:border-color .2s,background .2s,box-shadow .2s; }
-    .drop-zone:hover { border-color:rgba(16,185,129,.4); background:rgba(16,185,129,.03); }
-    .drop-zone.drag-over { border-color:var(--green); background:rgba(16,185,129,.06); box-shadow:0 0 0 3px rgba(16,185,129,.15); }
-    .drop-icon { font-size:36px; display:block; margin-bottom:10px; }
-    .drop-title { font-size:15px; font-weight:600; color:var(--text); margin-bottom:5px; }
-    .drop-sub { font-size:12px; color:var(--text-dim); margin-bottom:18px; }
-    .btn-import { display:inline-flex; align-items:center; gap:7px; background:var(--green); color:#0F172A; font-size:13px; font-weight:700; padding:9px 20px; border:none; border-radius:8px; cursor:pointer; transition:opacity .15s; }
-    .btn-import:hover { opacity:.87; }
-    .import-status { margin-top:10px; font-size:12px; font-weight:500; padding:8px 14px; border-radius:8px; display:inline-block; }
-    .import-status.ok   { background:var(--green-dim); color:var(--green); }
-    .import-status.err  { background:var(--red-dim); color:var(--red); }
-    .import-status.loading, .import-status.warn { background:var(--gold-dim); color:var(--gold); }
+    /* ── Glass card ── */
+    .glass{background:var(--surface);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:var(--r)}
 
-    /* Products table */
-    .products-section { max-width:960px; margin:28px auto 0; }
-    .section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:8px; }
-    .section-left { display:flex; align-items:center; gap:10px; }
-    .count-badge { background:var(--green-dim); color:var(--green); font-size:11px; font-weight:700; padding:2px 9px; border-radius:20px; }
-    .btn-clear { display:inline-flex; align-items:center; gap:6px; background:transparent; color:var(--red); border:1px solid rgba(239,68,68,.25); font-size:12px; font-weight:600; padding:6px 14px; border-radius:8px; cursor:pointer; transition:background .15s; }
-    .btn-clear:hover { background:var(--red-dim); }
-    .table-wrap { background:var(--surface); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
-    .table-scroll { overflow-x:auto; }
-    table { width:100%; border-collapse:collapse; font-size:12px; min-width:1320px; white-space:nowrap; }
-    thead th { background:rgba(15,23,42,.5); padding:10px 12px; text-align:left; font-size:10px; font-weight:700; color:var(--muted); letter-spacing:1.2px; text-transform:uppercase; border-bottom:1px solid var(--border); }
-    thead th.r { text-align:right; }
-    tbody tr { border-bottom:1px solid rgba(148,163,184,.06); transition:background .1s; }
-    tbody tr:last-child { border-bottom:none; }
-    tbody tr:hover { background:rgba(255,255,255,.02); }
-    tbody td { padding:8px 12px; vertical-align:middle; }
-    .rc { text-align:right; font-variant-numeric:tabular-nums; }
-    .dc { text-align:right; color:var(--muted); }
-    .editable { display:inline-block; padding:3px 6px; border-radius:5px; border:1px solid transparent; cursor:text; outline:none; color:var(--text); transition:border-color .15s,background .15s; min-width:30px; max-width:180px; }
-    .editable:hover { border-color:var(--border); background:rgba(148,163,184,.05); }
-    .editable:focus { border-color:var(--green); background:rgba(16,185,129,.07); }
-    .editable.n { text-align:right; font-variant-numeric:tabular-nums; }
-    .del-btn { width:26px; height:26px; border:1px solid var(--border); border-radius:7px; cursor:pointer; background:transparent; color:var(--muted); display:inline-flex; align-items:center; justify-content:center; transition:background .15s,color .15s; }
-    .del-btn:hover { background:var(--red-dim); color:var(--red); border-color:rgba(239,68,68,.3); }
-    tfoot td { font-weight:700; color:var(--green); background:rgba(16,185,129,.05); border-top:1px solid rgba(16,185,129,.15); padding:10px 12px; }
-    .empty-state { padding:48px 24px; text-align:center; }
-    .empty-icon { font-size:40px; margin-bottom:10px; }
-    .empty-title { font-size:14px; font-weight:600; color:var(--text-dim); }
-    .empty-sub { font-size:12px; color:var(--muted); margin-top:4px; }
-    @keyframes fadeInUp { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
-    .fi { animation:fadeInUp .18s ease both; }
+    /* ── Rates ── */
+    .rates-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
+    .rate-card{padding:20px;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s}
+    .rate-card:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,0,0,.35)}
+    .rate-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--green),transparent);opacity:.6}
+    .rate-card.gold-accent::before{background:linear-gradient(90deg,var(--gold),transparent)}
+    .card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
+    .card-label{font-size:11px;font-weight:600;color:var(--dim);letter-spacing:1px;text-transform:uppercase}
+    .card-source{font-size:10px;color:var(--muted);margin-top:2px}
+    .refresh-btn{width:28px;height:28px;background:rgba(148,163,184,.08);border:1px solid var(--border);border-radius:7px;color:var(--dim);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s;flex-shrink:0}
+    .refresh-btn:hover{background:var(--gdim);color:var(--green);border-color:rgba(16,185,129,.3)}
+    .refresh-btn.spinning svg{animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .rate-value{font-size:24px;font-weight:700;letter-spacing:-.5px;color:var(--text);line-height:1.1;min-height:30px}
+    .rate-value.loading-pulse{background:linear-gradient(90deg,var(--solid) 25%,rgba(100,116,139,.2) 50%,var(--solid) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:6px;width:70%;height:30px;color:transparent}
+    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+    .rate-sub{font-size:12px;color:var(--dim);margin-top:4px}
+    .status-row{display:flex;align-items:center;gap:6px;margin-top:12px}
+    .status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+    .status-dot.ok{background:var(--green);box-shadow:0 0 6px var(--green)}
+    .status-dot.err{background:var(--red)}
+    .status-dot.loading{background:var(--gold);animation:blink 1s ease infinite}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+    .status-text{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .rate-card.has-error{border-color:rgba(239,68,68,.2)}
 
-    /* ROI colors */
-    .roi-g { color:var(--green); font-weight:700; }
-    .roi-y { color:var(--gold); font-weight:700; }
-    .roi-r { color:var(--red); font-weight:700; }
+    /* ── KPI Dashboard ── */
+    .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-top:24px}
+    .kpi-card{padding:20px;position:relative;overflow:hidden}
+    .kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--green),transparent);opacity:.5}
+    .kpi-icon{font-size:20px;margin-bottom:8px}
+    .kpi-lbl{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px}
+    .kpi-val{font-size:20px;font-weight:700;color:var(--text);letter-spacing:-.5px}
+    .kpi-sub{font-size:11px;color:var(--dim);margin-top:2px}
 
-    /* Channel badge */
-    .ch-badge { display:inline-block; padding:2px 7px; border-radius:20px; font-size:10px; font-weight:700; letter-spacing:.5px; }
-    .ch-mayor { background:rgba(16,185,129,.15); color:var(--green); }
-    .ch-detal { background:rgba(245,158,11,.15); color:var(--gold); }
-    .ch-ambos { background:rgba(148,163,184,.1); color:var(--text-dim); }
+    /* ── Logistics Route ── */
+    .route-wrap{overflow-x:auto;margin-top:24px}
+    .route-diagram{display:flex;align-items:center;min-width:700px;padding:24px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);backdrop-filter:blur(16px)}
+    .route-node{flex-shrink:0;text-align:center;min-width:110px}
+    .route-flag{font-size:28px;margin-bottom:6px}
+    .route-name{font-size:12px;font-weight:700;color:var(--text)}
+    .route-cost{font-size:11px;color:var(--green);margin-top:4px;font-weight:600}
+    .route-arrow{flex:1;display:flex;flex-direction:column;align-items:center;padding:0 8px;min-width:60px}
+    .arrow-line{width:100%;height:2px;background:linear-gradient(90deg,var(--green),var(--gold));border-radius:1px;position:relative}
+    .arrow-line::after{content:'▶';position:absolute;right:-6px;top:-8px;font-size:11px;color:var(--gold)}
+    .arrow-label{font-size:10px;color:var(--muted);margin-top:5px;white-space:nowrap}
 
-    /* Analysis section */
-    .analysis-section { max-width:960px; margin:28px auto 0; display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-    .analysis-card { background:var(--surface); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border:1px solid var(--border); border-radius:var(--radius); padding:20px; }
-    .analysis-title { font-size:11px; font-weight:700; color:var(--text-dim); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
-    .analysis-title::before { content:''; display:inline-block; width:3px; height:12px; background:var(--green); border-radius:2px; }
-    .chart-wrap { position:relative; height:220px; }
-    .alerts-list { display:flex; flex-direction:column; gap:8px; max-height:280px; overflow-y:auto; }
-    .alert-item { display:flex; align-items:flex-start; gap:10px; background:rgba(148,163,184,.05); border:1px solid var(--border); border-radius:10px; padding:10px 14px; }
-    .alert-icon { font-size:16px; flex-shrink:0; line-height:1.4; }
-    .alert-title { font-size:13px; font-weight:600; color:var(--text); }
-    .alert-sub { font-size:11px; color:var(--muted); margin-top:1px; }
-    .alert-empty { text-align:center; color:var(--muted); font-size:13px; padding:20px 0; }
+    /* ── Config section ── */
+    .config-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:20px 28px;padding:24px}
+    .cfg-group-title{font-size:10px;font-weight:700;color:var(--dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+    .inp-row{margin-bottom:10px}
+    .inp-lbl{font-size:11px;color:var(--muted);display:block;margin-bottom:4px}
+    .inp-wrap{display:flex}
+    .inp-unit{background:rgba(100,116,139,.1);border:1px solid var(--border);border-right:none;border-radius:7px 0 0 7px;padding:7px 9px;font-size:11px;color:var(--muted);white-space:nowrap}
+    .cfg-input{flex:1;min-width:0;background:rgba(15,23,42,.5);border:1px solid var(--border);border-radius:0 7px 7px 0;color:var(--text);font-size:13px;padding:7px 9px;outline:none;transition:border-color .15s}
+    .cfg-input:focus{border-color:var(--green)}
 
-    /* Toast */
-    .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(70px); background:var(--surface-solid); border:1px solid var(--border); color:var(--text); padding:10px 20px; border-radius:10px; font-size:13px; font-weight:500; backdrop-filter:blur(16px); box-shadow:0 8px 32px rgba(0,0,0,.4); transition:transform .28s,opacity .28s; opacity:0; z-index:9999; max-width:90vw; }
-    .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
-    .toast.tok  { border-color:rgba(16,185,129,.35); }
-    .toast.terr { border-color:rgba(239,68,68,.35); }
-    .toast.twrn { border-color:rgba(245,158,11,.35); }
+    /* ── Import ── */
+    .drop-zone{border:2px dashed rgba(148,163,184,.2);border-radius:var(--r);padding:36px 24px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s,box-shadow .2s;background:var(--surface);backdrop-filter:blur(16px)}
+    .drop-zone:hover{border-color:rgba(16,185,129,.4);background:rgba(16,185,129,.03)}
+    .drop-zone.drag-over{border-color:var(--green);background:rgba(16,185,129,.06);box-shadow:0 0 0 3px rgba(16,185,129,.15)}
+    .drop-icon{font-size:32px;display:block;margin-bottom:8px}
+    .drop-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px}
+    .drop-sub{font-size:12px;color:var(--dim);margin-bottom:16px}
+    .btn-import{display:inline-flex;align-items:center;gap:7px;background:var(--green);color:#0F172A;font-size:13px;font-weight:700;padding:9px 20px;border:none;border-radius:8px;cursor:pointer;transition:opacity .15s}
+    .btn-import:hover{opacity:.87}
+    .import-status{margin-top:10px;font-size:12px;font-weight:500;padding:8px 14px;border-radius:8px;display:inline-block}
+    .import-status.ok{background:var(--gdim);color:var(--green)}
+    .import-status.err{background:var(--rdim);color:var(--red)}
+    .import-status.loading,.import-status.warn{background:var(--ydim);color:var(--gold)}
 
-    footer { max-width:960px; margin:40px auto 0; text-align:center; font-size:11px; color:var(--muted); }
-    @media (max-width:640px) { .rates-grid{grid-template-columns:1fr} .rate-value{font-size:22px} .analysis-section{grid-template-columns:1fr} }
+    /* ── Table ── */
+    .products-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+    .section-left{display:flex;align-items:center;gap:10px}
+    .count-badge{background:var(--gdim);color:var(--green);font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px}
+    .btn-clear{display:inline-flex;align-items:center;gap:6px;background:transparent;color:var(--red);border:1px solid rgba(239,68,68,.25);font-size:12px;font-weight:600;padding:6px 14px;border-radius:8px;cursor:pointer;transition:background .15s}
+    .btn-clear:hover{background:var(--rdim)}
+    .table-scroll{overflow-x:auto}
+    table{width:100%;border-collapse:collapse;font-size:12px;min-width:1320px;white-space:nowrap}
+    thead th{background:rgba(15,23,42,.5);padding:10px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:1.2px;text-transform:uppercase;border-bottom:1px solid var(--border)}
+    thead th.r{text-align:right}
+    tbody tr{border-bottom:1px solid rgba(148,163,184,.06);transition:background .1s}
+    tbody tr:last-child{border-bottom:none}
+    tbody tr:hover{background:rgba(255,255,255,.02)}
+    tbody td{padding:8px 12px;vertical-align:middle}
+    .rc{text-align:right;font-variant-numeric:tabular-nums}
+    .dc{text-align:right;color:var(--muted)}
+    .editable{display:inline-block;padding:3px 6px;border-radius:5px;border:1px solid transparent;cursor:text;outline:none;color:var(--text);transition:border-color .15s,background .15s;min-width:30px;max-width:180px}
+    .editable:hover{border-color:var(--border);background:rgba(148,163,184,.05)}
+    .editable:focus{border-color:var(--green);background:rgba(16,185,129,.07)}
+    .editable.n{text-align:right;font-variant-numeric:tabular-nums}
+    .del-btn{width:26px;height:26px;border:1px solid var(--border);border-radius:7px;cursor:pointer;background:transparent;color:var(--muted);display:inline-flex;align-items:center;justify-content:center;transition:background .15s,color .15s}
+    .del-btn:hover{background:var(--rdim);color:var(--red);border-color:rgba(239,68,68,.3)}
+    tfoot td{font-weight:700;color:var(--green);background:rgba(16,185,129,.05);border-top:1px solid rgba(16,185,129,.15);padding:10px 12px}
+    .empty-state{padding:48px 24px;text-align:center}
+    .empty-icon{font-size:38px;margin-bottom:10px}
+    .empty-title{font-size:14px;font-weight:600;color:var(--dim)}
+    .empty-sub{font-size:12px;color:var(--muted);margin-top:4px}
+    @keyframes fadeInUp{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+    .fi{animation:fadeInUp .18s ease both}
+    .roi-g{color:var(--green);font-weight:700}
+    .roi-y{color:var(--gold);font-weight:700}
+    .roi-r{color:var(--red);font-weight:700}
+    .ch-badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.5px}
+    .ch-mayor{background:rgba(16,185,129,.15);color:var(--green)}
+    .ch-detal{background:rgba(245,158,11,.15);color:var(--gold)}
+    .ch-ambos{background:rgba(148,163,184,.1);color:var(--dim)}
+
+    /* ── Analysis ── */
+    .analysis-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}
+    .analysis-card{padding:20px}
+    .analysis-title{font-size:11px;font-weight:700;color:var(--dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+    .analysis-title::before{content:'';display:inline-block;width:3px;height:12px;background:var(--green);border-radius:2px}
+    .chart-wrap{position:relative;height:200px}
+    .alerts-list{display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto}
+    .alert-item{display:flex;align-items:flex-start;gap:10px;background:rgba(148,163,184,.05);border:1px solid var(--border);border-radius:10px;padding:10px 14px}
+    .alert-icon{font-size:15px;flex-shrink:0;line-height:1.4}
+    .alert-title{font-size:12px;font-weight:600;color:var(--text)}
+    .alert-sub{font-size:11px;color:var(--muted);margin-top:1px}
+    .alert-empty{text-align:center;color:var(--muted);font-size:12px;padding:16px 0}
+
+    /* ── Container Simulator ── */
+    .sim-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:16px}
+    .container-types{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+    .ctype-lbl input[type=radio]{display:none}
+    .ctype-card{border:1px solid var(--border);border-radius:10px;padding:12px 16px;cursor:pointer;transition:border-color .15s,background .15s;min-width:100px;text-align:center}
+    .ctype-card:hover{border-color:rgba(16,185,129,.4)}
+    .ctype-lbl input[type=radio]:checked+.ctype-card{border-color:var(--green);background:var(--gdim)}
+    .ctype-name{font-size:14px;font-weight:700;color:var(--text)}
+    .ctype-spec{font-size:10px;color:var(--muted);margin-top:3px}
+    .custom-fields{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+    .custom-fields input{flex:1;min-width:120px;background:rgba(15,23,42,.5);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;padding:8px 12px;outline:none}
+    .custom-fields input:focus{border-color:var(--green)}
+    .prog-wrap{margin-bottom:14px}
+    .prog-header{display:flex;justify-content:space-between;font-size:11px;color:var(--dim);margin-bottom:6px}
+    .prog-bar{height:10px;background:rgba(148,163,184,.1);border-radius:5px;overflow:hidden}
+    .prog-fill{height:100%;border-radius:5px;transition:width .5s ease,background-color .3s}
+    .prog-g{background:var(--green)}.prog-y{background:var(--gold)}.prog-r{background:var(--red)}
+    .sim-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+    .sim-stat{background:rgba(148,163,184,.05);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+    .sim-stat-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px}
+    .sim-stat-val{font-size:15px;font-weight:700;color:var(--text);margin-top:3px}
+    .reco-list{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+    .reco-item{display:flex;align-items:flex-start;gap:8px;padding:10px 12px;border-radius:8px;border:1px solid var(--border);font-size:12px}
+    .reco-item.good{background:var(--gdim);border-color:rgba(16,185,129,.3);color:var(--green)}
+    .reco-item.warn{background:var(--ydim);border-color:rgba(245,158,11,.3);color:var(--gold)}
+    .reco-item.bad{background:var(--rdim);border-color:rgba(239,68,68,.3);color:var(--red)}
+    .reco-item.info{background:rgba(59,130,246,.08);border-color:rgba(59,130,246,.3);color:#60A5FA}
+    .prod-check-list{display:flex;flex-direction:column;gap:6px;max-height:360px;overflow-y:auto;padding-right:4px}
+    .prod-check-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:background .15s;user-select:none}
+    .prod-check-item:hover{background:rgba(148,163,184,.05)}
+    .prod-check-item input[type=checkbox]{width:16px;height:16px;accent-color:var(--green);cursor:pointer;flex-shrink:0}
+    .prod-check-info{flex:1;min-width:0}
+    .prod-check-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .prod-check-meta{font-size:10px;color:var(--muted);margin-top:2px}
+    .sim-actions{display:flex;gap:8px;margin-bottom:10px}
+    .btn-sm{display:inline-flex;align-items:center;gap:5px;background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--dim);font-size:11px;font-weight:600;padding:5px 12px;cursor:pointer;transition:background .15s,color .15s}
+    .btn-sm:hover{background:var(--gdim);color:var(--green);border-color:rgba(16,185,129,.3)}
+    .container-table{margin-top:20px}
+
+    /* ── Export ── */
+    .export-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:16px}
+    .export-card{padding:24px;text-align:center;cursor:pointer;transition:transform .15s,box-shadow .15s}
+    .export-card:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.25)}
+    .export-icon{font-size:36px;margin-bottom:12px}
+    .export-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px}
+    .export-desc{font-size:12px;color:var(--dim)}
+    .export-btn{display:inline-flex;align-items:center;gap:7px;margin-top:14px;padding:9px 20px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;transition:opacity .15s}
+    .btn-excel{background:#10B981;color:#0F172A}.btn-pdf{background:#EF4444;color:#fff}.btn-csv{background:#F59E0B;color:#0F172A}
+    .export-btn:hover{opacity:.87}
+    .checklist-wrap{padding:20px;margin-top:16px}
+    .check-title{font-size:12px;font-weight:700;color:var(--dim);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:12px}
+    .check-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
+    .check-item:last-child{border-bottom:none}
+    .check-status{font-size:16px;width:24px;text-align:center}
+    .check-label{flex:1;color:var(--text)}
+    .check-detail{font-size:11px;color:var(--muted)}
+    .history-list{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+    .hist-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(148,163,184,.04);border:1px solid var(--border);border-radius:8px;font-size:12px}
+    .hist-file{flex:1;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .hist-count{color:var(--green);font-weight:600}
+    .hist-time{color:var(--muted)}
+
+    /* ── Demo button ── */
+    .btn-demo{display:inline-flex;align-items:center;gap:6px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);color:var(--gold);font-size:12px;font-weight:600;padding:7px 14px;border-radius:8px;cursor:pointer;transition:background .15s}
+    .btn-demo:hover{background:rgba(245,158,11,.2)}
+
+    /* ── Toast ── */
+    .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(70px);background:var(--solid);border:1px solid var(--border);color:var(--text);padding:10px 20px;border-radius:10px;font-size:13px;font-weight:500;backdrop-filter:blur(16px);box-shadow:0 8px 32px rgba(0,0,0,.4);transition:transform .28s,opacity .28s;opacity:0;z-index:9999;max-width:90vw}
+    .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+    .toast.tok{border-color:rgba(16,185,129,.35)}.toast.terr{border-color:rgba(239,68,68,.35)}.toast.twrn{border-color:rgba(245,158,11,.35)}
+
+    footer{text-align:center;font-size:11px;color:var(--muted);padding:20px;border-top:1px solid var(--border);margin-top:20px}
+
+    @media(max-width:640px){.rates-grid,.kpi-grid,.sim-layout,.analysis-grid,.export-grid{grid-template-columns:1fr}.rate-value{font-size:20px}.sim-stats{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
 
-<!-- Header -->
-<header>
-  <div class="logo">
-    <div class="logo-icon">⚡</div>
-    <div>
-      <div class="logo-text">Calc<span>Nova</span></div>
-      <div class="logo-sub">ERP · Tasas en Vivo</div>
+<!-- ── Top bar: header + nav ── -->
+<div class="top-bar">
+  <header>
+    <div class="logo">
+      <div class="logo-icon">⚡</div>
+      <div>
+        <div class="logo-text">Calc<span>Nova</span> <small style="font-size:12px;font-weight:400;color:var(--muted)">ERP</small></div>
+        <div class="logo-sub">Importación China · v4.0</div>
+      </div>
     </div>
-  </div>
-  <div class="header-time">
-    <strong id="clock">--:--:--</strong>
-    <span id="date-display">--/--/----</span>
-  </div>
-</header>
-
-<!-- PASO 1: Tasas -->
-<div class="section-title">Mercados &amp; Divisas</div>
-<div class="rates-grid">
-  <div class="rate-card" id="card-yuan">
-    <div class="card-header">
-      <div><div class="card-label">🇨🇳 Yuan / USD</div><div class="card-source">open.er-api.com</div></div>
-      <button class="refresh-btn" onclick="refreshSingle('yuan')"><svg id="ico-yuan" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15A9 9 0 1 1 5.64 5.64L23 4"/></svg></button>
+    <div class="header-right">
+      <div class="header-time">
+        <strong id="clock">--:--:--</strong>
+        <span id="date-display">--</span>
+      </div>
     </div>
-    <div class="rate-value loading-pulse" id="val-yuan">&nbsp;</div>
-    <div class="rate-sub" id="sub-yuan">Cargando...</div>
-    <div class="status-row"><div class="status-dot loading" id="dot-yuan"></div><div class="status-text" id="txt-yuan">Conectando...</div></div>
-  </div>
-  <div class="rate-card gold-accent" id="card-cop">
-    <div class="card-header">
-      <div><div class="card-label">🇨🇴 USD / COP TRM</div><div class="card-source">api.frankfurter.app</div></div>
-      <button class="refresh-btn" onclick="refreshSingle('cop')"><svg id="ico-cop" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15A9 9 0 1 1 5.64 5.64L23 4"/></svg></button>
+  </header>
+  <nav style="background:rgba(15,23,42,.95)">
+    <div class="main-nav" id="desktop-nav">
+      <button class="nav-tab active" data-tab="dashboard" onclick="showTab('dashboard')">📊 Dashboard</button>
+      <button class="nav-tab" data-tab="productos" onclick="showTab('productos')">📦 Productos</button>
+      <button class="nav-tab" data-tab="contenedor" onclick="showTab('contenedor')">🚢 Contenedor</button>
+      <button class="nav-tab" data-tab="exportar" onclick="showTab('exportar')">📤 Exportar</button>
+      <button class="hamburger" id="hamburger" onclick="toggleMob()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
     </div>
-    <div class="rate-value loading-pulse" id="val-cop">&nbsp;</div>
-    <div class="rate-sub" id="sub-cop">Cargando...</div>
-    <div class="status-row"><div class="status-dot loading" id="dot-cop"></div><div class="status-text" id="txt-cop">Conectando...</div></div>
-  </div>
-  <div class="rate-card" id="card-bcv">
-    <div class="card-header">
-      <div><div class="card-label">🇻🇪 USD / VES BCV</div><div class="card-source">vzla.io API</div></div>
-      <button class="refresh-btn" onclick="refreshSingle('bcv')"><svg id="ico-bcv" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15A9 9 0 1 1 5.64 5.64L23 4"/></svg></button>
+    <div class="mob-nav" id="mob-nav">
+      <button class="nav-tab active" onclick="showTab('dashboard');toggleMob()">📊 Dashboard</button>
+      <button class="nav-tab" onclick="showTab('productos');toggleMob()">📦 Productos</button>
+      <button class="nav-tab" onclick="showTab('contenedor');toggleMob()">🚢 Contenedor</button>
+      <button class="nav-tab" onclick="showTab('exportar');toggleMob()">📤 Exportar</button>
     </div>
-    <div class="rate-value loading-pulse" id="val-bcv">&nbsp;</div>
-    <div class="rate-sub" id="sub-bcv">Cargando...</div>
-    <div class="status-row"><div class="status-dot loading" id="dot-bcv"></div><div class="status-text" id="txt-bcv">Conectando...</div></div>
-  </div>
-  <div class="rate-card gold-accent" id="card-binance">
-    <div class="card-header">
-      <div><div class="card-label">🟡 USDT / VES Binance</div><div class="card-source">Referencia P2P</div></div>
-      <button class="refresh-btn" onclick="refreshSingle('binance')"><svg id="ico-binance" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15A9 9 0 1 1 5.64 5.64L23 4"/></svg></button>
-    </div>
-    <div class="rate-value loading-pulse" id="val-binance">&nbsp;</div>
-    <div class="rate-sub" id="sub-binance">Cargando...</div>
-    <div class="status-row"><div class="status-dot loading" id="dot-binance"></div><div class="status-text" id="txt-binance">Conectando...</div></div>
-  </div>
+  </nav>
 </div>
 
-<!-- PASO 3: Dashboard KPIs -->
-<div class="kpi-section">
-  <div class="section-title" style="max-width:100%;margin-bottom:16px;">Dashboard Ejecutivo</div>
+<!-- ════════════════════════════════
+     TAB 1: DASHBOARD
+════════════════════════════════ -->
+<div class="tab-content active" id="tab-dashboard">
+<div class="page">
+
+  <div class="st">Mercados &amp; Divisas</div>
+  <div class="rates-grid">
+    <div class="rate-card glass" id="card-yuan">
+      <div class="card-header"><div><div class="card-label">🇨🇳 Yuan / USD</div><div class="card-source">open.er-api.com</div></div><button class="refresh-btn" onclick="refreshSingle('yuan')"><svg id="ico-yuan" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15A9 9 0 1 1 5.64 5.64L23 4"/></svg></button></div>
+      <div class="rate-value loading-pulse" id="val-yuan">&nbsp;</div><div class="rate-sub" id="sub-yuan">Cargando...</div>
+      <div class="status-row"><div class="status-dot loading" id="dot-yuan"></div><div class="status-text" id="txt-yuan">Conectando...</div></div>
+    </div>
+    <div class="rate-card glass gold-accent" id="card-cop">
+      <div class="card-header"><div><div class="card-label">🇨🇴 USD / COP TRM</div><div class="card-source">api.frankfurter.app</div></div><button class="refresh-btn" onclick="refreshSingle('cop')"><svg id="ico-cop" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15A9 9 0 1 1 5.64 5.64L23 4"/></svg></button></div>
+      <div class="rate-value loading-pulse" id="val-cop">&nbsp;</div><div class="rate-sub" id="sub-cop">Cargando...</div>
+      <div class="status-row"><div class="status-dot loading" id="dot-cop"></div><div class="status-text" id="txt-cop">Conectando...</div></div>
+    </div>
+    <div class="rate-card glass" id="card-bcv">
+      <div class="card-header"><div><div class="card-label">🇻🇪 USD / VES BCV</div><div class="card-source">vzla.io API</div></div><button class="refresh-btn" onclick="refreshSingle('bcv')"><svg id="ico-bcv" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15A9 9 0 1 1 5.64 5.64L23 4"/></svg></button></div>
+      <div class="rate-value loading-pulse" id="val-bcv">&nbsp;</div><div class="rate-sub" id="sub-bcv">Cargando...</div>
+      <div class="status-row"><div class="status-dot loading" id="dot-bcv"></div><div class="status-text" id="txt-bcv">Conectando...</div></div>
+    </div>
+    <div class="rate-card glass gold-accent" id="card-binance">
+      <div class="card-header"><div><div class="card-label">🟡 USDT / VES Binance</div><div class="card-source">Referencia P2P</div></div><button class="refresh-btn" onclick="refreshSingle('binance')"><svg id="ico-binance" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15A9 9 0 1 1 5.64 5.64L23 4"/></svg></button></div>
+      <div class="rate-value loading-pulse" id="val-binance">&nbsp;</div><div class="rate-sub" id="sub-binance">Cargando...</div>
+      <div class="status-row"><div class="status-dot loading" id="dot-binance"></div><div class="status-text" id="txt-binance">Conectando...</div></div>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div style="display:flex;align-items:center;gap:12px;margin:28px 0 0">
+    <div class="st" style="margin:0;flex:1">Dashboard Ejecutivo</div>
+    <button class="btn-demo" onclick="loadDemo()" title="Cargar datos de ejemplo">🎯 Demo</button>
+  </div>
   <div class="kpi-grid">
-    <div class="kpi-card">
-      <div class="kpi-icon">💰</div>
-      <div class="kpi-lbl">Inversión Total (Bs)</div>
-      <div class="kpi-val" id="kpi-invest">—</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-icon">📦</div>
-      <div class="kpi-lbl">Total Productos</div>
-      <div class="kpi-val" id="kpi-prods">0</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-icon">📊</div>
-      <div class="kpi-lbl">Margen Promedio</div>
-      <div class="kpi-val" id="kpi-margin">—</div>
-      <div class="kpi-sub">sobre precio venta</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-icon">📈</div>
-      <div class="kpi-lbl">ROI Promedio</div>
-      <div class="kpi-val" id="kpi-roi">—</div>
-      <div class="kpi-sub">retorno sobre costo</div>
+    <div class="kpi-card glass"><div class="kpi-icon">💰</div><div class="kpi-lbl">Inversión Total (Bs)</div><div class="kpi-val" id="kpi-invest">—</div></div>
+    <div class="kpi-card glass"><div class="kpi-icon">📦</div><div class="kpi-lbl">Total Productos</div><div class="kpi-val" id="kpi-prods">0</div></div>
+    <div class="kpi-card glass"><div class="kpi-icon">📊</div><div class="kpi-lbl">Margen Promedio</div><div class="kpi-val" id="kpi-margin">—</div><div class="kpi-sub">sobre precio venta</div></div>
+    <div class="kpi-card glass"><div class="kpi-icon">📈</div><div class="kpi-lbl">ROI Promedio</div><div class="kpi-val" id="kpi-roi">—</div><div class="kpi-sub">retorno sobre costo</div></div>
+  </div>
+
+  <!-- Logistics route -->
+  <div class="st" style="margin-top:28px">Ruta Logística</div>
+  <div class="route-wrap">
+    <div class="route-diagram">
+      <div class="route-node"><div class="route-flag">🇨🇳</div><div class="route-name">China</div><div class="route-cost" id="route-china">¥ —</div></div>
+      <div class="route-arrow"><div class="arrow-line"></div><div class="arrow-label">Flete marítimo</div><div class="arrow-label" id="route-flete" style="color:var(--green)">$ —</div></div>
+      <div class="route-node"><div class="route-flag">🚢</div><div class="route-name">Puerto 🇨🇴</div><div class="route-cost" id="route-bvta">$ —</div></div>
+      <div class="route-arrow"><div class="arrow-line"></div><div class="arrow-label">Transporte</div><div class="arrow-label" id="route-transport-col" style="color:var(--green)">$ —</div></div>
+      <div class="route-node"><div class="route-flag">🚚</div><div class="route-name">Cúcuta 🇨🇴</div><div class="route-cost" id="route-cucuta">COP —</div></div>
+      <div class="route-arrow"><div class="arrow-line"></div><div class="arrow-label">Frontera</div><div class="arrow-label" id="route-frontera" style="color:var(--green)">—</div></div>
+      <div class="route-node"><div class="route-flag">🚚</div><div class="route-name">San Antonio 🇻🇪</div><div class="route-cost" id="route-tachira">Bs —</div></div>
+      <div class="route-arrow"><div class="arrow-line"></div><div class="arrow-label">IVA + Op.</div><div class="arrow-label" id="route-iva" style="color:var(--gold)">—</div></div>
+      <div class="route-node"><div class="route-flag">🇻🇪</div><div class="route-name">Venezuela</div><div class="route-cost" id="route-ve">Bs —</div></div>
     </div>
   </div>
+
+</div>
 </div>
 
-<!-- PASO 2: Importador -->
-<div class="import-section">
-  <div class="section-title" style="max-width:100%;margin-bottom:16px;">Importar Productos</div>
+<!-- ════════════════════════════════
+     TAB 2: PRODUCTOS
+════════════════════════════════ -->
+<div class="tab-content" id="tab-productos">
+<div class="page">
+
+  <!-- Importer -->
+  <div class="st">Importar Productos</div>
   <div class="drop-zone" id="drop-zone">
     <span class="drop-icon">📂</span>
     <div class="drop-title">Arrastra tu archivo aquí o haz clic para seleccionar</div>
@@ -262,12 +364,10 @@
     <input type="file" id="file-input" accept=".xlsx,.xls,.csv" style="display:none">
   </div>
   <div id="import-status" class="import-status" hidden></div>
-</div>
 
-<!-- PASO 3: Configuración Financiera -->
-<div class="config-section">
-  <div class="section-title" style="max-width:100%;margin-bottom:16px;">Configuración Financiera</div>
-  <div class="config-wrap" id="config-wrap">
+  <!-- Config -->
+  <div class="st" style="margin-top:28px">Configuración Financiera</div>
+  <div class="glass" id="config-wrap">
     <div class="config-grid">
       <div>
         <div class="cfg-group-title">Gastos USD (contenedor)</div>
@@ -294,13 +394,11 @@
       </div>
     </div>
   </div>
-</div>
 
-<!-- PASO 2+3: Tabla de Productos -->
-<div class="products-section">
-  <div class="section-header">
+  <!-- Products table -->
+  <div class="products-header" style="margin-top:28px">
     <div class="section-left">
-      <div class="section-title" style="max-width:100%;margin:0;">Productos Importados</div>
+      <div class="st" style="margin:0">Productos Importados</div>
       <span class="count-badge" id="prod-count">0</span>
     </div>
     <button class="btn-clear" onclick="clearAll()">
@@ -308,86 +406,191 @@
       Limpiar todo
     </button>
   </div>
-  <div class="table-wrap">
-    <div id="prod-empty" class="empty-state">
-      <div class="empty-icon">📋</div>
-      <div class="empty-title">Sin productos importados</div>
-      <div class="empty-sub">Importa un archivo Excel o CSV para comenzar</div>
-    </div>
+  <div class="glass">
+    <div id="prod-empty" class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">Sin productos importados</div><div class="empty-sub">Importa un archivo Excel o CSV para comenzar</div></div>
     <div class="table-scroll" id="prod-table-wrap" hidden>
       <table>
-        <thead>
-          <tr>
-            <th>Nombre</th><th>SKU</th>
-            <th class="r">Cant.</th><th class="r">Precio ¥</th>
-            <th class="r">Peso kg</th><th class="r">CBM m³</th>
-            <th class="r">Sub ¥</th><th class="r">Sub $</th>
-            <th class="r">Costo Bs</th><th class="r">P.Mayor Bs</th>
-            <th class="r">P.Detal Bs</th><th class="r">Margen %</th>
-            <th class="r">ROI %</th><th>Canal</th><th></th>
-          </tr>
-        </thead>
+        <thead><tr>
+          <th>Nombre</th><th>SKU</th><th class="r">Cant.</th><th class="r">Precio ¥</th>
+          <th class="r">Peso kg</th><th class="r">CBM m³</th><th class="r">Sub ¥</th><th class="r">Sub $</th>
+          <th class="r">Costo Bs</th><th class="r">P.Mayor Bs</th><th class="r">P.Detal Bs</th>
+          <th class="r">Margen %</th><th class="r">ROI %</th><th>Canal</th><th></th>
+        </tr></thead>
         <tbody id="prod-tbody"></tbody>
-        <tfoot>
-          <tr>
-            <td colspan="2">TOTAL — <span id="total-count" style="font-size:11px;opacity:.7">0 productos</span></td>
-            <td class="rc" id="total-qty">—</td>
-            <td>—</td><td>—</td><td>—</td>
-            <td class="rc" id="total-cny">—</td>
-            <td class="rc" id="total-usd">—</td>
-            <td class="rc" id="total-cost-ves">—</td>
-            <td>—</td><td>—</td>
-            <td class="rc" id="total-margin">—</td>
-            <td class="rc" id="total-roi">—</td>
-            <td>—</td><td></td>
-          </tr>
-        </tfoot>
+        <tfoot><tr>
+          <td colspan="2">TOTAL — <span id="total-count" style="font-size:11px;opacity:.7">0 prods</span></td>
+          <td class="rc" id="total-qty">—</td><td>—</td><td>—</td><td>—</td>
+          <td class="rc" id="total-cny">—</td><td class="rc" id="total-usd">—</td>
+          <td class="rc" id="total-cost-ves">—</td><td>—</td><td>—</td>
+          <td class="rc" id="total-margin">—</td><td class="rc" id="total-roi">—</td><td>—</td><td></td>
+        </tr></tfoot>
       </table>
     </div>
   </div>
+
+  <!-- Analysis -->
+  <div class="analysis-grid" id="analysis-section" hidden>
+    <div class="analysis-card glass"><div class="analysis-title">Distribución de Gastos</div><div class="chart-wrap"><canvas id="expense-chart"></canvas></div></div>
+    <div class="analysis-card glass"><div class="analysis-title">Alertas Inteligentes</div><div id="alerts-list" class="alerts-list"><div class="alert-empty">Sin alertas · Importa productos para ver análisis</div></div></div>
+  </div>
+
+</div>
 </div>
 
-<!-- PASO 3: Análisis -->
-<div class="analysis-section" id="analysis-section" hidden>
-  <div class="analysis-card">
-    <div class="analysis-title">Distribución de Gastos</div>
-    <div class="chart-wrap"><canvas id="expense-chart"></canvas></div>
+<!-- ════════════════════════════════
+     TAB 3: CONTENEDOR
+════════════════════════════════ -->
+<div class="tab-content" id="tab-contenedor">
+<div class="page">
+
+  <div class="st">Simulador de Contenedor</div>
+
+  <!-- Container type selector -->
+  <div class="container-types">
+    <label class="ctype-lbl"><input type="radio" name="ctype" value="20ft" onchange="onCtypeChange()"><div class="ctype-card"><div class="ctype-name">20ft</div><div class="ctype-spec">33 CBM · 18t · $1.500</div></div></label>
+    <label class="ctype-lbl"><input type="radio" name="ctype" value="40ft" onchange="onCtypeChange()" checked><div class="ctype-card"><div class="ctype-name">40ft</div><div class="ctype-spec">67 CBM · 25t · $2.000</div></div></label>
+    <label class="ctype-lbl"><input type="radio" name="ctype" value="consolidada" onchange="onCtypeChange()"><div class="ctype-card"><div class="ctype-name">Consolidada</div><div class="ctype-spec">Flexible · Usuario define</div></div></label>
   </div>
-  <div class="analysis-card">
-    <div class="analysis-title">Alertas Inteligentes</div>
-    <div id="alerts-list" class="alerts-list">
-      <div class="alert-empty">Sin alertas · Importa productos para ver análisis</div>
+  <div id="consolidada-fields" class="custom-fields" hidden>
+    <input type="number" id="c-cbm" placeholder="CBM máximo" min="0" step="1" oninput="renderSimulator()">
+    <input type="number" id="c-weight" placeholder="Peso máx (toneladas)" min="0" step="0.5" oninput="renderSimulator()">
+    <input type="number" id="c-freight" placeholder="Flete USD" min="0" step="100" oninput="renderSimulator()">
+  </div>
+
+  <div class="sim-layout">
+    <!-- Left: stats + progress + recommendations -->
+    <div>
+      <div class="glass" style="padding:20px">
+        <div class="prog-wrap">
+          <div class="prog-header"><span>📦 Volumen CBM</span><span id="cbm-display">0 / 67 m³ (0%)</span></div>
+          <div class="prog-bar"><div class="prog-fill prog-g" id="cbm-bar" style="width:0%"></div></div>
+        </div>
+        <div class="prog-wrap" style="margin-top:16px">
+          <div class="prog-header"><span>⚖️ Peso</span><span id="weight-display">0 / 25.000 kg (0%)</span></div>
+          <div class="prog-bar"><div class="prog-fill prog-g" id="weight-bar" style="width:0%"></div></div>
+        </div>
+        <div class="sim-stats">
+          <div class="sim-stat"><div class="sim-stat-lbl">CBM restante</div><div class="sim-stat-val" id="cbm-left">— m³</div></div>
+          <div class="sim-stat"><div class="sim-stat-lbl">Peso restante</div><div class="sim-stat-val" id="weight-left">— kg</div></div>
+          <div class="sim-stat"><div class="sim-stat-lbl">Flete total</div><div class="sim-stat-val" id="sim-freight">$ —</div></div>
+          <div class="sim-stat"><div class="sim-stat-lbl">Productos selec.</div><div class="sim-stat-val" id="sim-count">0</div></div>
+        </div>
+        <div class="reco-list" id="reco-list"></div>
+      </div>
+    </div>
+
+    <!-- Right: product checkboxes -->
+    <div>
+      <div class="glass" style="padding:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <span style="font-size:12px;font-weight:600;color:var(--dim)">SELECCIONAR PRODUCTOS</span>
+          <div class="sim-actions">
+            <button class="btn-sm" onclick="selectAll(true)">Todos</button>
+            <button class="btn-sm" onclick="selectAll(false)">Ninguno</button>
+          </div>
+        </div>
+        <div class="prod-check-list" id="prod-check-list">
+          <div class="alert-empty">Importa productos en la pestaña Productos</div>
+        </div>
+      </div>
     </div>
   </div>
+
+  <!-- Container content table -->
+  <div class="st" style="margin-top:24px">Contenido del Contenedor</div>
+  <div class="glass" id="container-table-wrap">
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Producto</th><th>SKU</th><th class="r">Cant.</th><th class="r">CBM × cant</th><th class="r">Peso × cant (kg)</th><th class="r">% Flete asignado</th><th class="r">Flete USD</th></tr></thead>
+        <tbody id="container-tbody"></tbody>
+        <tfoot><tr><td colspan="2">TOTAL</td><td class="rc" id="ct-qty">0</td><td class="rc" id="ct-cbm">0 m³</td><td class="rc" id="ct-weight">0 kg</td><td class="rc">100%</td><td class="rc" id="ct-freight">$ 0</td></tr></tfoot>
+      </table>
+    </div>
+    <div class="empty-state" id="container-empty"><div class="empty-icon">🚢</div><div class="empty-title">Sin productos seleccionados</div><div class="empty-sub">Selecciona productos en el panel derecho</div></div>
+  </div>
+
+</div>
 </div>
 
-<footer>CalcNova ERP · Tasas actualizadas cada 5 minutos · Datos de referencia, no financieros</footer>
+<!-- ════════════════════════════════
+     TAB 4: EXPORTAR
+════════════════════════════════ -->
+<div class="tab-content" id="tab-exportar">
+<div class="page">
+
+  <!-- Validation checklist -->
+  <div class="st">Verificación Pre-Exportación</div>
+  <div class="glass checklist-wrap">
+    <div class="check-title">Estado del sistema</div>
+    <div class="check-item"><span class="check-status" id="cs-prods">❓</span><span class="check-label">Productos importados</span><span class="check-detail" id="cd-prods">0 productos</span></div>
+    <div class="check-item"><span class="check-status" id="cs-rates">❓</span><span class="check-label">Tasas actualizadas (últimos 30 min)</span><span class="check-detail" id="cd-rates">—</span></div>
+    <div class="check-item"><span class="check-status" id="cs-calcs">❓</span><span class="check-label">Cálculos financieros válidos</span><span class="check-detail" id="cd-calcs">—</span></div>
+    <div class="check-item"><span class="check-status" id="cs-cfg">✅</span><span class="check-label">Configuración financiera completa</span><span class="check-detail" id="cd-cfg">OK</span></div>
+  </div>
+
+  <!-- Export buttons -->
+  <div class="st" style="margin-top:24px">Descargar</div>
+  <div class="export-grid">
+    <div class="export-card glass">
+      <div class="export-icon">📗</div>
+      <div class="export-title">Excel (.xlsx)</div>
+      <div class="export-desc">3 hojas: Productos, Resumen financiero, Simulación contenedor</div>
+      <button class="export-btn btn-excel" onclick="exportExcel()">⬇ Descargar Excel</button>
+    </div>
+    <div class="export-card glass">
+      <div class="export-icon">📄</div>
+      <div class="export-title">PDF</div>
+      <div class="export-desc">Reporte ejecutivo con KPIs, tabla y ruta logística</div>
+      <button class="export-btn btn-pdf" onclick="exportPDF()">⬇ Descargar PDF</button>
+    </div>
+    <div class="export-card glass">
+      <div class="export-icon">📊</div>
+      <div class="export-title">CSV</div>
+      <div class="export-desc">Tabla de productos con todos los cálculos</div>
+      <button class="export-btn btn-csv" onclick="exportCSV()">⬇ Descargar CSV</button>
+    </div>
+  </div>
+
+  <!-- Import history -->
+  <div class="st" style="margin-top:28px">Historial de Importaciones</div>
+  <div class="glass" style="padding:20px">
+    <div id="history-list" class="history-list"><div class="alert-empty">Sin historial</div></div>
+  </div>
+
+</div>
+</div>
+
+<!-- Footer -->
+<footer>CalcNova ERP v4.0 · © 2025 · Tasas actualizadas cada 5 min · Datos de referencia</footer>
+
+<!-- Toast -->
 <div id="toast" class="toast"></div>
 
-<script>
-/* ═══ UTILS ═══ */
-const fmt = (n, d=2) => (isFinite(n) && n!==null && n!==undefined)
-  ? Number(n).toLocaleString('es-VE',{minimumFractionDigits:d,maximumFractionDigits:d}) : null;
-const nowStr = () => new Date().toLocaleString('es-VE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});
-const esc = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-const LS_RATES='calcnova_rates_v1', LS_PRODS='calcnova_products_v1', LS_CFG='calcnova_config_v1';
+<!-- Hidden PDF content -->
+<div id="pdf-content" style="display:none;font-family:Arial,sans-serif;padding:24px;background:#fff;color:#1E293B;font-size:12px"></div>
 
+<script>
+/* ═══════ UTILS ═══════ */
+const fmt=(n,d=2)=>(isFinite(n)&&n!==null&&n!==undefined)?Number(n).toLocaleString('es-VE',{minimumFractionDigits:d,maximumFractionDigits:d}):null;
+const nowStr=()=>new Date().toLocaleString('es-VE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const LS_RATES='calcnova_rates_v1',LS_PRODS='calcnova_products_v1',LS_CFG='calcnova_config_v1',LS_HIST='calcnova_hist_v1';
 function saveRateCache(k,v){try{const s=JSON.parse(localStorage.getItem(LS_RATES)||'{}');s[k]={val:v,ts:Date.now()};localStorage.setItem(LS_RATES,JSON.stringify(s));}catch(_){}}
 function loadRateCache(k){try{return(JSON.parse(localStorage.getItem(LS_RATES)||'{}')||{})[k]||null;}catch(_){return null;}}
 
-/* ═══ CONFIG ═══ */
+/* ═══════ CONFIG ═══════ */
 const DEF_CFG={freight:2000,insurance:500,portFees:300,bankCommission:1,transportCOL:800000,customsCOL:500000,transportVEN:50000,iva:16,operatingVEN:100000,marginWholesale:30,marginRetail:50};
 function loadCfg(){try{return{...DEF_CFG,...JSON.parse(localStorage.getItem(LS_CFG)||'{}')};}catch(_){return{...DEF_CFG};}}
 function saveCfg(c){try{localStorage.setItem(LS_CFG,JSON.stringify(c));}catch(_){}}
 function initCfgInputs(){const c=loadCfg();document.querySelectorAll('.cfg-input[data-field]').forEach(el=>{if(c[el.dataset.field]!==undefined)el.value=c[el.dataset.field];});}
 document.getElementById('config-wrap').addEventListener('input',e=>{
-  const el=e.target; if(!el.classList.contains('cfg-input'))return;
-  const f=el.dataset.field; if(!f)return;
-  const v=parseFloat(el.value); if(!isFinite(v)||v<0)return;
-  const c=loadCfg(); c[f]=v; saveCfg(c); recalcAll();
+  const el=e.target;if(!el.classList.contains('cfg-input'))return;
+  const f=el.dataset.field;if(!f)return;
+  const v=parseFloat(el.value);if(!isFinite(v)||v<0)return;
+  const c=loadCfg();c[f]=v;saveCfg(c);recalcAll();
 });
 
-/* ═══ PASO 1: TASAS ═══ */
+/* ═══════ PASO 1: TASAS ═══════ */
 const liveRates={yuanPerUsd:null,copPerUsd:null,vesPerUsd:null};
 async function fetchRate(url,ms=5000){const ctrl=new AbortController();const t=setTimeout(()=>ctrl.abort(),ms);try{const r=await fetch(url,{signal:ctrl.signal});if(!r.ok)throw new Error(`HTTP ${r.status}`);return await r.json();}finally{clearTimeout(t);}}
 function setLoading(id){const v=document.getElementById(`val-${id}`);v.classList.add('loading-pulse');v.innerHTML='&nbsp;';document.getElementById(`sub-${id}`).textContent='Actualizando...';setDot(id,'loading','Conectando...');const b=document.getElementById(`ico-${id}`);if(b)b.closest('.refresh-btn').classList.add('spinning');document.getElementById(`card-${id}`).classList.remove('has-error');}
@@ -395,57 +598,47 @@ function setOk(id,display,sub){const v=document.getElementById(`val-${id}`);v.cl
 function setErr(id,fb){const v=document.getElementById(`val-${id}`);v.classList.remove('loading-pulse');if(fb){v.textContent=fb.val;const age=Math.round((Date.now()-fb.ts)/60000);setDot(id,'err',`Error · Último valor: hace ${age} min`);document.getElementById(`sub-${id}`).textContent='Dato en caché';}else{v.textContent='Sin datos';setDot(id,'err','Sin conexión y sin caché');document.getElementById(`sub-${id}`).textContent='—';}document.getElementById(`card-${id}`).classList.add('has-error');stopSpin(id);}
 function setDot(id,s,t){document.getElementById(`dot-${id}`).className=`status-dot ${s}`;document.getElementById(`txt-${id}`).textContent=t;}
 function stopSpin(id){const b=document.getElementById(`ico-${id}`);if(b)b.closest('.refresh-btn').classList.remove('spinning');}
-
 async function fetchYuan(){const id='yuan';setLoading(id);try{const d=await fetchRate('https://open.er-api.com/v6/latest/USD');const r=d?.rates?.CNY;if(!isFinite(r))throw new Error('dato inválido');liveRates.yuanPerUsd=r;const disp=`1 USD = ${fmt(r,4)} CNY`;saveRateCache(id,disp);setOk(id,disp,`1 CNY = ${fmt(1/r,4)} USD`);recalcAll();}catch(e){setErr(id,loadRateCache(id));}}
-async function fetchCOP(){const id='cop';setLoading(id);try{const d=await fetchRate('https://api.frankfurter.app/latest?from=USD&to=COP');const r=d?.rates?.COP;if(!isFinite(r))throw new Error('dato inválido');liveRates.copPerUsd=r;const disp=`1 USD = ${fmt(r,2)} COP`;saveRateCache(id,disp);setOk(id,disp,`TRM referencial · ${d?.date||''}`);recalcAll();}catch(e){setErr(id,loadRateCache(id));}}
+async function fetchCOP(){const id='cop';setLoading(id);try{const d=await fetchRate('https://api.frankfurter.app/latest?from=USD&to=COP');const r=d?.rates?.COP;if(!isFinite(r))throw new Error('dato inválido');liveRates.copPerUsd=r;const disp=`1 USD = ${fmt(r,2)} COP`;saveRateCache(id,disp);setOk(id,disp,`TRM · ${d?.date||''}`);recalcAll();}catch(e){setErr(id,loadRateCache(id));}}
 async function fetchBCV(){const id='bcv';setLoading(id);try{const d=await fetchRate('https://docs.vzla.io/es/api/v2/rates/bcv/');const r=d?.usd??d?.rates?.USD??d?.USD??d?.data?.usd;if(!isFinite(r))throw new Error('dato inválido');liveRates.vesPerUsd=r;const disp=`1 USD = ${fmt(r,2)} VES`;saveRateCache(id,disp);setOk(id,disp,'Tasa BCV oficial');recalcAll();}catch(e){setErr(id,loadRateCache(id));}}
-async function fetchBinance(){const id='binance';setLoading(id);await new Promise(r=>setTimeout(r,300));const rate=2850;const disp=`1 USDT = ${fmt(rate,2)} VES`;saveRateCache(id,disp);setOk(id,disp,'Referencia P2P · Demo');}
-
+async function fetchBinance(){const id='binance';setLoading(id);await new Promise(r=>setTimeout(r,300));saveRateCache(id,`1 USDT = ${fmt(2850,2)} VES`);setOk(id,`1 USDT = ${fmt(2850,2)} VES`,'Referencia P2P · Demo');}
 const refreshers={yuan:fetchYuan,cop:fetchCOP,bcv:fetchBCV,binance:fetchBinance};
 async function refreshSingle(id){await(refreshers[id]||(() =>{}))();}
 async function updateRates(){await Promise.allSettled([fetchYuan(),fetchCOP(),fetchBCV(),fetchBinance()]);}
 function updateClock(){const d=new Date();document.getElementById('clock').textContent=d.toLocaleTimeString('es-VE',{hour:'2-digit',minute:'2-digit',second:'2-digit'});document.getElementById('date-display').textContent=d.toLocaleDateString('es-VE',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});}
 
-/* ═══ PASO 2: PRODUCTOS ═══ */
+/* ═══════ PASO 2: PRODUCTOS ═══════ */
 let products=[];
 function loadProds(){try{products=JSON.parse(localStorage.getItem(LS_PRODS)||'[]');}catch(_){products=[];}}
 function saveProds(){try{localStorage.setItem(LS_PRODS,JSON.stringify(products));}catch(_){}}
-
-const COL_MAP={name:['product','name','nombre','producto','item','descripcion','description','articulo'],qty:['qty','cantidad','quantity','units','unidades','cant','pcs','pieces'],price:['price','precio','unit price','cost','costo','price cny','precio yuan','unit cost','precio unitario'],weight:['weight','peso','wgt','kg','weight kg','gross weight'],cbm:['cbm','volume','volumen','vol','m3','m³'],sku:['sku','code','código','codigo','ref','reference','part','item code','id'],category:['category','categoría','categoria','type','tipo','cat']};
+const COL_MAP={name:['product','name','nombre','producto','item','descripcion','description'],qty:['qty','cantidad','quantity','units','unidades','cant','pcs'],price:['price','precio','unit price','cost','costo','price cny','precio yuan'],weight:['weight','peso','wgt','kg','weight kg','gross weight'],cbm:['cbm','volume','volumen','vol','m3','m³'],sku:['sku','code','código','codigo','ref','reference','item code'],category:['category','categoría','categoria','type','tipo','cat']};
 function detectCols(headers){const map={};headers.forEach((h,i)=>{const n=String(h).toLowerCase().trim().replace(/[_\-]/g,' ');for(const[f,aliases]of Object.entries(COL_MAP)){if(map[f]!==undefined)continue;if(aliases.some(a=>n===a||n.includes(a)))map[f]=i;}});return map;}
-
-function parseCSV(text){const lines=[];let cur='',inQ=false;for(let i=0;i<text.length;i++){const ch=text[i];if(ch==='"'){inQ=!inQ;}else if((ch==='\n'||ch==='\r')&&!inQ){if(cur.trim())lines.push(cur);cur='';if(ch==='\r'&&text[i+1]==='\n')i++;}else{cur+=ch;}}if(cur.trim())lines.push(cur);if(lines.length<2)throw new Error('Archivo vacío o sin filas de datos');const delim=lines[0].includes(';')?';':',';const split=row=>{const cells=[];let cell='';let q=false;for(const ch of row){if(ch==='"'){q=!q;}else if(ch===delim&&!q){cells.push(cell.trim());cell='';}else{cell+=ch;}}return[...cells,cell.trim()];};const headers=split(lines[0]);return{headers,colMap:detectCols(headers),rows:lines.slice(1).map(split)};}
+function parseCSV(text){const lines=[];let cur='',inQ=false;for(let i=0;i<text.length;i++){const ch=text[i];if(ch==='"'){inQ=!inQ;}else if((ch==='\n'||ch==='\r')&&!inQ){if(cur.trim())lines.push(cur);cur='';if(ch==='\r'&&text[i+1]==='\n')i++;}else{cur+=ch;}}if(cur.trim())lines.push(cur);if(lines.length<2)throw new Error('Archivo vacío o sin datos');const delim=lines[0].includes(';')?';':',';const split=row=>{const cells=[];let cell='';let q=false;for(const ch of row){if(ch==='"'){q=!q;}else if(ch===delim&&!q){cells.push(cell.trim());cell='';}else{cell+=ch;}}return[...cells,cell.trim()];};const headers=split(lines[0]);return{headers,colMap:detectCols(headers),rows:lines.slice(1).map(split)};}
 function parseExcel(buf){const wb=XLSX.read(buf,{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];const data=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});if(data.length<2)throw new Error('Archivo vacío');const headers=data[0].map(String);return{headers,colMap:detectCols(headers),rows:data.slice(1)};}
 function rowsToProducts(rows,colMap){const skuSet=new Set(products.map(p=>p.sku).filter(Boolean).map(s=>s.toLowerCase()));let added=0,dupes=0;const prods=[];for(const row of rows){if(row.every(c=>String(c).trim()===''))continue;const get=f=>{const i=colMap[f];return i!==undefined?String(row[i]??'').trim():'';};const getN=f=>{const i=colMap[f];if(i===undefined)return 0;const v=parseFloat(String(row[i]).replace(/\s/g,'').replace(',','.'));return(isFinite(v)&&v>=0)?v:0;};const skuVal=get('sku');if(skuVal&&skuSet.has(skuVal.toLowerCase())){dupes++;continue;}const p={id:'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),name:get('name')||'Producto sin nombre',sku:skuVal,qty:getN('qty')||1,price:getN('price'),weight:getN('weight'),cbm:getN('cbm'),category:get('category')};prods.push(p);if(skuVal)skuSet.add(skuVal.toLowerCase());added++;}return{prods,added,dupes};}
 
-/* ═══ PASO 3: CÁLCULOS ═══ */
-function calcAllProducts(){if(!products.length)return[];const cfg=loadCfg();const{yuanPerUsd:yR,copPerUsd:cR,vesPerUsd:vR}=liveRates;const totalBW=products.reduce((s,p)=>s+(p.qty||0)*(p.weight||0),0);const useEq=totalBW===0;return products.map(p=>{const noRates=!yR||!cR||!vR;if(noRates)return{id:p.id,unitCostVES:null,priceWholesale:null,priceRetail:null,marginWholesalePct:null,marginRetailPct:null,roi:null,channel:'—',alert:null,totalCostVES:null};const bw=(p.qty||0)*(p.weight||0);const wR=useEq?1/products.length:(bw/totalBW);const costBaseUSD=(p.qty||0)*(p.price||0)/yR;const costComm=costBaseUSD*(1+cfg.bankCommission/100);const maritime=(cfg.freight+cfg.insurance+cfg.portFees)*wR;const costMarUSD=costComm+maritime;const costCOP=costMarUSD*cR;const colCost=(cfg.transportCOL+cfg.customsCOL)*wR;const costColCOP=costCOP+colCost;const vPerC=vR/cR;const costVES=costColCOP*vPerC;const venCost=(cfg.transportVEN+cfg.operatingVEN)*wR;const costPreIVA=costVES+venCost;const totalCostVES=costPreIVA*(1+cfg.iva/100);const qty=Math.max(p.qty||1,1);const unitCostVES=totalCostVES/qty;const pw=unitCostVES*(1+cfg.marginWholesale/100);const pr=unitCostVES*(1+cfg.marginRetail/100);const mwP=pw>0?(pw-unitCostVES)/pw*100:0;const mrP=pr>0?(pr-unitCostVES)/pr*100:0;const roi=unitCostVES>0?(pw-unitCostVES)/unitCostVES*100:0;let channel=(p.qty||0)>50&&mwP>25?'MAYOR':mrP>40?'DETAL':'AMBOS';let alert=null;if(roi>50)alert={icon:'🔥',title:'Producto estrella',sub:`ROI ${fmt(roi,1)}%`};else if(mrP>60)alert={icon:'💎',title:'Excelente detal',sub:`Margen detal ${fmt(mrP,1)}%`};else if((p.qty||0)>100&&mwP>25)alert={icon:'📦',title:'Ideal mayorista',sub:`${p.qty} uds · Margen ${fmt(mwP,1)}%`};else if(roi>0&&roi<10)alert={icon:'⚠️',title:'Baja rentabilidad',sub:`ROI ${fmt(roi,1)}%`};return{id:p.id,unitCostVES:isFinite(unitCostVES)?unitCostVES:null,priceWholesale:isFinite(pw)?pw:null,priceRetail:isFinite(pr)?pr:null,marginWholesalePct:isFinite(mwP)?mwP:null,marginRetailPct:isFinite(mrP)?mrP:null,roi:isFinite(roi)?roi:null,channel,alert,totalCostVES:isFinite(totalCostVES)?totalCostVES:null};});}
+/* ═══════ PASO 3: CÁLCULOS ═══════ */
+function calcAllProducts(){if(!products.length)return[];const cfg=loadCfg();const{yuanPerUsd:yR,copPerUsd:cR,vesPerUsd:vR}=liveRates;const totalBW=products.reduce((s,p)=>s+(p.qty||0)*(p.weight||0),0);const useEq=totalBW===0;return products.map(p=>{const noRates=!yR||!cR||!vR;if(noRates)return{id:p.id,unitCostVES:null,priceWholesale:null,priceRetail:null,marginWholesalePct:null,roi:null,channel:'—',alert:null,totalCostVES:null};const bw=(p.qty||0)*(p.weight||0);const wR=useEq?1/products.length:(bw/totalBW);const costBaseUSD=(p.qty||0)*(p.price||0)/yR;const costComm=costBaseUSD*(1+cfg.bankCommission/100);const maritime=(cfg.freight+cfg.insurance+cfg.portFees)*wR;const costMarUSD=costComm+maritime;const costCOP=costMarUSD*cR;const colCost=(cfg.transportCOL+cfg.customsCOL)*wR;const costColCOP=costCOP+colCost;const vPerC=vR/cR;const costVES=costColCOP*vPerC;const venCost=(cfg.transportVEN+cfg.operatingVEN)*wR;const costPreIVA=costVES+venCost;const totalCostVES=costPreIVA*(1+cfg.iva/100);const qty=Math.max(p.qty||1,1);const unitCostVES=totalCostVES/qty;const pw=unitCostVES*(1+cfg.marginWholesale/100);const pr=unitCostVES*(1+cfg.marginRetail/100);const mwP=pw>0?(pw-unitCostVES)/pw*100:0;const mrP=pr>0?(pr-unitCostVES)/pr*100:0;const roi=unitCostVES>0?(pw-unitCostVES)/unitCostVES*100:0;const channel=(p.qty||0)>50&&mwP>25?'MAYOR':mrP>40?'DETAL':'AMBOS';let alert=null;if(roi>50)alert={icon:'🔥',title:'Producto estrella',sub:`ROI ${fmt(roi,1)}%`};else if(mrP>60)alert={icon:'💎',title:'Excelente detal',sub:`Margen ${fmt(mrP,1)}%`};else if((p.qty||0)>100&&mwP>25)alert={icon:'📦',title:'Ideal mayorista',sub:`${p.qty} uds`};else if(roi>0&&roi<10)alert={icon:'⚠️',title:'Baja rentabilidad',sub:`ROI ${fmt(roi,1)}%`};return{id:p.id,unitCostVES:isFinite(unitCostVES)?unitCostVES:null,priceWholesale:isFinite(pw)?pw:null,priceRetail:isFinite(pr)?pr:null,marginWholesalePct:isFinite(mwP)?mwP:null,roi:isFinite(roi)?roi:null,channel,alert,totalCostVES:isFinite(totalCostVES)?totalCostVES:null};});}
 
-function recalcAll(){renderTable();renderDashboard();renderChart();renderAlerts();}
+let chartDirty=true,chartInst=null;
+function recalcAll(){renderTable();renderDashboard();renderRoute();if(document.getElementById('tab-productos').classList.contains('active')){renderChart();}else{chartDirty=true;}renderAlerts();renderSimulator();renderExportStatus();}
 
-/* ═══ RENDER TABLE ═══ */
+/* ═══════ RENDER TABLE ═══════ */
 function renderTable(){
-  const tbody=document.getElementById('prod-tbody');
-  const emptyEl=document.getElementById('prod-empty');
-  const tblWrp=document.getElementById('prod-table-wrap');
+  const tbody=document.getElementById('prod-tbody'),emptyEl=document.getElementById('prod-empty'),tblWrp=document.getElementById('prod-table-wrap');
   document.getElementById('prod-count').textContent=products.length;
   if(!products.length){emptyEl.hidden=false;tblWrp.hidden=true;return;}
   emptyEl.hidden=true;tblWrp.hidden=false;
-  const prev=document.activeElement;
-  const wasEdit=prev?.classList?.contains('editable')&&tbody.contains(prev);
+  const prev=document.activeElement;const wasEdit=prev?.classList?.contains('editable')&&tbody.contains(prev);
   const rId=wasEdit?prev.dataset.id:null,rF=wasEdit?prev.dataset.f:null;
-  const calcs=calcAllProducts();
-  const yR=liveRates.yuanPerUsd;
-  let tQty=0,tCNY=0,tUSD=0,hasUSD=false,tCostVES=0,hasCVES=false,tMarg=0,tROI=0,cCnt=0;
+  const calcs=calcAllProducts();const yR=liveRates.yuanPerUsd;
+  let tQty=0,tCNY=0,tUSD=0,hasUSD=false,tCVES=0,hasCVES=false,tMarg=0,tROI=0,cCnt=0;
   tbody.innerHTML=products.map(p=>{
     const c=calcs.find(x=>x.id===p.id)||{};
-    const sub¥=(p.qty||0)*(p.price||0);
-    const sub$=(yR&&isFinite(yR))?sub¥/yR:null;
-    tQty+=p.qty||0;tCNY+=sub¥;
-    if(sub$!==null){tUSD+=sub$;hasUSD=true;}
-    if(c.totalCostVES!=null){tCostVES+=c.totalCostVES;hasCVES=true;}
-    if(c.marginWholesalePct!=null){tMarg+=c.marginWholesalePct;cCnt++;}
-    if(c.roi!=null)tROI+=c.roi;
+    const subCNY=(p.qty||0)*(p.price||0);const subUSD=(yR&&isFinite(yR))?subCNY/yR:null;
+    tQty+=p.qty||0;tCNY+=subCNY;if(subUSD!==null){tUSD+=subUSD;hasUSD=true;}
+    if(c.totalCostVES!=null){tCVES+=c.totalCostVES;hasCVES=true;}
+    if(c.marginWholesalePct!=null){tMarg+=c.marginWholesalePct;cCnt++;}if(c.roi!=null)tROI+=c.roi;
     const rCls=c.roi!=null?(c.roi>30?'roi-g':c.roi>15?'roi-y':'roi-r'):'';
     const chCls={MAYOR:'ch-mayor',DETAL:'ch-detal',AMBOS:'ch-ambos'}[c.channel]||'';
     return`<tr class="fi" data-id="${p.id}">
@@ -455,8 +648,8 @@ function renderTable(){
       <td><span class="editable n" data-f="price" data-id="${p.id}" contenteditable="true" spellcheck="false">${fmt(p.price,4)??'0'}</span></td>
       <td><span class="editable n" data-f="weight" data-id="${p.id}" contenteditable="true" spellcheck="false">${fmt(p.weight,3)??'0'}</span></td>
       <td><span class="editable n" data-f="cbm" data-id="${p.id}" contenteditable="true" spellcheck="false">${fmt(p.cbm,4)??'0'}</span></td>
-      <td class="rc">${fmt(sub¥,2)??'0'} ¥</td>
-      <td class="${sub$!==null?'rc':'dc'}">${sub$!==null?fmt(sub$,2)+' $':'—'}</td>
+      <td class="rc">${fmt(subCNY,2)??'0'} ¥</td>
+      <td class="${subUSD!==null?'rc':'dc'}">${subUSD!==null?fmt(subUSD,2)+' $':'—'}</td>
       <td class="rc">${c.unitCostVES!=null?fmt(c.unitCostVES,2)+' Bs':'—'}</td>
       <td class="rc">${c.priceWholesale!=null?fmt(c.priceWholesale,2)+' Bs':'—'}</td>
       <td class="rc">${c.priceRetail!=null?fmt(c.priceRetail,2)+' Bs':'—'}</td>
@@ -466,23 +659,21 @@ function renderTable(){
       <td><button class="del-btn" onclick="deleteProduct('${p.id}')" title="Eliminar"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button></td>
     </tr>`;
   }).join('');
-  document.getElementById('total-count').textContent=`${products.length} producto${products.length!==1?'s':''}`;
+  document.getElementById('total-count').textContent=`${products.length} prod${products.length!==1?'s':''}`;
   document.getElementById('total-qty').textContent=fmt(tQty,2)??'0';
   document.getElementById('total-cny').textContent=(fmt(tCNY,2)??'0')+' ¥';
   document.getElementById('total-usd').textContent=hasUSD?(fmt(tUSD,2)??'0')+' $':'—';
-  document.getElementById('total-cost-ves').textContent=hasCVES?(fmt(tCostVES,2)??'0')+' Bs':'—';
+  document.getElementById('total-cost-ves').textContent=hasCVES?(fmt(tCVES,2)??'0')+' Bs':'—';
   document.getElementById('total-margin').textContent=cCnt?(fmt(tMarg/cCnt,1)??'—')+'%':'—';
   document.getElementById('total-roi').textContent=cCnt?(fmt(tROI/cCnt,1)??'—')+'%':'—';
   if(rId&&rF){const el=tbody.querySelector(`[data-id="${rId}"][data-f="${rF}"]`);if(el){el.focus();try{const r=document.createRange();r.selectNodeContents(el);r.collapse(false);window.getSelection().removeAllRanges();window.getSelection().addRange(r);}catch(_){}}}
 }
 
-/* Edit cells */
 document.getElementById('prod-tbody').addEventListener('blur',e=>{
   const el=e.target;if(!el.classList.contains('editable'))return;
   const{f,id}=el.dataset;const prod=products.find(p=>p.id===id);if(!prod)return;
-  const raw=el.textContent.trim();
-  const numFields=['qty','price','weight','cbm'];
-  if(numFields.includes(f)){const n=parseFloat(raw.replace(/[^\d.,-]/g,'').replace(',','.')); if(isFinite(n)&&n>=0)prod[f]=n;const dec={qty:2,price:4,weight:3,cbm:4}[f]||2;el.textContent=fmt(prod[f],dec)??'0';}
+  const raw=el.textContent.trim();const numFields=['qty','price','weight','cbm'];
+  if(numFields.includes(f)){const n=parseFloat(raw.replace(/[^\d.,-]/g,'').replace(',','.'));if(isFinite(n)&&n>=0)prod[f]=n;const dec={qty:2,price:4,weight:3,cbm:4}[f]||2;el.textContent=fmt(prod[f],dec)??'0';}
   else{prod[f]=raw||(f==='name'?'Producto sin nombre':'');el.textContent=prod[f];}
   saveProds();setTimeout(()=>recalcAll(),0);
 },true);
@@ -490,50 +681,54 @@ document.getElementById('prod-tbody').addEventListener('blur',e=>{
 function deleteProduct(id){products=products.filter(p=>p.id!==id);saveProds();recalcAll();}
 function clearAll(){if(!products.length)return;if(!confirm('¿Eliminar todos los productos?'))return;products=[];saveProds();recalcAll();showToast('Tabla vaciada','ok');}
 
-/* ═══ RENDER DASHBOARD ═══ */
+/* ═══════ RENDER DASHBOARD ═══════ */
 function renderDashboard(){
   const calcs=calcAllProducts();
   document.getElementById('kpi-prods').textContent=products.length;
   if(!calcs.length||calcs.every(c=>c.totalCostVES===null)){
-    document.getElementById('kpi-invest').textContent='—';
-    document.getElementById('kpi-margin').textContent='—';
-    document.getElementById('kpi-roi').textContent='—';
-    return;
+    ['kpi-invest','kpi-margin','kpi-roi'].forEach(id=>document.getElementById(id).textContent='—');return;
   }
   let inv=0,marg=0,roi=0,cnt=0;
-  for(const c of calcs){
-    if(c.totalCostVES!=null)inv+=c.totalCostVES;
-    if(c.marginWholesalePct!=null){marg+=c.marginWholesalePct;cnt++;}
-    if(c.roi!=null)roi+=c.roi;
-  }
+  for(const c of calcs){if(c.totalCostVES!=null)inv+=c.totalCostVES;if(c.marginWholesalePct!=null){marg+=c.marginWholesalePct;cnt++;}if(c.roi!=null)roi+=c.roi;}
   document.getElementById('kpi-invest').textContent=(fmt(inv,0)??'—')+' Bs';
   document.getElementById('kpi-margin').textContent=cnt?(fmt(marg/cnt,1)??'—')+'%':'—';
   document.getElementById('kpi-roi').textContent=cnt?(fmt(roi/cnt,1)??'—')+'%':'—';
 }
 
-/* ═══ RENDER CHART ═══ */
-let chartInst=null;
+/* ═══════ RENDER ROUTE ═══════ */
+function renderRoute(){
+  const cfg=loadCfg();
+  const totalYuan=products.reduce((s,p)=>s+(p.qty||0)*(p.price||0),0);
+  const calcs=calcAllProducts();
+  const totalCostVES=calcs.reduce((s,c)=>s+(c.totalCostVES||0),0);
+  document.getElementById('route-china').textContent=totalYuan>0?`¥ ${fmt(totalYuan,0)}`:'¥ —';
+  document.getElementById('route-flete').textContent=`$ ${fmt(cfg.freight,0)} USD`;
+  document.getElementById('route-bvta').textContent=`$ ${fmt(cfg.portFees,0)} USD`;
+  document.getElementById('route-transport-col').textContent=`$${fmt(cfg.transportCOL,0)} COP`;
+  document.getElementById('route-cucuta').textContent=`$${fmt(cfg.customsCOL,0)} COP`;
+  document.getElementById('route-frontera').textContent='Cruce';
+  document.getElementById('route-tachira').textContent=`Bs ${fmt(cfg.transportVEN,0)}`;
+  document.getElementById('route-iva').textContent=`IVA ${cfg.iva}%`;
+  document.getElementById('route-ve').textContent=totalCostVES>0?`Bs ${fmt(totalCostVES,0)}`:'Bs —';
+}
+
+/* ═══════ RENDER CHART ═══════ */
 function renderChart(){
+  chartDirty=false;
   const sec=document.getElementById('analysis-section');
   if(!products.length){sec.hidden=true;return;}
   sec.hidden=false;
   if(typeof Chart==='undefined')return;
-  const cfg=loadCfg();
-  const cR=liveRates.copPerUsd||1,vR=liveRates.vesPerUsd||1;
-  const flete=cfg.freight,seguro=cfg.insurance;
-  const aduanas=cfg.portFees+cfg.customsCOL/cR;
-  const transporte=cfg.transportCOL/cR+(cfg.transportVEN+cfg.operatingVEN)/vR;
+  const cfg=loadCfg();const cR=liveRates.copPerUsd||1,vR=liveRates.vesPerUsd||1;
   const calcs=calcAllProducts();
   let preIVA=0;calcs.forEach(c=>{if(c.totalCostVES!=null)preIVA+=c.totalCostVES/(1+cfg.iva/100);});
-  const ivaUSD=preIVA*(cfg.iva/100)/vR;
-  try{
-    if(chartInst){chartInst.destroy();chartInst=null;}
-    const ctx=document.getElementById('expense-chart').getContext('2d');
-    chartInst=new Chart(ctx,{type:'doughnut',data:{labels:['Flete','Seguro','Aduanas/Puerto','Transporte','IVA'],datasets:[{data:[flete,seguro,Math.max(aduanas,0),Math.max(transporte,0),Math.max(ivaUSD,0)],backgroundColor:['#10B981CC','#F59E0BCC','#3B82F6CC','#8B5CF6CC','#EF4444CC'],borderColor:['#10B981','#F59E0B','#3B82F6','#8B5CF6','#EF4444'],borderWidth:1.5,hoverOffset:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#94A3B8',font:{size:11},padding:10}},tooltip:{callbacks:{label:ctx=>` ${ctx.label}: $${fmt(ctx.raw,0)??'0'} USD`}}}}});
-  }catch(e){console.warn('Chart error:',e);}
+  const data=[cfg.freight,cfg.insurance,Math.max(cfg.portFees+cfg.customsCOL/cR,0),Math.max(cfg.transportCOL/cR+(cfg.transportVEN+cfg.operatingVEN)/vR,0),Math.max(preIVA*(cfg.iva/100)/vR,0)];
+  try{if(chartInst){chartInst.destroy();chartInst=null;}
+  chartInst=new Chart(document.getElementById('expense-chart').getContext('2d'),{type:'doughnut',data:{labels:['Flete','Seguro','Aduanas/Puerto','Transporte','IVA'],datasets:[{data,backgroundColor:['#10B981CC','#F59E0BCC','#3B82F6CC','#8B5CF6CC','#EF4444CC'],borderColor:['#10B981','#F59E0B','#3B82F6','#8B5CF6','#EF4444'],borderWidth:1.5,hoverOffset:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#94A3B8',font:{size:11},padding:10}},tooltip:{callbacks:{label:c=>` ${c.label}: $${fmt(c.raw,0)??'0'} USD`}}}}});}
+  catch(e){console.warn('Chart error:',e);}
 }
 
-/* ═══ RENDER ALERTS ═══ */
+/* ═══════ RENDER ALERTS ═══════ */
 function renderAlerts(){
   const list=document.getElementById('alerts-list');if(!list)return;
   const calcs=calcAllProducts();
@@ -542,13 +737,180 @@ function renderAlerts(){
   list.innerHTML=items.slice(0,8).map(a=>`<div class="alert-item"><span class="alert-icon">${a.icon}</span><div><div class="alert-title">${a.title} — ${esc(a.product)}</div><div class="alert-sub">${a.sub||''}</div></div></div>`).join('');
 }
 
-/* ═══ TOAST + IMPORT STATUS ═══ */
+/* ═══════ PASO 4: TABS ═══════ */
+function showTab(tab){
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(el=>el.classList.toggle('active',el.dataset.tab===tab||(el.textContent.toLowerCase().includes(tab.split('')[0])&&el.dataset.tab===undefined)));
+  document.querySelectorAll(`[data-tab="${tab}"]`).forEach(el=>el.classList.add('active'));
+  document.getElementById(`tab-${tab}`).classList.add('active');
+  if(tab==='productos'&&chartDirty)renderChart();
+  if(tab==='contenedor')renderSimulator();
+  if(tab==='exportar'){renderExportStatus();renderHistory();}
+  if(tab==='dashboard')renderRoute();
+}
+function toggleMob(){document.getElementById('mob-nav').classList.toggle('open');}
+
+/* ═══════ PASO 4: CONTAINER SIMULATOR ═══════ */
+const CTYPES={
+  '20ft':{cbm:33,weight:18000,freight:1500},
+  '40ft':{cbm:67,weight:25000,freight:2000},
+  'consolidada':null
+};
+let selectedProds=new Set();
+
+function getContainerSpecs(){
+  const type=document.querySelector('input[name="ctype"]:checked')?.value||'40ft';
+  if(type==='consolidada'){
+    return{cbm:parseFloat(document.getElementById('c-cbm').value)||0,weight:(parseFloat(document.getElementById('c-weight').value)||0)*1000,freight:parseFloat(document.getElementById('c-freight').value)||0};
+  }
+  return CTYPES[type]||CTYPES['40ft'];
+}
+
+function onCtypeChange(){
+  const type=document.querySelector('input[name="ctype"]:checked')?.value;
+  document.getElementById('consolidada-fields').hidden=type!=='consolidada';
+  renderSimulator();
+}
+
+function renderSimulator(){
+  renderCheckList();
+  const specs=getContainerSpecs();
+  const sel=products.filter(p=>selectedProds.has(p.id));
+  let totalCBM=0,totalWeight=0,totalFreightUSD=0;
+  sel.forEach(p=>{totalCBM+=(p.qty||0)*(p.cbm||0);totalWeight+=(p.qty||0)*(p.weight||0);});
+  const specs_freight=specs.freight||0;
+  const cbmPct=specs.cbm>0?Math.min(totalCBM/specs.cbm*100,999):0;
+  const wPct=specs.weight>0?Math.min(totalWeight/specs.weight*100,999):0;
+  const progClass=pct=>pct>90?'prog-r':pct>70?'prog-y':'prog-g';
+  document.getElementById('cbm-bar').style.width=Math.min(cbmPct,100)+'%';
+  document.getElementById('cbm-bar').className='prog-fill '+progClass(cbmPct);
+  document.getElementById('cbm-display').textContent=`${fmt(totalCBM,2)??'0'} / ${fmt(specs.cbm||0,0)} m³ (${fmt(cbmPct,1)??'0'}%)`;
+  document.getElementById('weight-bar').style.width=Math.min(wPct,100)+'%';
+  document.getElementById('weight-bar').className='prog-fill '+progClass(wPct);
+  document.getElementById('weight-display').textContent=`${fmt(totalWeight,0)??'0'} / ${fmt(specs.weight||0,0)} kg (${fmt(wPct,1)??'0'}%)`;
+  document.getElementById('cbm-left').textContent=specs.cbm?`${fmt(Math.max(specs.cbm-totalCBM,0),2)} m³`:'—';
+  document.getElementById('weight-left').textContent=specs.weight?`${fmt(Math.max(specs.weight-totalWeight,0),0)} kg`:'—';
+  document.getElementById('sim-freight').textContent=`$ ${fmt(specs_freight,0)??'0'}`;
+  document.getElementById('sim-count').textContent=sel.length;
+  const recoList=document.getElementById('reco-list');
+  const recos=[];
+  if(sel.length===0){recos.push({cls:'info',msg:'ℹ️ Selecciona productos para comenzar la simulación'});}
+  else if(cbmPct>100||wPct>100){if(cbmPct>100)recos.push({cls:'bad',msg:'❌ Exceso de volumen — Reducir productos o cambiar a contenedor más grande'});if(wPct>100)recos.push({cls:'bad',msg:'❌ Exceso de peso — Cambiar a contenedor 40ft o dividir carga'});}
+  else if(cbmPct>=70&&cbmPct<=90&&wPct<=90){recos.push({cls:'good',msg:`✅ Combinación óptima — Contenedor al ${fmt(Math.max(cbmPct,wPct),0)}% de capacidad`});}
+  else if(cbmPct<50&&sel.length>0){recos.push({cls:'info',msg:'💰 Ahorro potencial — Consolidar con otro proveedor en esta carga'});}
+  else{recos.push({cls:'warn',msg:`⚠️ Uso actual: CBM ${fmt(cbmPct,0)}%, Peso ${fmt(wPct,0)}%`});}
+  recoList.innerHTML=recos.map(r=>`<div class="reco-item ${r.cls}">${r.msg}</div>`).join('');
+  renderContainerTable(sel,specs);
+}
+
+function renderCheckList(){
+  const list=document.getElementById('prod-check-list');
+  if(!products.length){list.innerHTML='<div class="alert-empty">Importa productos en la pestaña Productos</div>';return;}
+  list.innerHTML=products.map(p=>{
+    const totalCBM=(p.qty||0)*(p.cbm||0),totalWeight=(p.qty||0)*(p.weight||0);
+    return`<label class="prod-check-item"><input type="checkbox" value="${p.id}" ${selectedProds.has(p.id)?'checked':''} onchange="onProdCheck(this)"><div class="prod-check-info"><div class="prod-check-name">${esc(p.name)}</div><div class="prod-check-meta">Cant: ${p.qty} · CBM: ${fmt(totalCBM,3)??'0'} · Peso: ${fmt(totalWeight,1)??'0'} kg</div></div></label>`;
+  }).join('');
+}
+
+function onProdCheck(cb){cb.checked?selectedProds.add(cb.value):selectedProds.delete(cb.value);renderSimulator();}
+function selectAll(val){products.forEach(p=>val?selectedProds.add(p.id):selectedProds.delete(p.id));renderSimulator();}
+
+function renderContainerTable(sel,specs){
+  const tbody=document.getElementById('container-tbody');
+  const emptyEl=document.getElementById('container-empty');
+  const wrap=document.getElementById('container-table-wrap');
+  if(!sel.length){tbody.innerHTML='';emptyEl.hidden=false;return;}
+  emptyEl.hidden=true;
+  const totalCBM=sel.reduce((s,p)=>s+(p.qty||0)*(p.cbm||0),0);
+  const freight=specs.freight||0;
+  let tQty=0,tCBM=0,tW=0;
+  tbody.innerHTML=sel.map(p=>{
+    const pCBM=(p.qty||0)*(p.cbm||0),pW=(p.qty||0)*(p.weight||0);
+    const pct=totalCBM>0?pCBM/totalCBM*100:100/sel.length;
+    const pFreight=freight*pct/100;
+    tQty+=p.qty||0;tCBM+=pCBM;tW+=pW;
+    return`<tr class="fi"><td>${esc(p.name)}</td><td style="color:var(--muted)">${esc(p.sku)}</td><td class="rc">${p.qty}</td><td class="rc">${fmt(pCBM,3)??'0'} m³</td><td class="rc">${fmt(pW,1)??'0'} kg</td><td class="rc">${fmt(pct,1)??'0'}%</td><td class="rc">$${fmt(pFreight,2)??'0'}</td></tr>`;
+  }).join('');
+  document.getElementById('ct-qty').textContent=tQty;
+  document.getElementById('ct-cbm').textContent=(fmt(tCBM,2)??'0')+' m³';
+  document.getElementById('ct-weight').textContent=(fmt(tW,1)??'0')+' kg';
+  document.getElementById('ct-freight').textContent='$'+fmt(freight,0);
+}
+
+/* ═══════ PASO 4: EXPORT ═══════ */
+function renderExportStatus(){
+  const hasProds=products.length>0;
+  const caches=['yuan','cop','bcv'].map(k=>loadRateCache(k));
+  const ages=caches.map(c=>c?Date.now()-c.ts:Infinity);
+  const maxAge=Math.max(...ages);const ratesOk=maxAge<30*60*1000;
+  const calcs=calcAllProducts();const calcsOk=!calcs.some(c=>c.totalCostVES===null&&(liveRates.yuanPerUsd||liveRates.copPerUsd));
+  const set=(csId,cdId,ok,detail)=>{document.getElementById(csId).textContent=ok?'✅':'⚠️';document.getElementById(cdId).textContent=detail;};
+  set('cs-prods','cd-prods',hasProds,`${products.length} productos`);
+  set('cs-rates','cd-rates',ratesOk,ratesOk?`Hace ${Math.round(maxAge/60000)} min`:'Actualiza las tasas');
+  set('cs-calcs','cd-calcs',!products.length||calcsOk,calcsOk?'Sin errores':'Verifica tasas BCV/COP');
+}
+
+function exportExcel(){
+  if(!products.length){showToast('Sin productos para exportar','err');return;}
+  const calcs=calcAllProducts();const cfg=loadCfg();
+  const wb=XLSX.utils.book_new();
+  const headers=['Nombre','SKU','Categoría','Cantidad','Precio ¥','Peso kg','CBM m³','Subtotal ¥','Subtotal $','Costo Bs','P.Mayor Bs','P.Detal Bs','Margen %','ROI %','Canal'];
+  const rows=products.map(p=>{const c=calcs.find(x=>x.id===p.id)||{};const sub=(p.qty||0)*(p.price||0);const yR=liveRates.yuanPerUsd;return[p.name,p.sku,p.category,p.qty,p.price,p.weight,p.cbm,sub,yR?+(sub/yR).toFixed(2):null,c.unitCostVES!=null?+c.unitCostVES.toFixed(2):null,c.priceWholesale!=null?+c.priceWholesale.toFixed(2):null,c.priceRetail!=null?+c.priceRetail.toFixed(2):null,c.marginWholesalePct!=null?+c.marginWholesalePct.toFixed(2):null,c.roi!=null?+c.roi.toFixed(2):null,c.channel];});
+  const ws1=XLSX.utils.aoa_to_sheet([headers,...rows]);ws1['!cols']=[{wch:25},{wch:12},{wch:12},{wch:8},{wch:10},{wch:9},{wch:9},{wch:12},{wch:12},{wch:14},{wch:14},{wch:14},{wch:10},{wch:8},{wch:8}];
+  XLSX.utils.book_append_sheet(wb,ws1,'Productos');
+  const tCVES=calcs.reduce((s,c)=>s+(c.totalCostVES||0),0);const avgM=calcs.filter(c=>c.marginWholesalePct!=null).reduce((s,c,_,a)=>s+c.marginWholesalePct/a.length,0);const avgR=calcs.filter(c=>c.roi!=null).reduce((s,c,_,a)=>s+c.roi/a.length,0);
+  const ws2=XLSX.utils.aoa_to_sheet([['CalcNova ERP — Resumen Financiero'],[''],['Fecha',new Date().toLocaleDateString('es-VE')],[''],['Indicador','Valor'],['Total Productos',products.length],['Inversión Total (Bs)',+tCVES.toFixed(2)],['Margen Promedio (%)',+avgM.toFixed(2)],['ROI Promedio (%)',+avgR.toFixed(2)],[''],['Tasas Usadas'],['Yuan/USD',liveRates.yuanPerUsd??'N/A'],['COP/USD',liveRates.copPerUsd??'N/A'],['VES/USD (BCV)',liveRates.vesPerUsd??'N/A']]);
+  XLSX.utils.book_append_sheet(wb,ws2,'Resumen Financiero');
+  const selProds=products.filter(p=>selectedProds.has(p.id));const specs=getContainerSpecs();const tCBM=selProds.reduce((s,p)=>s+(p.qty||0)*(p.cbm||0),0);const tW=selProds.reduce((s,p)=>s+(p.qty||0)*(p.weight||0),0);
+  const ws3=XLSX.utils.aoa_to_sheet([['Simulación Contenedor'],[''],['Tipo',document.querySelector('input[name="ctype"]:checked')?.value||'40ft'],['CBM Total',+tCBM.toFixed(2)],['Peso Total (kg)',+tW.toFixed(1)],['Flete USD',specs.freight||0],['Productos Seleccionados',selProds.length]]);
+  XLSX.utils.book_append_sheet(wb,ws3,'Simulación Contenedor');
+  XLSX.writeFile(wb,`CalcNova_${new Date().toISOString().slice(0,10)}.xlsx`);
+  showToast('✅ Excel descargado','ok');
+}
+
+function exportCSV(){
+  if(!products.length){showToast('Sin productos para exportar','err');return;}
+  const calcs=calcAllProducts();
+  const rows=[['Nombre','SKU','Categoría','Cantidad','Precio Yuan','Peso kg','CBM m3','Subtotal Yuan','Subtotal USD','Costo Bs','Precio Mayor Bs','Precio Detal Bs','Margen %','ROI %','Canal']];
+  products.forEach(p=>{const c=calcs.find(x=>x.id===p.id)||{};const sub=(p.qty||0)*(p.price||0);const yR=liveRates.yuanPerUsd;rows.push([p.name,p.sku,p.category,p.qty,p.price,p.weight,p.cbm,sub,yR?(sub/yR).toFixed(2):'',c.unitCostVES!=null?c.unitCostVES.toFixed(2):'',c.priceWholesale!=null?c.priceWholesale.toFixed(2):'',c.priceRetail!=null?c.priceRetail.toFixed(2):'',c.marginWholesalePct!=null?c.marginWholesalePct.toFixed(2):'',c.roi!=null?c.roi.toFixed(2):'',c.channel||'']);});
+  const csv=rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'})),download:`CalcNova_${new Date().toISOString().slice(0,10)}.csv`});
+  a.click();URL.revokeObjectURL(a.href);showToast('✅ CSV descargado','ok');
+}
+
+function exportPDF(){
+  if(!products.length){showToast('Sin productos para exportar','err');return;}
+  if(typeof html2pdf==='undefined'){showToast('Librería PDF no cargada, espera un momento','wrn');return;}
+  const calcs=calcAllProducts();
+  const tCVES=calcs.reduce((s,c)=>s+(c.totalCostVES||0),0);
+  const avgM=calcs.filter(c=>c.marginWholesalePct!=null).reduce((s,c,_,a)=>s+c.marginWholesalePct/a.length,0);
+  const pdfDiv=document.getElementById('pdf-content');
+  pdfDiv.innerHTML=`
+    <div style="text-align:center;margin-bottom:20px"><h1 style="color:#10B981;font-size:24px">CalcNova ERP</h1><p style="color:#64748B">${new Date().toLocaleDateString('es-VE',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</p></div>
+    <h2 style="border-bottom:2px solid #10B981;padding-bottom:8px;color:#1E293B;margin-bottom:16px">Dashboard Ejecutivo</h2>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:20px">
+      <tr style="background:#10B981;color:white"><td style="padding:10px">Total Productos</td><td style="padding:10px">Inversión Total (Bs)</td><td style="padding:10px">Margen Promedio</td><td style="padding:10px">ROI Promedio</td></tr>
+      <tr style="background:#f8fafc"><td style="padding:10px;font-weight:bold;font-size:18px">${products.length}</td><td style="padding:10px;font-weight:bold;font-size:16px">${fmt(tCVES,0)??'—'}</td><td style="padding:10px;font-weight:bold;font-size:18px">${fmt(avgM,1)??'—'}%</td><td style="padding:10px;font-weight:bold;font-size:18px">${fmt(calcs.reduce((s,c,_,a)=>s+(c.roi||0)/a.length,0),1)??'—'}%</td></tr>
+    </table>
+    <h2 style="border-bottom:2px solid #10B981;padding-bottom:8px;color:#1E293B;margin-bottom:16px">Productos Importados</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <thead><tr style="background:#1E293B;color:white">${['Nombre','SKU','Cant','Precio ¥','Costo Bs','P.Mayor Bs','P.Detal Bs','ROI %','Canal'].map(h=>`<th style="padding:8px;text-align:left">${h}</th>`).join('')}</tr></thead>
+      <tbody>${products.map((p,i)=>{const c=calcs.find(x=>x.id===p.id)||{};return`<tr style="background:${i%2===0?'#f8fafc':'white'}"><td style="padding:7px">${p.name}</td><td style="padding:7px">${p.sku||'—'}</td><td style="padding:7px">${p.qty}</td><td style="padding:7px">${fmt(p.price,2)??'—'}</td><td style="padding:7px">${c.unitCostVES!=null?fmt(c.unitCostVES,2):'—'}</td><td style="padding:7px">${c.priceWholesale!=null?fmt(c.priceWholesale,2):'—'}</td><td style="padding:7px">${c.priceRetail!=null?fmt(c.priceRetail,2):'—'}</td><td style="padding:7px;color:${c.roi>30?'#10B981':c.roi>15?'#F59E0B':'#EF4444'}">${c.roi!=null?fmt(c.roi,1)+'%':'—'}</td><td style="padding:7px">${c.channel||'—'}</td></tr>`;}).join('')}</tbody>
+    </table>
+    <p style="margin-top:20px;font-size:10px;color:#64748B;text-align:center">Generado por CalcNova ERP · ${nowStr()} · Solo referencial</p>`;
+  pdfDiv.style.display='block';
+  html2pdf().set({margin:8,filename:`CalcNova_${new Date().toISOString().slice(0,10)}.pdf`,image:{type:'jpeg',quality:.97},html2canvas:{scale:2,logging:false},jsPDF:{unit:'mm',format:'a4',orientation:'landscape'}}).from(pdfDiv).save().then(()=>{pdfDiv.style.display='none';showToast('✅ PDF descargado','ok');}).catch(()=>{pdfDiv.style.display='none';showToast('Error generando PDF','err');});
+}
+
+/* ═══════ PASO 4: HISTORY ═══════ */
+function addHistory(filename,count){try{const h=JSON.parse(localStorage.getItem(LS_HIST)||'[]');h.unshift({filename,count,ts:Date.now()});localStorage.setItem(LS_HIST,JSON.stringify(h.slice(0,5)));}catch(_){}}
+function renderHistory(){const list=document.getElementById('history-list');try{const h=JSON.parse(localStorage.getItem(LS_HIST)||'[]');if(!h.length){list.innerHTML='<div class="alert-empty">Sin historial de importaciones</div>';return;}list.innerHTML=h.map(item=>`<div class="hist-item"><span class="hist-file">📁 ${esc(item.filename)}</span><span class="hist-count">${item.count} prods</span><span class="hist-time">${new Date(item.ts).toLocaleDateString('es-VE')}</span></div>`).join('');}catch(_){list.innerHTML='<div class="alert-empty">Sin historial</div>';}}
+
+/* ═══════ IMPORT HANDLER ═══════ */
 function showToast(msg,type='ok'){const el=document.getElementById('toast');el.textContent=msg;el.className=`toast t${type} show`;clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),3500);}
 function setImportStatus(s,msg){const el=document.getElementById('import-status');el.className=`import-status ${s}`;el.textContent=msg;el.hidden=false;}
-
 async function handleFile(file){
-  if(!file)return;
-  const ext=file.name.split('.').pop().toLowerCase();
+  if(!file)return;const ext=file.name.split('.').pop().toLowerCase();
   if(!['xlsx','xls','csv'].includes(ext)){showToast('Formato no soportado. Usa .xlsx o .csv','err');return;}
   if(file.size>10*1024*1024)showToast(`Archivo grande (${(file.size/1048576).toFixed(1)} MB), puede tardar...`,'wrn');
   setImportStatus('loading','⏳ Procesando...');
@@ -556,17 +918,16 @@ async function handleFile(file){
     let parsed;
     if(ext==='csv'){parsed=parseCSV(await file.text());}
     else{if(typeof XLSX==='undefined')throw new Error('Librería Excel no cargada');parsed=parseExcel(await file.arrayBuffer());}
-    if(!parsed.rows.length)throw new Error('No se encontraron filas de datos');
+    if(!parsed.rows.length)throw new Error('Sin filas de datos');
     const{prods,added,dupes}=rowsToProducts(parsed.rows,parsed.colMap);
-    if(added===0){setImportStatus('warn',`⚠️ Todos los SKU ya existen (${dupes} duplicados)`);showToast('SKUs duplicados, nada importado','wrn');return;}
-    products.push(...prods);saveProds();recalcAll();
+    if(added===0){setImportStatus('warn',`⚠️ SKUs duplicados (${dupes})`);showToast('SKUs duplicados, nada importado','wrn');return;}
+    products.push(...prods);saveProds();addHistory(file.name,added);recalcAll();
     let msg=`✅ ${added} producto${added!==1?'s':''} importado${added!==1?'s':''}`;
     if(dupes>0)msg+=` · ${dupes} duplicado${dupes!==1?'s':''} omitido${dupes!==1?'s':''}`;
     setImportStatus('ok',msg);showToast(msg,'ok');
   }catch(err){setImportStatus('err',`❌ ${err.message}`);showToast(`Error: ${err.message}`,'err');}
   document.getElementById('file-input').value='';
 }
-
 const dropZone=document.getElementById('drop-zone'),fileInput=document.getElementById('file-input');
 dropZone.addEventListener('click',()=>fileInput.click());
 document.getElementById('btn-select').addEventListener('click',e=>{e.stopPropagation();fileInput.click();});
@@ -575,10 +936,24 @@ dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.a
 dropZone.addEventListener('dragleave',e=>{if(!dropZone.contains(e.relatedTarget))dropZone.classList.remove('drag-over');});
 dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.classList.remove('drag-over');if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0]);});
 
-/* ═══ INIT ═══ */
+/* ═══════ DEMO DATA ═══════ */
+function loadDemo(){
+  if(products.length&&!confirm('¿Reemplazar productos actuales con datos demo?'))return;
+  products=[
+    {id:'d1',name:'Ventilador 16" Torre',sku:'VEN-001',qty:100,price:35,weight:1.8,cbm:0.008,category:'Electro'},
+    {id:'d2',name:'Hervidor Eléctrico 1.8L',sku:'HER-002',qty:60,price:28,weight:1.2,cbm:0.005,category:'Electro'},
+    {id:'d3',name:'Plancha de Vapor Pro',sku:'PLA-003',qty:80,price:22,weight:0.9,cbm:0.003,category:'Electro'},
+    {id:'d4',name:'Mochila Escolar 30L',sku:'MOC-004',qty:200,price:15,weight:0.5,cbm:0.003,category:'Moda'},
+    {id:'d5',name:'Cargador USB-C 65W',sku:'CAR-005',qty:500,price:8,weight:0.1,cbm:0.0005,category:'Accesorios'},
+    {id:'d6',name:'Audífonos Bluetooth',sku:'AUD-006',qty:120,price:45,weight:0.3,cbm:0.002,category:'Electro'},
+  ];
+  saveProds();recalcAll();showTab('productos');showToast('✅ Datos demo cargados — ve a Productos','ok');
+}
+
+/* ═══════ INIT ═══════ */
 initCfgInputs();
 loadProds();
-renderTable();renderDashboard();renderChart();renderAlerts();
+recalcAll();
 updateClock();setInterval(updateClock,1000);
 updateRates();setInterval(updateRates,5*60*1000);
 </script>
