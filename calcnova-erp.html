@@ -152,6 +152,11 @@
     .roi-g{color:var(--green);font-weight:700}
     .roi-y{color:var(--gold);font-weight:700}
     .roi-r{color:var(--red);font-weight:700}
+    /* Celda resaltada: inversión total Bs (la más importante de la tabla) */
+    .ves-total{color:var(--green);font-weight:700}
+    /* Barra de tasas y logística encima de la tabla */
+    .rates-bar{display:flex;align-items:center;flex-wrap:wrap;gap:6px 20px;padding:9px 16px;border-bottom:1px solid var(--border);font-size:11.5px;line-height:1.5}
+    .rates-bar strong{font-weight:700}
     .ch-badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.5px}
     .ch-mayor{background:rgba(16,185,129,.15);color:var(--green)}
     .ch-detal{background:rgba(245,158,11,.15);color:var(--gold)}
@@ -440,21 +445,32 @@
   </div>
   <div class="glass">
     <div id="prod-empty" class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">Sin productos importados</div><div class="empty-sub">Importa un archivo Excel o CSV para comenzar</div></div>
+    <!-- ── Barra de tasas y logística ── -->
+    <div id="rates-info-bar" class="rates-bar" hidden>
+      <span id="rates-bar-rates" style="color:var(--dim)">⏳ Cargando tasas...</span>
+      <span style="color:var(--border)">│</span>
+      <span id="rates-bar-logistics" style="color:var(--gold)">📦 Sin logística configurada</span>
+      <span style="margin-left:auto;color:var(--muted);font-size:10.5px"><strong style="color:var(--green)">Total Bs</strong> = Cant × Costo/Ud · incluye toda la logística + IVA</span>
+    </div>
     <div class="table-scroll" id="prod-table-wrap" hidden>
       <table>
         <thead><tr>
           <th>Nombre</th><th>SKU</th><th class="r">Cant.</th><th class="r">Precio ¥</th>
-          <th class="r">Peso kg</th><th class="r">CBM m³</th><th class="r">Sub ¥</th><th class="r">Sub $</th>
-          <th class="r">Costo Bs</th><th class="r">P.Mayor Bs</th><th class="r">P.Detal Bs</th>
-          <th class="r">Margen %</th><th class="r">ROI %</th><th>Canal</th><th></th>
+          <th class="r">Peso kg</th><th class="r">CBM m³</th><th class="r">Sub ¥</th>
+          <th class="r" title="Costo del producto en USD (sin logística)">Base $</th>
+          <th class="r" title="Costo por unidad: producto + logística distribuida + IVA">Costo/Ud Bs</th>
+          <th class="r" style="color:var(--green)" title="Inversión total en Bs para todas las unidades de esta referencia">Total Bs ★</th>
+          <th class="r">P.Mayor Bs</th><th class="r">P.Detal Bs</th>
+          <th class="r">ROI %</th><th>Canal</th><th></th>
         </tr></thead>
         <tbody id="prod-tbody"></tbody>
         <tfoot><tr>
           <td colspan="2">TOTAL — <span id="total-count" style="font-size:11px;opacity:.7">0 prods</span></td>
           <td class="rc" id="total-qty">—</td><td>—</td><td>—</td><td>—</td>
           <td class="rc" id="total-cny">—</td><td class="rc" id="total-usd">—</td>
-          <td class="rc" id="total-cost-ves">—</td><td>—</td><td>—</td>
-          <td class="rc" id="total-margin">—</td><td class="rc" id="total-roi">—</td><td>—</td><td></td>
+          <td>—</td><td class="rc" id="total-cost-ves">—</td>
+          <td>—</td><td>—</td>
+          <td class="rc" id="total-roi">—</td><td>—</td><td></td>
         </tr></tfoot>
       </table>
     </div>
@@ -651,7 +667,7 @@ document.getElementById('config-wrap').addEventListener('input',e=>{
 const liveRates={yuanPerUsd:null,copPerUsd:null,vesPerUsd:null};
 async function fetchRate(url,ms=5000){const ctrl=new AbortController();const t=setTimeout(()=>ctrl.abort(),ms);try{const r=await fetch(url,{signal:ctrl.signal});if(!r.ok)throw new Error(`HTTP ${r.status}`);return await r.json();}finally{clearTimeout(t);}}
 function setLoading(id){const v=document.getElementById(`val-${id}`);v.classList.add('loading-pulse');v.innerHTML='&nbsp;';document.getElementById(`sub-${id}`).textContent='Actualizando...';setDot(id,'loading','Conectando...');const b=document.getElementById(`ico-${id}`);if(b)b.closest('.refresh-btn').classList.add('spinning');document.getElementById(`card-${id}`).classList.remove('has-error');}
-function setOk(id,display,sub){const v=document.getElementById(`val-${id}`);v.classList.remove('loading-pulse');v.textContent=display;document.getElementById(`sub-${id}`).textContent=sub||'';setDot(id,'ok',`Actualizado ${nowStr()}`);stopSpin(id);}
+function setOk(id,display,sub){const v=document.getElementById(`val-${id}`);v.classList.remove('loading-pulse');v.textContent=display;document.getElementById(`sub-${id}`).textContent=sub||'';setDot(id,'ok',`Actualizado ${nowStr()}`);stopSpin(id);renderRatesBar();}
 function setErr(id,fb){
   const v=document.getElementById(`val-${id}`);v.classList.remove('loading-pulse');
   if(fb){
@@ -833,7 +849,7 @@ function calcAllProducts(){
   const{yuanPerUsd:yR,copPerUsd:cR,vesPerUsd:vR}=liveRates;
   const noRates=!yR||!cR||!vR;
   const n=products.length;
-  const ZERO={id:'',unitCostVES:null,priceWholesale:null,priceRetail:null,
+  const ZERO={id:'',baseProdUSD:null,unitCostVES:null,priceWholesale:null,priceRetail:null,
               marginWholesalePct:null,roi:null,channel:'—',alert:null,
               totalCostVES:null,totalUSD:null,totalCOP:null};
 
@@ -921,6 +937,7 @@ function calcAllProducts(){
       const safe=v=>isFinite(v)?v:null;
       return{
         id:p.id,
+        baseProdUSD      :safe(subtotalUSD),  // solo el costo del producto en USD (sin logística)
         totalUSD         :safe(totalUSD),
         totalCOP         :safe(totalCOP),
         totalCostVES     :safe(totalCostVES),
@@ -945,20 +962,24 @@ function recalcAll(){renderTable();renderDashboard();renderRoute();if(document.g
 function renderTable(){
   const tbody=document.getElementById('prod-tbody'),emptyEl=document.getElementById('prod-empty'),tblWrp=document.getElementById('prod-table-wrap');
   document.getElementById('prod-count').textContent=products.length;
-  if(!products.length){emptyEl.hidden=false;tblWrp.hidden=true;return;}
+  if(!products.length){emptyEl.hidden=false;tblWrp.hidden=true;renderRatesBar();return;}
   emptyEl.hidden=true;tblWrp.hidden=false;
   const prev=document.activeElement;const wasEdit=prev?.classList?.contains('editable')&&tbody.contains(prev);
   const rId=wasEdit?prev.dataset.id:null,rF=wasEdit?prev.dataset.f:null;
-  const calcs=calcAllProducts();const yR=liveRates.yuanPerUsd;
-  let tQty=0,tCNY=0,tUSD=0,hasUSD=false,tCVES=0,hasCVES=false,tMarg=0,tROI=0,cCnt=0;
+  const calcs=calcAllProducts();const yR=liveRates.yuanPerUsd;const cfg=loadCfg();
+  let tQty=0,tCNY=0,tUSD=0,hasUSD=false,tCVES=0,hasCVES=false,tROI=0,cCnt=0;
   tbody.innerHTML=products.map(p=>{
     const c=calcs.find(x=>x.id===p.id)||{};
-    const subCNY=(p.qty||0)*(p.price||0);const subUSD=(yR&&isFinite(yR))?subCNY/yR:null;
-    tQty+=p.qty||0;tCNY+=subCNY;if(subUSD!==null){tUSD+=subUSD;hasUSD=true;}
+    const subCNY=(p.qty||0)*(p.price||0);
+    // Base $: solo el producto (sin logística); usa baseProdUSD de calcAllProducts si existe
+    const baseUSD=c.baseProdUSD!=null?c.baseProdUSD:((yR&&isFinite(yR))?subCNY/yR:null);
+    tQty+=p.qty||0;tCNY+=subCNY;
+    if(baseUSD!=null){tUSD+=baseUSD;hasUSD=true;}
     if(c.totalCostVES!=null){tCVES+=c.totalCostVES;hasCVES=true;}
-    if(c.marginWholesalePct!=null){tMarg+=c.marginWholesalePct;cCnt++;}if(c.roi!=null)tROI+=c.roi;
+    if(c.roi!=null){tROI+=c.roi;cCnt++;}
     const rCls=c.roi!=null?(c.roi>30?'roi-g':c.roi>15?'roi-y':'roi-r'):'';
     const chCls={MAYOR:'ch-mayor',DETAL:'ch-detal',AMBOS:'ch-ambos'}[c.channel]||'';
+    const qty=p.qty||0;
     return`<tr class="fi" data-id="${p.id}">
       <td><span class="editable" data-f="name" data-id="${p.id}" contenteditable="true" spellcheck="false">${esc(p.name)}</span></td>
       <td><span class="editable" data-f="sku" data-id="${p.id}" contenteditable="true" spellcheck="false">${esc(p.sku)}</span></td>
@@ -967,11 +988,11 @@ function renderTable(){
       <td><span class="editable n" data-f="weight" data-id="${p.id}" contenteditable="true" spellcheck="false">${fmt(p.weight,3)??'0'}</span></td>
       <td><span class="editable n" data-f="cbm" data-id="${p.id}" contenteditable="true" spellcheck="false">${fmt(p.cbm,4)??'0'}</span></td>
       <td class="rc">${fmt(subCNY,2)??'0'} ¥</td>
-      <td class="${subUSD!==null?'rc':'dc'}">${subUSD!==null?fmt(subUSD,2)+' $':'—'}</td>
-      <td class="rc">${c.unitCostVES!=null?fmt(c.unitCostVES,2)+' Bs':'—'}</td>
+      <td class="${baseUSD!=null?'rc':'dc'}" title="Costo del producto en USD antes de logística">${baseUSD!=null?fmt(baseUSD,2)+' $':'—'}</td>
+      <td class="${c.unitCostVES!=null?'rc':'dc'}" title="Costo por unidad: producto + logística + IVA ${cfg.iva||16}%">${c.unitCostVES!=null?fmt(c.unitCostVES,2)+' Bs':'—'}</td>
+      <td class="${c.totalCostVES!=null?'rc ves-total':'dc'}" title="Inversión total: ${qty} ud × Costo/ud (incluye logística + IVA)">${c.totalCostVES!=null?fmt(c.totalCostVES,2)+' Bs':'—'}</td>
       <td class="rc">${c.priceWholesale!=null?fmt(c.priceWholesale,2)+' Bs':'—'}</td>
       <td class="rc">${c.priceRetail!=null?fmt(c.priceRetail,2)+' Bs':'—'}</td>
-      <td class="rc ${rCls}">${c.marginWholesalePct!=null?fmt(c.marginWholesalePct,1)+'%':'—'}</td>
       <td class="rc ${rCls}">${c.roi!=null?fmt(c.roi,1)+'%':'—'}</td>
       <td><span class="ch-badge ${chCls}">${c.channel||'—'}</span></td>
       <td><button class="del-btn" onclick="deleteProduct('${p.id}')" title="Eliminar"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button></td>
@@ -982,9 +1003,50 @@ function renderTable(){
   document.getElementById('total-cny').textContent=(fmt(tCNY,2)??'0')+' ¥';
   document.getElementById('total-usd').textContent=hasUSD?(fmt(tUSD,2)??'0')+' $':'—';
   document.getElementById('total-cost-ves').textContent=hasCVES?(fmt(tCVES,2)??'0')+' Bs':'—';
-  document.getElementById('total-margin').textContent=cCnt?(fmt(tMarg/cCnt,1)??'—')+'%':'—';
   document.getElementById('total-roi').textContent=cCnt?(fmt(tROI/cCnt,1)??'—')+'%':'—';
+  renderRatesBar();
   if(rId&&rF){const el=tbody.querySelector(`[data-id="${rId}"][data-f="${rF}"]`);if(el){el.focus();try{const r=document.createRange();r.selectNodeContents(el);r.collapse(false);window.getSelection().removeAllRanges();window.getSelection().addRange(r);}catch(_){}}}
+}
+
+/* ── Barra de tasas activas y estado de logística ── */
+function renderRatesBar(){
+  const bar=document.getElementById('rates-info-bar');
+  if(!bar)return;
+  bar.hidden=!products.length;
+  if(!products.length)return;
+  const{yuanPerUsd:yR,copPerUsd:cR,vesPerUsd:vR}=liveRates;
+  const cfg=loadCfg();
+  const rEl=document.getElementById('rates-bar-rates');
+  const lEl=document.getElementById('rates-bar-logistics');
+  if(!rEl||!lEl)return;
+  /* Tasas */
+  if(yR&&cR&&vR){
+    rEl.innerHTML=`⚡ <strong>Tasas activas:</strong> ¥${fmt(yR,4)}=US$1  ·  US$1=COP ${fmt(cR,0)}  ·  US$1=Bs ${fmt(vR,2)}`;
+    rEl.style.color='var(--green)';
+  }else{
+    const miss=[];if(!yR)miss.push('Yuan/USD');if(!cR)miss.push('COP/USD');if(!vR)miss.push('VES/USD');
+    rEl.textContent=`⚠️ Tasa${miss.length>1?'s':''} no cargada${miss.length>1?'s':''}: ${miss.join(', ')} — recarga la página`;
+    rEl.style.color='var(--gold)';
+  }
+  /* Logística */
+  const intl=(cfg.freight||0)+(cfg.insurance||0)+(cfg.portFees||0);
+  const col =(cfg.transportCOL||0)+(cfg.customsCOL||0)+(cfg.extraCOL||0);
+  const ven =(cfg.nationalizationVEN||0)+(cfg.transportVEN||0)+(cfg.operatingVEN||0);
+  const hasLog=!!(intl||col||ven||cfg.tariffVEN||cfg.bankCommission);
+  if(hasLog){
+    const parts=[];
+    if(intl)parts.push(`Marítimo $${fmt(intl,0)}`);
+    if(cfg.bankCommission)parts.push(`Banco ${cfg.bankCommission}%`);
+    if(col)parts.push(`Colombia COP ${fmt(col,0)}`);
+    if(cfg.tariffVEN)parts.push(`Arancel ${cfg.tariffVEN}%`);
+    if(ven)parts.push(`Venezuela Bs ${fmt(ven,0)}`);
+    parts.push(`IVA ${cfg.iva||16}%`);
+    lEl.innerHTML=`✅ <strong>Logística incluida:</strong> ${parts.join(' · ')}`;
+    lEl.style.color='var(--green)';
+  }else{
+    lEl.innerHTML=`⚠️ <strong>Sin costos de logística</strong> — Costo/Ud Bs = solo conversión del producto + IVA ${cfg.iva||16}%. Configura en <em>Configuración Financiera</em>`;
+    lEl.style.color='var(--gold)';
+  }
 }
 
 document.getElementById('prod-tbody').addEventListener('blur',e=>{
