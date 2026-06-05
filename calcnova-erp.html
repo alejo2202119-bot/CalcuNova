@@ -183,8 +183,8 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
     </div>
   </div>
   <div class="g4" style="margin-bottom:18px">
-    <div class="stat border-b"><div class="stat-label">Inversión Total</div><div class="stat-val tb" id="st-inv">Bs 0</div><div class="stat-sub" id="st-inv2">$0 USD</div></div>
-    <div class="stat border-g"><div class="stat-label">Utilidad Estimada</div><div class="stat-val tg" id="st-util">Bs 0</div><div class="stat-sub" id="st-util2">0% margen</div></div>
+    <div class="stat border-b"><div class="stat-label">Inversión Total USD</div><div class="stat-val tb" id="st-inv">$0</div><div class="stat-sub" id="st-inv2">Bs 0 equiv. BCV</div></div>
+    <div class="stat border-g"><div class="stat-label">Utilidad Estimada USD</div><div class="stat-val tg" id="st-util">$0</div><div class="stat-sub" id="st-util2">0% margen</div></div>
     <div class="stat border-o"><div class="stat-label">Productos / Unidades</div><div class="stat-val to" id="st-prods">0</div><div class="stat-sub" id="st-units">0 unidades</div></div>
     <div class="stat"><div class="stat-label">Mejor ROI</div><div class="stat-val" id="st-best" style="font-size:14px;color:var(--purple)">—</div><div class="stat-sub" id="st-best2">—</div></div>
   </div>
@@ -251,7 +251,7 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
     <div class="card">
       <div class="tbl-wrap">
         <table>
-          <thead><tr><th>Producto</th><th>Costo Unit. Bs</th><th>P. Mayor Bs</th><th>P. Detal Bs</th><th>Costo Total Bs</th><th>Ganancia</th><th>Margen %</th><th>Recomendación</th></tr></thead>
+          <thead><tr><th>Producto</th><th>Costo Unit. $</th><th>P. Mayor Bs</th><th>P. Detal Bs</th><th>Costo Total $</th><th>Ganancia $</th><th>Margen %</th><th>Recomendación</th></tr></thead>
           <tbody id="tbody-r"></tbody>
         </table>
       </div>
@@ -276,24 +276,29 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
       </div>
     </div>
     <div class="card">
-      <div class="card-header"><div class="card-title"><span class="icon icon-o">🇨🇴</span>Colombia (USD / COP)</div></div>
+      <div class="card-header"><div class="card-title"><span class="icon icon-o">🇨🇴</span>Colombia — todo en COP (pesos)</div></div>
+      <div style="font-size:11px;color:var(--dim);margin-bottom:10px">Fletes, descargas y operativos se pagan en peso colombiano</div>
       <div class="gform">
-        <div class="field"><label>Puerto</label><select class="inp" id="c-port"><option value="buenaventura">Buenaventura</option><option value="barranquilla">Barranquilla</option><option value="cartagena">Cartagena</option></select></div>
-        <div class="field"><label>Gastos Puerto COL ($)</label><input class="inp" id="c-portC" type="number" min="0" placeholder="0"></div>
-        <div class="field"><label>Aduana / Nacionalización ($)</label><input class="inp" id="c-custom" type="number" min="0" placeholder="0"></div>
-        <div class="field"><label>Transporte Colombia ($)</label><input class="inp" id="c-trCOL" type="number" min="0" placeholder="0"></div>
-        <div class="field"><label>Cúcuta ($)</label><input class="inp" id="c-cuc" type="number" min="0" placeholder="0"></div>
-        <div class="field"><label>Extras Colombia ($)</label><input class="inp" id="c-exCOL" type="number" min="0" placeholder="0"></div>
+        <div class="field"><label>Puerto de entrada</label><select class="inp" id="c-port"><option value="buenaventura">Buenaventura</option><option value="barranquilla">Barranquilla</option><option value="cartagena">Cartagena</option></select></div>
+        <div class="field"><label>Gastos Puerto descarga (COP)</label><input class="inp" id="c-portC" type="number" min="0" placeholder="0"></div>
+        <div class="field"><label>Aduana / Nacionalización COL (COP)</label><input class="inp" id="c-custom" type="number" min="0" placeholder="0"></div>
+        <div class="field"><label>Transporte interno Colombia (COP)</label><input class="inp" id="c-trCOL" type="number" min="0" placeholder="0"></div>
+        <div class="field"><label>Operativos Cúcuta (COP)</label><input class="inp" id="c-cuc" type="number" min="0" placeholder="0"></div>
+        <div class="field"><label>Flete Cúcuta → San Cristóbal (COP)</label><input class="inp" id="c-cucSC" type="number" min="0" placeholder="0"></div>
+        <div class="field"><label>Extras Colombia (COP)</label><input class="inp" id="c-exCOL" type="number" min="0" placeholder="0"></div>
       </div>
     </div>
     <div class="card">
-      <div class="card-header"><div class="card-title"><span class="icon icon-r">🇻🇪</span>Venezuela (Bs / VES)</div></div>
+      <div class="card-header"><div class="card-title"><span class="icon icon-r">🇻🇪</span>Venezuela</div></div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:12px;padding:8px;background:rgba(239,68,68,.05);border-radius:8px;border:1px solid rgba(239,68,68,.15)">
+        Solo la <strong style="color:var(--red)">aduana/nacionalización</strong> se ingresa en Bs (al tipo BCV). El resto en USD.
+      </div>
       <div class="gform">
-        <div class="field"><label>Transporte VEN / San Cristóbal (Bs)</label><input class="inp" id="c-trVEN" type="number" min="0" placeholder="0"></div>
-        <div class="field"><label>Nacionalización VEN (Bs)</label><input class="inp" id="c-nat" type="number" min="0" placeholder="0"></div>
-        <div class="field"><label>Costos Operativos (Bs)</label><input class="inp" id="c-op" type="number" min="0" placeholder="0"></div>
-        <div class="field"><label>Arancel / Tarifa (%)</label><input class="inp" id="c-tariff" type="number" min="0" max="100" placeholder="0"></div>
-        <div class="field"><label>Extras Venezuela (Bs)</label><input class="inp" id="c-exVEN" type="number" min="0" placeholder="0"></div>
+        <div class="field"><label>Aduana / Nacionalización VEN (Bs — BCV)</label><input class="inp" id="c-nat" type="number" min="0" placeholder="0"></div>
+        <div class="field"><label>Arancel sobre valor ($) (%)</label><input class="inp" id="c-tariff" type="number" min="0" max="100" placeholder="0"></div>
+        <div class="field"><label>Transporte a otros estados ($)</label><input class="inp" id="c-trVEN" type="number" min="0" placeholder="0"></div>
+        <div class="field"><label>Costos Operativos ($)</label><input class="inp" id="c-op" type="number" min="0" placeholder="0"></div>
+        <div class="field"><label>Extras Venezuela ($)</label><input class="inp" id="c-exVEN" type="number" min="0" placeholder="0"></div>
         <div class="field"><label>IVA (%)</label><input class="inp" id="c-iva" type="number" min="0" max="100" placeholder="16" value="16"></div>
       </div>
     </div>
@@ -396,8 +401,8 @@ const CTYPES = {'20ft':{cbm:33,wt:18000},'40ft':{cbm:67,wt:25000},'consolidada':
 function loadCfg(){
   const def={
     freight:0,insurance:0,portOrigin:0,bankCommission:0,
-    portCOL:0,customsCOL:0,transportCOL:0,cucuta:0,extraCOL:0,
-    transportVEN:0,nationalizationVEN:0,operatingVEN:0,tariffVEN:0,extraVEN:0,
+    portCOL:0,customsCOL:0,transportCOL:0,cucuta:0,cucutaSC:0,extraCOL:0,
+    nationalizationBs:0,tariffVEN:0,transportVEN:0,operatingVEN:0,extraVEN:0,
     iva:16,marginWholesale:0,marginRetail:0,
     distribution:'weight',port:'buenaventura',vesRate:'bcv',
     company:'',refresh:30
@@ -597,8 +602,12 @@ function clearProds(){
 function loadCostForm(){
   const sv=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v||0;};
   sv('c-freight',cfg.freight);sv('c-ins',cfg.insurance);sv('c-portO',cfg.portOrigin);sv('c-bank',cfg.bankCommission);
-  sv('c-portC',cfg.portCOL);sv('c-custom',cfg.customsCOL);sv('c-trCOL',cfg.transportCOL);sv('c-cuc',cfg.cucuta);sv('c-exCOL',cfg.extraCOL);
-  sv('c-trVEN',cfg.transportVEN);sv('c-nat',cfg.nationalizationVEN);sv('c-op',cfg.operatingVEN);sv('c-tariff',cfg.tariffVEN);sv('c-exVEN',cfg.extraVEN);
+  // Colombia — all COP
+  sv('c-portC',cfg.portCOL);sv('c-custom',cfg.customsCOL);sv('c-trCOL',cfg.transportCOL);
+  sv('c-cuc',cfg.cucuta);sv('c-cucSC',cfg.cucutaSC);sv('c-exCOL',cfg.extraCOL);
+  // Venezuela — nat in Bs, rest in USD
+  sv('c-nat',cfg.nationalizationBs);sv('c-tariff',cfg.tariffVEN);
+  sv('c-trVEN',cfg.transportVEN);sv('c-op',cfg.operatingVEN);sv('c-exVEN',cfg.extraVEN);
   sv('c-iva',cfg.iva||16);sv('c-mw',cfg.marginWholesale);sv('c-mr',cfg.marginRetail);
   const p=document.getElementById('c-port');if(p)p.value=cfg.port||'buenaventura';
   const d=document.getElementById('c-dist');if(d)d.value=cfg.distribution||'weight';
@@ -607,9 +616,14 @@ function loadCostForm(){
 
 function saveCosts(){
   const g=id=>parseFloat(document.getElementById(id)?.value)||0;
+  // China/Maritime (USD)
   cfg.freight=g('c-freight');cfg.insurance=g('c-ins');cfg.portOrigin=g('c-portO');cfg.bankCommission=g('c-bank');
-  cfg.portCOL=g('c-portC');cfg.customsCOL=g('c-custom');cfg.transportCOL=g('c-trCOL');cfg.cucuta=g('c-cuc');cfg.extraCOL=g('c-exCOL');
-  cfg.transportVEN=g('c-trVEN');cfg.nationalizationVEN=g('c-nat');cfg.operatingVEN=g('c-op');cfg.tariffVEN=g('c-tariff');cfg.extraVEN=g('c-exVEN');
+  // Colombia (COP)
+  cfg.portCOL=g('c-portC');cfg.customsCOL=g('c-custom');cfg.transportCOL=g('c-trCOL');
+  cfg.cucuta=g('c-cuc');cfg.cucutaSC=g('c-cucSC');cfg.extraCOL=g('c-exCOL');
+  // Venezuela (nationalizationBs in Bs, rest in USD)
+  cfg.nationalizationBs=g('c-nat');cfg.tariffVEN=g('c-tariff');
+  cfg.transportVEN=g('c-trVEN');cfg.operatingVEN=g('c-op');cfg.extraVEN=g('c-exVEN');
   cfg.iva=g('c-iva');cfg.marginWholesale=g('c-mw');cfg.marginRetail=g('c-mr');
   cfg.port=document.getElementById('c-port')?.value||'buenaventura';
   cfg.distribution=document.getElementById('c-dist')?.value||'weight';
@@ -618,14 +632,17 @@ function saveCosts(){
 }
 
 // ── CALC ───────────────────────────────────────────────────
+// Pipeline: CNY→USD | Maritime(USD) | Colombia(COP÷rate→USD) | Aduana VEN(Bs÷BCV→USD) | VEN interno(USD) | IVA
+// Dashboard shows USD. Selling prices in Bs (USD × BCV).
 function calcAll(){
   if(!prods.length){
     const rs=document.getElementById('res-section');if(rs)rs.style.display='none';
     return null;
   }
-  const yr=R.y||0,cr=R.c||0;
-  const vr=cfg.vesRate==='paralelo'?(R.p||R.v||0):(R.v||0);
-  if(yr<=0||cr<=0||vr<=0){
+  const yr=R.y||0;  // yuan per USD
+  const cr=R.c||0;  // COP per USD
+  const vr=R.v||0;  // Bs BCV per USD (for nationalization + selling price conversion)
+  if(yr<=0){
     const rs=document.getElementById('res-section');if(rs)rs.style.display='none';
     return null;
   }
@@ -639,47 +656,57 @@ function calcAll(){
     const pW=(p.qty||0)*(p.weight||0);
     const pCBM=(p.qty||0)*(p.cbm||0);
     const pVal=(p.qty||0)*(p.price||0)/yr;
-    let wR=0;
+    let wR=1/nP;
     if(cfg.distribution==='weight') wR=totW>0?pW/totW:1/nP;
     else if(cfg.distribution==='cbm') wR=totCBM>0?pCBM/totCBM:1/nP;
     else if(cfg.distribution==='value') wR=totVal>0?pVal/totVal:1/nP;
-    else wR=1/nP;
 
-    // Stage 1: CNY→USD
+    // Stage 1: CNY → USD
     const prodCNY=(p.qty||0)*(p.price||0);
     const prodUSD=prodCNY/yr;
     const bankFee=prodUSD*(cfg.bankCommission||0)/100;
-    const sub1=prodUSD+bankFee;
+    const s1=prodUSD+bankFee;
 
-    // Stage 2: Maritime
-    const s2=sub1+(cfg.freight||0)*wR+(cfg.insurance||0)*wR+(cfg.portOrigin||0)*wR;
+    // Stage 2: Maritime costs (USD)
+    const s2=s1+(cfg.freight||0)*wR+(cfg.insurance||0)*wR+(cfg.portOrigin||0)*wR;
 
-    // Stage 3: COL
-    const baseCOP=s2*cr;
-    const totalCOP=baseCOP+(cfg.portCOL||0)*wR+(cfg.customsCOL||0)*wR+(cfg.transportCOL||0)*wR+(cfg.cucuta||0)*wR+(cfg.extraCOL||0)*wR;
+    // Stage 3: Colombia costs — all COP → convert to USD
+    let colUSD=0;
+    if(cr>0){
+      const colCOP=((cfg.portCOL||0)+(cfg.customsCOL||0)+(cfg.transportCOL||0)+
+                    (cfg.cucuta||0)+(cfg.cucutaSC||0)+(cfg.extraCOL||0))*wR;
+      colUSD=colCOP/cr;
+    }
+    const s3=s2+colUSD;
 
-    // Stage 4: VES + tariff
-    const vPerCOP=vr/cr;
-    const baseVES=totalCOP*vPerCOP;
-    const tariffVES=baseVES*(cfg.tariffVEN||0)/100;
+    // Stage 4: Venezuelan customs/nationalization (Bs → USD via BCV) + tariff % on USD value
+    let natUSD=0;
+    if(vr>0) natUSD=((cfg.nationalizationBs||0)*wR)/vr;
+    const tariffUSD=s3*(cfg.tariffVEN||0)/100;
+    const s4=s3+natUSD+tariffUSD;
 
-    // Stage 5: VES costs
-    const preIVA=baseVES+tariffVES+(cfg.transportVEN||0)*wR+(cfg.nationalizationVEN||0)*wR+(cfg.operatingVEN||0)*wR+(cfg.extraVEN||0)*wR;
+    // Stage 5: Venezuela internal costs (USD)
+    const s5=s4+((cfg.transportVEN||0)+(cfg.operatingVEN||0)+(cfg.extraVEN||0))*wR;
 
-    // Stage 6: IVA
-    const totalVES=preIVA*(1+(cfg.iva||16)/100);
-    const unitVES=totalVES/qty;
-    const pMayor=unitVES*(1+(cfg.marginWholesale||0)/100);
-    const pDetal=unitVES*(1+(cfg.marginRetail||0)/100);
-    const ganancia=(cfg.marginRetail||0)>0?(pDetal*qty-totalVES):0;
-    const margen=totalVES>0?(ganancia/totalVES*100):0;
-    const roi=totalVES>0?(ganancia/totalVES*100):0;
+    // Stage 6: IVA on total USD
+    const totalUSD=s5*(1+(cfg.iva||16)/100);
+    const unitUSD=totalUSD/qty;
+
+    // Selling prices in Bs (unitUSD × BCV rate × margin)
+    const unitBs=vr>0?unitUSD*vr:0;
+    const pMayorBs=unitBs*(1+(cfg.marginWholesale||0)/100);
+    const pDetalBs=unitBs*(1+(cfg.marginRetail||0)/100);
+
+    // Profit in USD
+    const pDetalUSD=unitUSD*(1+(cfg.marginRetail||0)/100);
+    const gananciaUSD=(cfg.marginRetail||0)>0?(pDetalUSD*qty-totalUSD):0;
+    const margen=totalUSD>0?(gananciaUSD/totalUSD*100):0;
     let rec='MARGEN BAJO';
-    if(roi>50)rec='ALTA RENTABILIDAD';
+    if(margen>50)rec='ALTA RENTABILIDAD';
     else if(margen>30)rec='IDEAL DETAL';
     else if(margen>10)rec='IDEAL MAYOR';
 
-    return {p,qty,totalVES,unitVES,pMayor,pDetal,ganancia,margen,roi,rec,prodUSD,s2};
+    return {p,qty,totalUSD,unitUSD,unitBs,pMayorBs,pDetalBs,gananciaUSD,margen,rec,prodUSD,s2};
   });
 
   renderResults(results);
@@ -693,13 +720,15 @@ function renderResults(rs){
   sec.style.display='block';
   tb.innerHTML=rs.map(r=>{
     const rClass={'ALTA':'b-o','DETAL':'b-b','MAYOR':'b-g','BAJO':'b-r'}[Object.keys({'ALTA':'','DETAL':'','MAYOR':'','BAJO':''}).find(k=>r.rec.includes(k))||'BAJO'];
+    const hasMW=(cfg.marginWholesale||0)>0;
+    const hasMR=(cfg.marginRetail||0)>0;
     return `<tr>
       <td><strong>${esc(r.p.name||'Sin nombre')}</strong><div style="font-size:11px;color:var(--muted)">${r.p.cat} · ${r.qty} uds</div></td>
-      <td class="tn">Bs ${fmtN(r.unitVES)}</td>
-      <td class="tn tg">${(cfg.marginWholesale||0)>0?'Bs '+fmtN(r.pMayor):'—'}</td>
-      <td class="tn tb">${(cfg.marginRetail||0)>0?'Bs '+fmtN(r.pDetal):'—'}</td>
-      <td class="tn">Bs ${fmtN(r.totalVES)}</td>
-      <td class="tn ${r.ganancia>0?'tg':'tr'}">${r.ganancia>0?'Bs '+fmtN(r.ganancia):'—'}</td>
+      <td class="tn"><span style="font-weight:700">$${fmt2(r.unitUSD)}</span><div style="font-size:11px;color:var(--dim)">Bs ${fmtN(r.unitBs)}</div></td>
+      <td class="tn tg">${hasMW?'Bs '+fmtN(r.pMayorBs):'—'}</td>
+      <td class="tn tb">${hasMR?'Bs '+fmtN(r.pDetalBs):'—'}</td>
+      <td class="tn">$${fmt2(r.totalUSD)}</td>
+      <td class="tn ${r.gananciaUSD>0?'tg':'tr'}">${r.gananciaUSD>0?'$'+fmt2(r.gananciaUSD):'—'}</td>
       <td class="tn ${r.margen>15?'tg':r.margen>0?'to':'tr'}">${fmt1(r.margen)}%</td>
       <td><span class="badge ${rClass}">${r.rec}</span></td>
     </tr>`;
@@ -710,8 +739,8 @@ function renderResults(rs){
 function renderDash(){
   const rs=calcAll();
   if(!rs||!rs.length){
-    setText('st-inv','Bs 0');setText('st-inv2','$0 USD');
-    setText('st-util','Bs 0');setText('st-util2','0%');
+    setText('st-inv','$0');setText('st-inv2','Bs 0 equiv. BCV');
+    setText('st-util','$0');setText('st-util2','0%');
     setText('st-prods','0');setText('st-units','0 unidades');
     setText('st-best','—');setText('st-best2','—');
     const dl=document.getElementById('dash-list');
@@ -719,37 +748,39 @@ function renderDash(){
     if(mainChart){mainChart.destroy();mainChart=null;}
     return;
   }
-  const totInv=rs.reduce((s,r)=>s+r.totalVES,0);
-  const totUtil=rs.reduce((s,r)=>s+(r.ganancia>0?r.ganancia:0),0);
+  const totInvUSD=rs.reduce((s,r)=>s+r.totalUSD,0);
+  const totUtilUSD=rs.reduce((s,r)=>s+(r.gananciaUSD>0?r.gananciaUSD:0),0);
   const totUnits=rs.reduce((s,r)=>s+r.qty,0);
-  const totUSD=rs.reduce((s,r)=>s+r.s2,0);
-  const best=rs.slice().sort((a,b)=>b.roi-a.roi)[0];
-  const margPct=totInv>0?(totUtil/totInv*100):0;
+  const vr=R.v||0;
+  const best=rs.slice().sort((a,b)=>b.margen-a.margen)[0];
+  const margPct=totInvUSD>0?(totUtilUSD/totInvUSD*100):0;
 
-  setText('st-inv','Bs '+fmtN(totInv));setText('st-inv2','$'+fmt2(totUSD)+' USD');
-  setText('st-util','Bs '+fmtN(totUtil));setText('st-util2',fmt1(margPct)+'% margen');
+  setText('st-inv','$'+fmt2(totInvUSD));
+  setText('st-inv2',vr>0?'Bs '+fmtN(totInvUSD*vr)+' equiv. BCV':'Bs — (sin tasa BCV)');
+  setText('st-util','$'+fmt2(totUtilUSD));
+  setText('st-util2',fmt1(margPct)+'% margen');
   setText('st-prods',String(rs.length));setText('st-units',fmtN(totUnits)+' unidades');
-  if(best){setText('st-best',best.p.name||'Sin nombre');setText('st-best2','ROI: '+fmt1(best.roi)+'%');}
+  if(best){setText('st-best',best.p.name||'Sin nombre');setText('st-best2','Margen: '+fmt1(best.margen)+'%');}
 
-  // Product list
+  // Product list — show USD cost, and Bs unit price
   const dl=document.getElementById('dash-list');
   if(dl) dl.innerHTML=rs.map(r=>`
     <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)">
-      <div><div style="font-weight:600;font-size:13px">${esc(r.p.name||'—')}</div><div style="font-size:11px;color:var(--dim)">${r.qty} uds · Bs ${fmtN(r.unitVES)}/ud</div></div>
-      <div style="text-align:right"><div style="font-weight:600;color:var(--green);font-size:13px">Bs ${fmtN(r.totalVES)}</div><div style="font-size:11px;color:var(--dim)">${fmt1(r.margen)}% margen</div></div>
+      <div><div style="font-weight:600;font-size:13px">${esc(r.p.name||'—')}</div><div style="font-size:11px;color:var(--dim)">${r.qty} uds · $${fmt2(r.unitUSD)}/ud${r.unitBs>0?' · Bs '+fmtN(r.unitBs):''}</div></div>
+      <div style="text-align:right"><div style="font-weight:700;color:var(--green);font-size:13px">$${fmt2(r.totalUSD)}</div><div style="font-size:11px;color:var(--dim)">${fmt1(r.margen)}% margen</div></div>
     </div>`).join('');
 
-  // Chart
+  // Chart — distribute by USD cost
   const canvas=document.getElementById('chart-main');
   if(canvas){
     if(mainChart){mainChart.destroy();mainChart=null;}
     const colors=['#10B981','#3B82F6','#F59E0B','#8B5CF6','#EF4444','#06B6D4','#84CC16','#F97316'];
     mainChart=new Chart(canvas,{
       type:'doughnut',
-      data:{labels:rs.map(r=>r.p.name||'—'),datasets:[{data:rs.map(r=>r.totalVES),backgroundColor:colors.slice(0,rs.length),borderWidth:0,hoverOffset:6}]},
+      data:{labels:rs.map(r=>r.p.name||'—'),datasets:[{data:rs.map(r=>r.totalUSD),backgroundColor:colors.slice(0,rs.length),borderWidth:0,hoverOffset:6}]},
       options:{responsive:true,maintainAspectRatio:false,
         plugins:{legend:{position:'bottom',labels:{color:'#94A3B8',font:{size:11},padding:10,boxWidth:10}},
-        tooltip:{callbacks:{label:c=>' Bs '+fmtN(c.parsed)}}}}
+        tooltip:{callbacks:{label:c=>' $'+fmt2(c.parsed)}}}}
     });
   }
   updateDashR();
@@ -835,8 +866,8 @@ function exportPDF(){
     </style></head><body>
       <h1>CalcNova Import Calculator</h1>
       <p style="color:#64748b">Exportado: ${new Date().toLocaleString('es')} · Tasas: ¥${fmt2(R.y||0)} · BCV Bs${fmt2(R.v||0)}</p>
-      <table><tr><th>Producto</th><th>Cant.</th><th>Costo Unit. Bs</th><th>P.Mayor Bs</th><th>P.Detal Bs</th><th>Total Bs</th><th>Margen%</th><th>Rec.</th></tr>
-        ${rs.map(r=>`<tr><td><b>${esc(r.p.name||'—')}</b></td><td>${r.qty}</td><td>${fmtN(r.unitVES)}</td><td>${cfg.marginWholesale>0?fmtN(r.pMayor):'—'}</td><td>${cfg.marginRetail>0?fmtN(r.pDetal):'—'}</td><td>${fmtN(r.totalVES)}</td><td>${fmt1(r.margen)}%</td><td>${r.rec}</td></tr>`).join('')}
+      <table><tr><th>Producto</th><th>Cant.</th><th>Costo Unit. $</th><th>P.Mayor Bs</th><th>P.Detal Bs</th><th>Total $</th><th>Margen%</th><th>Rec.</th></tr>
+        ${rs.map(r=>`<tr><td><b>${esc(r.p.name||'—')}</b></td><td>${r.qty}</td><td>$${fmt2(r.unitUSD)}</td><td>${cfg.marginWholesale>0?'Bs '+fmtN(r.pMayorBs):'—'}</td><td>${cfg.marginRetail>0?'Bs '+fmtN(r.pDetalBs):'—'}</td><td>$${fmt2(r.totalUSD)}</td><td>${fmt1(r.margen)}%</td><td>${r.rec}</td></tr>`).join('')}
       </table>
     </body></html>`);
     win.document.close();win.print();
@@ -845,8 +876,8 @@ function exportPDF(){
 function exportCSV(){
   try{
     const rs=calcAll();if(!rs||!rs.length){toast('Sin datos','err');return;}
-    let csv='Producto,Categoría,Cantidad,Precio CNY,Precio USD,Peso KG,CBM,Costo Unit Bs,P Mayor Bs,P Detal Bs,Costo Total Bs,Ganancia Bs,Margen %,Recomendación\r\n';
-    rs.forEach(r=>{csv+=[`"${r.p.name||''}"`,r.p.cat,r.qty,r.p.price,fmt2(r.prodUSD),r.p.weight,r.p.cbm,fmtN(r.unitVES),fmtN(r.pMayor),fmtN(r.pDetal),fmtN(r.totalVES),fmtN(r.ganancia),fmt1(r.margen),`"${r.rec}"`].join(',')+'\r\n';});
+    let csv='Producto,Categoría,Cantidad,Precio CNY,Precio USD,Peso KG,CBM,Costo Unit USD,Costo Unit Bs,P Mayor Bs,P Detal Bs,Costo Total USD,Ganancia USD,Margen %,Recomendación\r\n';
+    rs.forEach(r=>{csv+=[`"${r.p.name||''}"`,r.p.cat,r.qty,r.p.price,fmt2(r.prodUSD),r.p.weight,r.p.cbm,fmt2(r.unitUSD),fmtN(r.unitBs),fmtN(r.pMayorBs),fmtN(r.pDetalBs),fmt2(r.totalUSD),fmt2(r.gananciaUSD),fmt1(r.margen),`"${r.rec}"`].join(',')+'\r\n';});
     dl(csv,'calcnova-export.csv','text/csv;charset=utf-8;');
     toast('Exportado como CSV');
   }catch(e){toast('Error exportar','err');}
