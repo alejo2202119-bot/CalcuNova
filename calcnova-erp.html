@@ -1,1609 +1,886 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>CalcNova ERP</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js" onerror="var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';document.head.appendChild(s)"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <style>
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    :root{--bg:#0F172A;--surface:rgba(30,41,59,.7);--solid:#1E293B;--border:rgba(148,163,184,.12);--green:#10B981;--gdim:rgba(16,185,129,.15);--gold:#F59E0B;--ydim:rgba(245,158,11,.15);--red:#EF4444;--rdim:rgba(239,68,68,.12);--muted:#64748B;--text:#E2E8F0;--dim:#94A3B8;--r:16px}
-    body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;padding-bottom:60px}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CalcNova Import Calculator</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0F172A;--surface:rgba(30,41,59,.8);--border:rgba(148,163,184,.12);
+  --green:#10B981;--gold:#F59E0B;--red:#EF4444;--blue:#3B82F6;--purple:#8B5CF6;
+  --text:#E2E8F0;--dim:#94A3B8;--muted:#475569;
+  --radius:12px;--radius-lg:16px;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,-apple-system,sans-serif;font-size:14px;min-height:100vh;line-height:1.5}
+button{cursor:pointer;border:none;outline:none;font-family:inherit}
+input,select{font-family:inherit;outline:none}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--muted);border-radius:99px}
 
-    /* ── Header ── */
-    .top-bar{background:rgba(15,23,42,.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
-    header{max-width:1100px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-    .logo{display:flex;align-items:center;gap:10px}
-    .logo-icon{width:38px;height:38px;background:linear-gradient(135deg,var(--green),#059669);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
-    .logo-text{font-size:20px;font-weight:700;letter-spacing:-.5px}.logo-text span{color:var(--green)}
-    .logo-sub{font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase}
-    .header-right{display:flex;align-items:center;gap:16px}
-    .header-time{text-align:right;font-size:11px;color:var(--dim);line-height:1.6}
-    .header-time strong{display:block;font-size:15px;font-weight:600;color:var(--text)}
+/* LAYOUT */
+.app{display:flex;flex-direction:column;min-height:100vh}
+.header{background:rgba(15,23,42,.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.header-logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--green),var(--blue));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.header-nav{display:flex;gap:4px}
+.nav-btn{padding:6px 14px;border-radius:8px;font-size:13px;font-weight:500;color:var(--dim);background:transparent;transition:all .15s}
+.nav-btn:hover,.nav-btn.active{background:rgba(148,163,184,.1);color:var(--text)}
+.nav-btn.active{color:var(--green)}
+.header-rates{display:flex;gap:10px;align-items:center}
+.rate-chip{display:flex;align-items:center;gap:5px;padding:4px 10px;background:rgba(30,41,59,.6);border:1px solid var(--border);border-radius:20px;font-size:12px;white-space:nowrap}
+.rate-dot{width:6px;height:6px;border-radius:50%;background:var(--muted);flex-shrink:0}
+.rate-dot.live{background:var(--green);box-shadow:0 0 6px var(--green)}
+.rate-dot.err{background:var(--red)}
+main{flex:1;padding:24px;max-width:1400px;margin:0 auto;width:100%}
+.section{display:none}
+.section.active{display:block}
 
-    /* ── Nav tabs ── */
-    .main-nav{max-width:1100px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:4px;border-bottom:1px solid var(--border)}
-    .nav-tab{display:flex;align-items:center;gap:6px;padding:12px 16px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;transition:color .15s,border-color .15s;white-space:nowrap}
-    .nav-tab:hover{color:var(--text)}
-    .nav-tab.active{color:var(--green);border-bottom-color:var(--green)}
-    .hamburger{display:none;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--dim);padding:8px;cursor:pointer;margin-left:auto}
-    .mob-nav{display:none;flex-direction:column;background:var(--solid);border-bottom:1px solid var(--border)}
-    .mob-nav.open{display:flex}
-    .mob-nav .nav-tab{border-bottom:1px solid var(--border);border-right:none;padding:14px 20px}
-    @media(max-width:640px){.main-nav .nav-tab{display:none}.hamburger{display:flex}}
+/* CARDS */
+.card{background:var(--surface);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.card-title{font-weight:600;font-size:15px;display:flex;align-items:center;gap:8px}
+.icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px}
+.icon-g{background:rgba(16,185,129,.15);color:var(--green)}
+.icon-b{background:rgba(59,130,246,.15);color:var(--blue)}
+.icon-o{background:rgba(245,158,11,.15);color:var(--gold)}
+.icon-r{background:rgba(239,68,68,.15);color:var(--red)}
+.icon-p{background:rgba(139,92,246,.15);color:var(--purple)}
 
-    /* ── Page wrapper ── */
-    .page{max-width:1100px;margin:0 auto;padding:28px 20px}
+/* GRID */
+.g2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.gform{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:12px}
 
-    /* ── Tab transitions ── */
-    .tab-content{display:none}
-    .tab-content.active{display:block;animation:tabIn .25s ease}
-    @keyframes tabIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+/* STAT */
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.stat-label{font-size:11px;color:var(--dim);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.stat-val{font-size:22px;font-weight:700;line-height:1;margin-bottom:4px}
+.stat-sub{font-size:12px;color:var(--dim)}
+.border-g{border-color:rgba(16,185,129,.25)}
+.border-b{border-color:rgba(59,130,246,.25)}
+.border-o{border-color:rgba(245,158,11,.25)}
 
-    /* ── Section title ── */
-    .st{font-size:13px;font-weight:600;color:var(--dim);letter-spacing:1.8px;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:16px}
-    .st::before{content:'';display:inline-block;width:3px;height:14px;background:var(--green);border-radius:2px}
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500;transition:all .15s;white-space:nowrap}
+.btn-p{background:var(--green);color:#0F172A}
+.btn-p:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.btn-s{background:rgba(148,163,184,.1);color:var(--text);border:1px solid var(--border)}
+.btn-s:hover{background:rgba(148,163,184,.18)}
+.btn-d{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2)}
+.btn-d:hover{background:rgba(239,68,68,.2)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-ico{width:30px;height:30px;padding:0;justify-content:center;border-radius:7px;font-size:16px;line-height:1}
 
-    /* ── Glass card ── */
-    .glass{background:var(--surface);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:var(--r)}
+/* INPUTS */
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:12px;color:var(--dim);font-weight:500}
+.inp{width:100%;padding:8px 11px;background:rgba(15,23,42,.6);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;transition:border-color .15s}
+.inp:focus{border-color:var(--green)}
+.inp::placeholder{color:var(--muted)}
+select.inp option{background:#1e293b}
 
-    /* ── Rates ── */
-    .rates-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
-    .rate-card{padding:20px;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s}
-    .rate-card:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,0,0,.35)}
-    .rate-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--green),transparent);opacity:.6}
-    .rate-card.gold-accent::before{background:linear-gradient(90deg,var(--gold),transparent)}
-    .card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
-    .card-label{font-size:11px;font-weight:600;color:var(--dim);letter-spacing:1px;text-transform:uppercase}
-    .card-source{font-size:10px;color:var(--muted);margin-top:2px}
-    .refresh-btn{width:28px;height:28px;background:rgba(148,163,184,.08);border:1px solid var(--border);border-radius:7px;color:var(--dim);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s;flex-shrink:0}
-    .refresh-btn:hover{background:var(--gdim);color:var(--green);border-color:rgba(16,185,129,.3)}
-    .refresh-btn.spinning svg{animation:spin .8s linear infinite}
-    @keyframes spin{to{transform:rotate(360deg)}}
-    .rate-value{font-size:24px;font-weight:700;letter-spacing:-.5px;color:var(--text);line-height:1.1;min-height:30px}
-    .rate-value.loading-pulse{background:linear-gradient(90deg,var(--solid) 25%,rgba(100,116,139,.2) 50%,var(--solid) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:6px;width:70%;height:30px;color:transparent}
-    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-    .rate-sub{font-size:12px;color:var(--dim);margin-top:4px}
-    .status-row{display:flex;align-items:center;gap:6px;margin-top:12px}
-    .status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-    .status-dot.ok{background:var(--green);box-shadow:0 0 6px var(--green)}
-    .status-dot.err{background:var(--red)}
-    .status-dot.loading{background:var(--gold);animation:blink 1s ease infinite}
-    @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-    .status-text{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .rate-card.has-error{border-color:rgba(239,68,68,.2)}
+/* TABLE */
+.tbl-wrap{overflow-x:auto;border-radius:var(--radius)}
+table{width:100%;border-collapse:collapse;min-width:720px}
+thead tr{border-bottom:1px solid var(--border)}
+th{padding:9px 11px;text-align:left;font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+tbody tr{border-bottom:1px solid rgba(148,163,184,.05);transition:background .1s}
+tbody tr:hover{background:rgba(148,163,184,.04)}
+td{padding:9px 11px;font-size:13px;vertical-align:middle}
+.tdi{background:transparent;border:1px solid transparent;border-radius:6px;padding:5px 7px;color:var(--text);font-size:13px;width:100%;transition:border-color .15s;font-family:inherit}
+.tdi:focus{border-color:var(--green);background:rgba(15,23,42,.6)}
+.tn{font-variant-numeric:tabular-nums;font-weight:500}
+.tg{color:var(--green);font-weight:600}
+.to{color:var(--gold)}
+.tr{color:var(--red)}
+.tb{color:var(--blue)}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700}
+.b-g{background:rgba(16,185,129,.15);color:var(--green)}
+.b-o{background:rgba(245,158,11,.15);color:var(--gold)}
+.b-b{background:rgba(59,130,246,.15);color:var(--blue)}
+.b-r{background:rgba(239,68,68,.15);color:var(--red)}
+.b-p{background:rgba(139,92,246,.15);color:var(--purple)}
 
-    /* ── KPI Dashboard ── */
-    .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-top:24px}
-    .kpi-card{padding:20px;position:relative;overflow:hidden}
-    .kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--green),transparent);opacity:.5}
-    .kpi-icon{font-size:20px;margin-bottom:8px}
-    .kpi-lbl{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px}
-    .kpi-val{font-size:20px;font-weight:700;color:var(--text);letter-spacing:-.5px}
-    .kpi-sub{font-size:11px;color:var(--dim);margin-top:2px}
+/* TABS */
+.tabs{display:flex;gap:2px;background:rgba(15,23,42,.6);border-radius:10px;padding:3px;margin-bottom:16px;border:1px solid var(--border)}
+.tab{flex:1;padding:7px;border-radius:8px;font-size:13px;font-weight:500;color:var(--dim);background:transparent;text-align:center;cursor:pointer;border:none;transition:all .15s}
+.tab.active{background:rgba(30,41,59,.9);color:var(--text)}
 
-    /* ── Logistics Route ── */
-    .route-wrap{overflow-x:auto;margin-top:24px}
-    .route-diagram{display:flex;align-items:center;min-width:700px;padding:24px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);backdrop-filter:blur(16px)}
-    .route-node{flex-shrink:0;text-align:center;min-width:110px}
-    .route-flag{font-size:28px;margin-bottom:6px}
-    .route-name{font-size:12px;font-weight:700;color:var(--text)}
-    .route-cost{font-size:11px;color:var(--green);margin-top:4px;font-weight:600}
-    .route-arrow{flex:1;display:flex;flex-direction:column;align-items:center;padding:0 8px;min-width:60px}
-    .arrow-line{width:100%;height:2px;background:linear-gradient(90deg,var(--green),var(--gold));border-radius:1px;position:relative}
-    .arrow-line::after{content:'▶';position:absolute;right:-6px;top:-8px;font-size:11px;color:var(--gold)}
-    .arrow-label{font-size:10px;color:var(--muted);margin-top:5px;white-space:nowrap}
+/* MISC */
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.sec-title{font-size:18px;font-weight:700}
+.sec-sub{font-size:13px;color:var(--dim);margin-top:2px}
+.fsec-title{font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.divider{height:1px;background:var(--border);margin:16px 0}
+.empty{padding:40px 20px;text-align:center;color:var(--muted)}
+.empty-ico{font-size:32px;margin-bottom:10px}
+.empty-ttl{font-size:14px;font-weight:600;color:var(--dim);margin-bottom:4px}
+.empty-sub{font-size:12px}
+.chart-wrap{position:relative;height:220px}
 
-    /* ── Config section ── */
-    .config-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:20px 28px;padding:24px}
-    .cfg-group-title{font-size:10px;font-weight:700;color:var(--dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
-    .inp-row{margin-bottom:10px}
-    .inp-lbl{font-size:11px;color:var(--muted);display:block;margin-bottom:4px}
-    .inp-wrap{display:flex}
-    .inp-unit{background:rgba(100,116,139,.1);border:1px solid var(--border);border-right:none;border-radius:7px 0 0 7px;padding:7px 9px;font-size:11px;color:var(--muted);white-space:nowrap}
-    .cfg-input{flex:1;min-width:0;background:rgba(15,23,42,.5);border:1px solid var(--border);border-radius:0 7px 7px 0;color:var(--text);font-size:13px;padding:7px 9px;outline:none;transition:border-color .15s}
-    .cfg-input:focus{border-color:var(--green)}
+/* CONTAINER */
+.cbar-wrap{height:16px;background:rgba(148,163,184,.1);border-radius:99px;overflow:hidden;margin:6px 0}
+.cbar-fill{height:100%;border-radius:99px;transition:width .4s;background:linear-gradient(90deg,var(--green),var(--blue))}
+.cbar-fill.warn{background:linear-gradient(90deg,var(--gold),var(--red))}
 
-    /* ── Import ── */
-    .drop-zone{border:2px dashed rgba(148,163,184,.2);border-radius:var(--r);padding:36px 24px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s,box-shadow .2s;background:var(--surface);backdrop-filter:blur(16px)}
-    .drop-zone:hover{border-color:rgba(16,185,129,.4);background:rgba(16,185,129,.03)}
-    .drop-zone.drag-over{border-color:var(--green);background:rgba(16,185,129,.06);box-shadow:0 0 0 3px rgba(16,185,129,.15)}
-    .drop-icon{font-size:32px;display:block;margin-bottom:8px}
-    .drop-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px}
-    .drop-sub{font-size:12px;color:var(--dim);margin-bottom:16px}
-    .btn-import{display:inline-flex;align-items:center;gap:7px;background:var(--green);color:#0F172A;font-size:13px;font-weight:700;padding:9px 20px;border:none;border-radius:8px;cursor:pointer;transition:opacity .15s}
-    .btn-import:hover{opacity:.87}
-    .import-status{margin-top:10px;font-size:12px;font-weight:500;padding:8px 14px;border-radius:8px;display:inline-block}
-    .import-status.ok{background:var(--gdim);color:var(--green)}
-    .import-status.err{background:var(--rdim);color:var(--red)}
-    .import-status.loading,.import-status.warn{background:var(--ydim);color:var(--gold)}
+/* MANUAL RATES */
+#manual-rates{background:rgba(245,158,11,.05);border:1px solid rgba(245,158,11,.25);border-radius:var(--radius);padding:14px;margin-bottom:14px;display:none}
 
-    /* ── Table ── */
-    .products-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
-    .section-left{display:flex;align-items:center;gap:10px}
-    .count-badge{background:var(--gdim);color:var(--green);font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px}
-    .btn-clear{display:inline-flex;align-items:center;gap:6px;background:transparent;color:var(--red);border:1px solid rgba(239,68,68,.25);font-size:12px;font-weight:600;padding:6px 14px;border-radius:8px;cursor:pointer;transition:background .15s}
-    .btn-clear:hover{background:var(--rdim)}
-    .table-scroll{overflow-x:auto}
-    table{width:100%;border-collapse:collapse;font-size:12px;min-width:1320px;white-space:nowrap}
-    thead th{background:rgba(15,23,42,.5);padding:10px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:1.2px;text-transform:uppercase;border-bottom:1px solid var(--border)}
-    thead th.r{text-align:right}
-    tbody tr{border-bottom:1px solid rgba(148,163,184,.06);transition:background .1s}
-    tbody tr:last-child{border-bottom:none}
-    tbody tr:hover{background:rgba(255,255,255,.02)}
-    tbody td{padding:8px 12px;vertical-align:middle}
-    .rc{text-align:right;font-variant-numeric:tabular-nums}
-    .dc{text-align:right;color:var(--muted)}
-    .editable{display:inline-block;padding:3px 6px;border-radius:5px;border:1px solid transparent;cursor:text;outline:none;color:var(--text);transition:border-color .15s,background .15s;min-width:30px;max-width:180px}
-    .editable:hover{border-color:var(--border);background:rgba(148,163,184,.05)}
-    .editable:focus{border-color:var(--green);background:rgba(16,185,129,.07)}
-    .editable.n{text-align:right;font-variant-numeric:tabular-nums}
-    .del-btn{width:26px;height:26px;border:1px solid var(--border);border-radius:7px;cursor:pointer;background:transparent;color:var(--muted);display:inline-flex;align-items:center;justify-content:center;transition:background .15s,color .15s}
-    .del-btn:hover{background:var(--rdim);color:var(--red);border-color:rgba(239,68,68,.3)}
-    tfoot td{font-weight:700;color:var(--green);background:rgba(16,185,129,.05);border-top:1px solid rgba(16,185,129,.15);padding:10px 12px}
-    .empty-state{padding:48px 24px;text-align:center}
-    .empty-icon{font-size:38px;margin-bottom:10px}
-    .empty-title{font-size:14px;font-weight:600;color:var(--dim)}
-    .empty-sub{font-size:12px;color:var(--muted);margin-top:4px}
-    @keyframes fadeInUp{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
-    .fi{animation:fadeInUp .18s ease both}
-    .roi-g{color:var(--green);font-weight:700}
-    .roi-y{color:var(--gold);font-weight:700}
-    .roi-r{color:var(--red);font-weight:700}
-    /* Celda resaltada: inversión total Bs (la más importante de la tabla) */
-    .ves-total{color:var(--green);font-weight:700}
-    /* Barra de tasas y logística encima de la tabla */
-    .rates-bar{display:flex;align-items:center;flex-wrap:wrap;gap:6px 20px;padding:9px 16px;border-bottom:1px solid var(--border);font-size:11.5px;line-height:1.5}
-    .rates-bar strong{font-weight:700}
-    .ch-badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.5px}
-    .ch-mayor{background:rgba(16,185,129,.15);color:var(--green)}
-    .ch-detal{background:rgba(245,158,11,.15);color:var(--gold)}
-    .ch-ambos{background:rgba(148,163,184,.1);color:var(--dim)}
+/* TOAST */
+#toast{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.ti{padding:11px 16px;background:rgba(30,41,59,.95);border:1px solid var(--border);border-radius:10px;backdrop-filter:blur(16px);font-size:13px;max-width:280px;animation:sI .2s ease;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,.4)}
+.ti-ok{border-color:rgba(16,185,129,.4);color:var(--green)}
+.ti-err{border-color:rgba(239,68,68,.4);color:var(--red)}
+.ti-w{border-color:rgba(245,158,11,.4);color:var(--gold)}
+@keyframes sI{from{transform:translateX(16px);opacity:0}to{transform:translateX(0);opacity:1}}
 
-    /* ── Analysis ── */
-    .analysis-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}
-    .analysis-card{padding:20px}
-    .analysis-title{font-size:11px;font-weight:700;color:var(--dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px}
-    .analysis-title::before{content:'';display:inline-block;width:3px;height:12px;background:var(--green);border-radius:2px}
-    .chart-wrap{position:relative;height:200px}
-    .alerts-list{display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto}
-    .alert-item{display:flex;align-items:flex-start;gap:10px;background:rgba(148,163,184,.05);border:1px solid var(--border);border-radius:10px;padding:10px 14px}
-    .alert-icon{font-size:15px;flex-shrink:0;line-height:1.4}
-    .alert-title{font-size:12px;font-weight:600;color:var(--text)}
-    .alert-sub{font-size:11px;color:var(--muted);margin-top:1px}
-    .alert-empty{text-align:center;color:var(--muted);font-size:12px;padding:16px 0}
-
-    /* ── Container Simulator ── */
-    .sim-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:16px}
-    .container-types{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
-    .ctype-lbl input[type=radio]{display:none}
-    .ctype-card{border:1px solid var(--border);border-radius:10px;padding:12px 16px;cursor:pointer;transition:border-color .15s,background .15s;min-width:100px;text-align:center}
-    .ctype-card:hover{border-color:rgba(16,185,129,.4)}
-    .ctype-lbl input[type=radio]:checked+.ctype-card{border-color:var(--green);background:var(--gdim)}
-    .ctype-name{font-size:14px;font-weight:700;color:var(--text)}
-    .ctype-spec{font-size:10px;color:var(--muted);margin-top:3px}
-    .custom-fields{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
-    .custom-fields input{flex:1;min-width:120px;background:rgba(15,23,42,.5);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;padding:8px 12px;outline:none}
-    .custom-fields input:focus{border-color:var(--green)}
-    .prog-wrap{margin-bottom:14px}
-    .prog-header{display:flex;justify-content:space-between;font-size:11px;color:var(--dim);margin-bottom:6px}
-    .prog-bar{height:10px;background:rgba(148,163,184,.1);border-radius:5px;overflow:hidden}
-    .prog-fill{height:100%;border-radius:5px;transition:width .5s ease,background-color .3s}
-    .prog-g{background:var(--green)}.prog-y{background:var(--gold)}.prog-r{background:var(--red)}
-    .sim-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
-    .sim-stat{background:rgba(148,163,184,.05);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
-    .sim-stat-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px}
-    .sim-stat-val{font-size:15px;font-weight:700;color:var(--text);margin-top:3px}
-    .reco-list{display:flex;flex-direction:column;gap:8px;margin-top:14px}
-    .reco-item{display:flex;align-items:flex-start;gap:8px;padding:10px 12px;border-radius:8px;border:1px solid var(--border);font-size:12px}
-    .reco-item.good{background:var(--gdim);border-color:rgba(16,185,129,.3);color:var(--green)}
-    .reco-item.warn{background:var(--ydim);border-color:rgba(245,158,11,.3);color:var(--gold)}
-    .reco-item.bad{background:var(--rdim);border-color:rgba(239,68,68,.3);color:var(--red)}
-    .reco-item.info{background:rgba(59,130,246,.08);border-color:rgba(59,130,246,.3);color:#60A5FA}
-    .prod-check-list{display:flex;flex-direction:column;gap:6px;max-height:360px;overflow-y:auto;padding-right:4px}
-    .prod-check-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:background .15s;user-select:none}
-    .prod-check-item:hover{background:rgba(148,163,184,.05)}
-    .prod-check-item input[type=checkbox]{width:16px;height:16px;accent-color:var(--green);cursor:pointer;flex-shrink:0}
-    .prod-check-info{flex:1;min-width:0}
-    .prod-check-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .prod-check-meta{font-size:10px;color:var(--muted);margin-top:2px}
-    .sim-actions{display:flex;gap:8px;margin-bottom:10px}
-    .btn-sm{display:inline-flex;align-items:center;gap:5px;background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--dim);font-size:11px;font-weight:600;padding:5px 12px;cursor:pointer;transition:background .15s,color .15s}
-    .btn-sm:hover{background:var(--gdim);color:var(--green);border-color:rgba(16,185,129,.3)}
-    .container-table{margin-top:20px}
-
-    /* ── Export ── */
-    .export-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:16px}
-    .export-card{padding:24px;text-align:center;cursor:pointer;transition:transform .15s,box-shadow .15s}
-    .export-card:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.25)}
-    .export-icon{font-size:36px;margin-bottom:12px}
-    .export-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px}
-    .export-desc{font-size:12px;color:var(--dim)}
-    .export-btn{display:inline-flex;align-items:center;gap:7px;margin-top:14px;padding:9px 20px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;transition:opacity .15s}
-    .btn-excel{background:#10B981;color:#0F172A}.btn-pdf{background:#EF4444;color:#fff}.btn-csv{background:#F59E0B;color:#0F172A}
-    .export-btn:hover{opacity:.87}
-    .checklist-wrap{padding:20px;margin-top:16px}
-    .check-title{font-size:12px;font-weight:700;color:var(--dim);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:12px}
-    .check-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
-    .check-item:last-child{border-bottom:none}
-    .check-status{font-size:16px;width:24px;text-align:center}
-    .check-label{flex:1;color:var(--text)}
-    .check-detail{font-size:11px;color:var(--muted)}
-    .history-list{display:flex;flex-direction:column;gap:6px;margin-top:12px}
-    .hist-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(148,163,184,.04);border:1px solid var(--border);border-radius:8px;font-size:12px}
-    .hist-file{flex:1;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .hist-count{color:var(--green);font-weight:600}
-    .hist-time{color:var(--muted)}
-
-    /* ── Demo button ── */
-    .btn-demo{display:inline-flex;align-items:center;gap:6px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);color:var(--gold);font-size:12px;font-weight:600;padding:7px 14px;border-radius:8px;cursor:pointer;transition:background .15s}
-    .btn-demo:hover{background:rgba(245,158,11,.2)}
-
-    /* ── Toast ── */
-    .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(70px);background:var(--solid);border:1px solid var(--border);color:var(--text);padding:10px 20px;border-radius:10px;font-size:13px;font-weight:500;backdrop-filter:blur(16px);box-shadow:0 8px 32px rgba(0,0,0,.4);transition:transform .28s,opacity .28s;opacity:0;z-index:9999;max-width:90vw}
-    .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
-    .toast.tok{border-color:rgba(16,185,129,.35)}.toast.terr{border-color:rgba(239,68,68,.35)}.toast.twrn{border-color:rgba(245,158,11,.35)}
-
-    footer{text-align:center;font-size:11px;color:var(--muted);padding:20px;border-top:1px solid var(--border);margin-top:20px}
-
-    @media(max-width:640px){.rates-grid,.kpi-grid,.sim-layout,.analysis-grid,.export-grid{grid-template-columns:1fr}.rate-value{font-size:20px}.sim-stats{grid-template-columns:1fr}}
-  </style>
+@media(max-width:768px){
+  .header{padding:0 14px}
+  .header-nav{display:none}
+  .header-rates{display:none}
+  main{padding:14px}
+  .g2,.g4{grid-template-columns:1fr}
+}
+</style>
 </head>
 <body>
+<div class="app">
 
-<!-- ── Top bar: header + nav ── -->
-<div class="top-bar">
-  <header>
-    <div class="logo">
-      <div class="logo-icon">⚡</div>
-      <div>
-        <div class="logo-text">Calc<span>Nova</span> <small style="font-size:12px;font-weight:400;color:var(--muted)">ERP</small></div>
-        <div class="logo-sub">Importación China · v4.0</div>
-      </div>
-    </div>
-    <div class="header-right">
-      <div class="header-time">
-        <strong id="clock">--:--:--</strong>
-        <span id="date-display">--</span>
-      </div>
-    </div>
-  </header>
-  <nav style="background:rgba(15,23,42,.95)">
-    <div class="main-nav" id="desktop-nav">
-      <button class="nav-tab active" data-tab="dashboard" onclick="showTab('dashboard')">📊 Dashboard</button>
-      <button class="nav-tab" data-tab="productos" onclick="showTab('productos')">📦 Productos</button>
-      <button class="nav-tab" data-tab="contenedor" onclick="showTab('contenedor')">🚢 Contenedor</button>
-      <button class="nav-tab" data-tab="exportar" onclick="showTab('exportar')">📤 Exportar</button>
-      <button class="hamburger" id="hamburger" onclick="toggleMob()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-      </button>
-    </div>
-    <div class="mob-nav" id="mob-nav">
-      <button class="nav-tab active" onclick="showTab('dashboard');toggleMob()">📊 Dashboard</button>
-      <button class="nav-tab" onclick="showTab('productos');toggleMob()">📦 Productos</button>
-      <button class="nav-tab" onclick="showTab('contenedor');toggleMob()">🚢 Contenedor</button>
-      <button class="nav-tab" onclick="showTab('exportar');toggleMob()">📤 Exportar</button>
-    </div>
+<header class="header">
+  <div class="header-logo">
+    <div class="logo-icon">⚡</div>
+    CalcNova <span style="color:var(--green);margin-left:3px">Import</span>
+  </div>
+  <nav class="header-nav">
+    <button class="nav-btn active" onclick="nav('dashboard')">Dashboard</button>
+    <button class="nav-btn" onclick="nav('productos')">Productos</button>
+    <button class="nav-btn" onclick="nav('costos')">Costos</button>
+    <button class="nav-btn" onclick="nav('simulador')">Simulador</button>
+    <button class="nav-btn" onclick="nav('config')">Config</button>
   </nav>
-</div>
+  <div class="header-rates">
+    <div class="rate-chip"><span class="rate-dot" id="dot-y"></span><span id="hr-y">¥/$ —</span></div>
+    <div class="rate-chip"><span class="rate-dot" id="dot-c"></span><span id="hr-c">COP —</span></div>
+    <div class="rate-chip"><span class="rate-dot" id="dot-b"></span><span id="hr-b">BCV —</span></div>
+    <div class="rate-chip"><span class="rate-dot" id="dot-p"></span><span id="hr-p">PAR —</span></div>
+    <button class="btn btn-s btn-sm" onclick="refreshRates()" title="Actualizar tasas">↻</button>
+  </div>
+</header>
 
-<!-- ════════════════════════════════
-     TAB 1: DASHBOARD
-════════════════════════════════ -->
-<div class="tab-content active" id="tab-dashboard">
-<div class="page">
+<main>
 
-  <div class="st">Mercados &amp; Divisas</div>
-  <div class="rates-grid">
-    <div class="rate-card glass" id="card-yuan">
-      <div class="card-header"><div><div class="card-label">🇨🇳 Yuan / USD</div><div class="card-source">open.er-api.com</div></div><button class="refresh-btn" onclick="refreshSingle('yuan')"><svg id="ico-yuan" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15A9 9 0 1 1 5.64 5.64L23 4"/></svg></button></div>
-      <div class="rate-value loading-pulse" id="val-yuan">&nbsp;</div><div class="rate-sub" id="sub-yuan">Cargando...</div>
-      <div class="status-row"><div class="status-dot loading" id="dot-yuan"></div><div class="status-text" id="txt-yuan">Conectando...</div></div>
+<!-- DASHBOARD -->
+<section id="sec-dashboard" class="section active">
+  <div class="sec-hdr">
+    <div><div class="sec-title">Dashboard</div><div class="sec-sub">Resumen general de importación</div></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-s btn-sm" onclick="exportPDF()">⬇ PDF</button>
+      <button class="btn btn-s btn-sm" onclick="exportCSV()">⬇ Excel/CSV</button>
     </div>
-    <div class="rate-card glass gold-accent" id="card-cop">
-      <div class="card-header"><div><div class="card-label">🇨🇴 USD / COP TRM</div><div class="card-source">api.frankfurter.app</div></div><button class="refresh-btn" onclick="refreshSingle('cop')"><svg id="ico-cop" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15A9 9 0 1 1 5.64 5.64L23 4"/></svg></button></div>
-      <div class="rate-value loading-pulse" id="val-cop">&nbsp;</div><div class="rate-sub" id="sub-cop">Cargando...</div>
-      <div class="status-row"><div class="status-dot loading" id="dot-cop"></div><div class="status-text" id="txt-cop">Conectando...</div></div>
+  </div>
+  <div class="g4" style="margin-bottom:18px">
+    <div class="stat border-b"><div class="stat-label">Inversión Total</div><div class="stat-val tb" id="st-inv">Bs 0</div><div class="stat-sub" id="st-inv2">$0 USD</div></div>
+    <div class="stat border-g"><div class="stat-label">Utilidad Estimada</div><div class="stat-val tg" id="st-util">Bs 0</div><div class="stat-sub" id="st-util2">0% margen</div></div>
+    <div class="stat border-o"><div class="stat-label">Productos / Unidades</div><div class="stat-val to" id="st-prods">0</div><div class="stat-sub" id="st-units">0 unidades</div></div>
+    <div class="stat"><div class="stat-label">Mejor ROI</div><div class="stat-val" id="st-best" style="font-size:14px;color:var(--purple)">—</div><div class="stat-sub" id="st-best2">—</div></div>
+  </div>
+  <div class="g2" style="margin-bottom:18px">
+    <div class="card">
+      <div class="card-header"><div class="card-title"><span class="icon icon-g">📦</span>Productos</div><button class="btn btn-p btn-sm" onclick="nav('productos')">+ Agregar</button></div>
+      <div id="dash-list"><div class="empty"><div class="empty-ico">📦</div><div class="empty-ttl">Sin productos</div><div class="empty-sub">Ve a Productos para agregar</div></div></div>
     </div>
-    <div class="rate-card glass" id="card-bcv">
-      <div class="card-header"><div><div class="card-label">🇻🇪 USD / VES BCV</div><div class="card-source">vzla.io API</div></div><button class="refresh-btn" onclick="refreshSingle('bcv')"><svg id="ico-bcv" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15A9 9 0 1 1 5.64 5.64L23 4"/></svg></button></div>
-      <div class="rate-value loading-pulse" id="val-bcv">&nbsp;</div><div class="rate-sub" id="sub-bcv">Cargando...</div>
-      <div class="status-row"><div class="status-dot loading" id="dot-bcv"></div><div class="status-text" id="txt-bcv">Conectando...</div></div>
+    <div class="card">
+      <div class="card-header"><div class="card-title"><span class="icon icon-b">📊</span>Distribución de Costos</div></div>
+      <div class="chart-wrap"><canvas id="chart-main"></canvas></div>
     </div>
-    <div class="rate-card glass gold-accent" id="card-binance">
-      <div class="card-header"><div><div class="card-label">🟡 USDT / VES Binance</div><div class="card-source">Referencia P2P</div></div><button class="refresh-btn" onclick="refreshSingle('binance')"><svg id="ico-binance" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15A9 9 0 1 1 5.64 5.64L23 4"/></svg></button></div>
-      <div class="rate-value loading-pulse" id="val-binance">&nbsp;</div><div class="rate-sub" id="sub-binance">Cargando...</div>
-      <div class="status-row"><div class="status-dot loading" id="dot-binance"></div><div class="status-text" id="txt-binance">Conectando...</div></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><div class="card-title"><span class="icon icon-o">💱</span>Tasas de Cambio</div><button class="btn btn-s btn-sm" onclick="refreshRates()">↻ Actualizar</button></div>
+    <div class="g4">
+      <div class="stat"><div class="stat-label">Yuan / USD</div><div class="stat-val" id="rd-y" style="font-size:18px">—</div><div class="stat-sub" id="rd-y2">—</div></div>
+      <div class="stat"><div class="stat-label">COP / USD</div><div class="stat-val" id="rd-c" style="font-size:18px">—</div><div class="stat-sub" id="rd-c2">—</div></div>
+      <div class="stat"><div class="stat-label">BCV Bs / USD</div><div class="stat-val" id="rd-b" style="font-size:18px">—</div><div class="stat-sub" id="rd-b2">—</div></div>
+      <div class="stat"><div class="stat-label">Paralelo Bs / USD</div><div class="stat-val" id="rd-p" style="font-size:18px">—</div><div class="stat-sub" id="rd-p2">—</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- PRODUCTOS -->
+<section id="sec-productos" class="section">
+  <div class="sec-hdr">
+    <div><div class="sec-title">Productos</div><div class="sec-sub">Agrega los productos de tu importación</div></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-d btn-sm" onclick="clearProds()">🗑 Limpiar</button>
+      <button class="btn btn-p" onclick="addProd()">+ Agregar Producto</button>
     </div>
   </div>
 
-  <!-- KPIs -->
-  <div style="display:flex;align-items:center;gap:12px;margin:28px 0 0">
-    <div class="st" style="margin:0;flex:1">Dashboard Ejecutivo</div>
-    <button class="btn-demo" onclick="loadDemo()" title="Cargar datos de ejemplo">🎯 Demo</button>
-  </div>
-  <div class="kpi-grid">
-    <div class="kpi-card glass"><div class="kpi-icon">💰</div><div class="kpi-lbl">Inversión Total (Bs)</div><div class="kpi-val" id="kpi-invest">—</div></div>
-    <div class="kpi-card glass"><div class="kpi-icon">📦</div><div class="kpi-lbl">Total Productos</div><div class="kpi-val" id="kpi-prods">0</div></div>
-    <div class="kpi-card glass"><div class="kpi-icon">📊</div><div class="kpi-lbl">Margen Promedio</div><div class="kpi-val" id="kpi-margin">—</div><div class="kpi-sub">sobre precio venta</div></div>
-    <div class="kpi-card glass"><div class="kpi-icon">📈</div><div class="kpi-lbl">ROI Promedio</div><div class="kpi-val" id="kpi-roi">—</div><div class="kpi-sub">retorno sobre costo</div></div>
-  </div>
-
-  <!-- Logistics route -->
-  <div class="st" style="margin-top:28px">Ruta Logística</div>
-  <div class="route-wrap">
-    <div class="route-diagram">
-      <div class="route-node"><div class="route-flag">🇨🇳</div><div class="route-name">China</div><div class="route-cost" id="route-china">¥ —</div></div>
-      <div class="route-arrow"><div class="arrow-line"></div><div class="arrow-label">Flete marítimo</div><div class="arrow-label" id="route-flete" style="color:var(--green)">$ —</div></div>
-      <div class="route-node"><div class="route-flag">🚢</div><div class="route-name" id="route-puerto-name">Buenaventura 🇨🇴</div><div class="route-cost" id="route-bvta">$ —</div></div>
-      <div class="route-arrow"><div class="arrow-line"></div><div class="arrow-label">Transporte</div><div class="arrow-label" id="route-transport-col" style="color:var(--green)">$ —</div></div>
-      <div class="route-node"><div class="route-flag">🚚</div><div class="route-name">Cúcuta 🇨🇴</div><div class="route-cost" id="route-cucuta">COP —</div></div>
-      <div class="route-arrow"><div class="arrow-line"></div><div class="arrow-label">Frontera</div><div class="arrow-label" id="route-frontera" style="color:var(--green)">—</div></div>
-      <div class="route-node"><div class="route-flag">🚚</div><div class="route-name">San Antonio 🇻🇪</div><div class="route-cost" id="route-tachira">Bs —</div></div>
-      <div class="route-arrow"><div class="arrow-line"></div><div class="arrow-label">IVA + Op.</div><div class="arrow-label" id="route-iva" style="color:var(--gold)">—</div></div>
-      <div class="route-node"><div class="route-flag">🇻🇪</div><div class="route-name">Venezuela</div><div class="route-cost" id="route-ve">Bs —</div></div>
+  <div id="manual-rates">
+    <div style="font-size:12px;font-weight:600;color:var(--gold);margin-bottom:10px">⚠ APIs no disponibles — Ingresa tasas manualmente</div>
+    <div class="gform">
+      <div class="field"><label>Yuan ¥ por 1 USD</label><input class="inp" id="mr-y" type="number" placeholder="7.25" oninput="applyManual()"></div>
+      <div class="field"><label>COP por 1 USD</label><input class="inp" id="mr-c" type="number" placeholder="4200" oninput="applyManual()"></div>
+      <div class="field"><label>Bs BCV por 1 USD</label><input class="inp" id="mr-b" type="number" placeholder="36.50" oninput="applyManual()"></div>
     </div>
   </div>
 
-</div>
-</div>
-
-<!-- ════════════════════════════════
-     TAB 2: PRODUCTOS
-════════════════════════════════ -->
-<div class="tab-content" id="tab-productos">
-<div class="page">
-
-  <!-- ══ IMPORTAR PRODUCTOS ══ -->
-  <div class="st">Importar Productos</div>
-
-  <!-- Alerta: si XLSX no carga, aparece este panel -->
-  <div id="xlsx-unavailable-banner" style="display:none;margin-bottom:12px">
-    <div class="glass" style="padding:14px 18px;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.05)">
-      <div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:6px">⚠️ No se puede leer archivos .xlsx — la librería Excel requiere conexión a internet</div>
-      <div style="font-size:12px;color:var(--dim);line-height:1.7">
-        <strong style="color:var(--gold)">Solución fácil:</strong> Abre tu Excel →
-        <strong>Archivo → Guardar Como → CSV UTF-8 (con delimitadores de coma)</strong> → sube ese archivo .csv<br>
-        El CSV siempre funciona, sin internet, sin instalaciones.
-      </div>
-    </div>
-  </div>
-
-  <!-- Zona de import -->
-  <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start">
-    <label class="drop-zone" id="drop-zone" for="file-input" style="cursor:pointer;display:block;margin:0">
-      <span class="drop-icon">📂</span>
-      <div class="drop-title">Arrastra tu archivo aquí o haz clic para seleccionar</div>
-      <div class="drop-sub">
-        <span id="xlsx-ok-badge" style="display:none;color:var(--green)">✅ Excel .xlsx disponible · </span>CSV siempre funciona (recomendado)
-      </div>
-      <div style="margin-top:8px;font-size:11px;color:var(--muted)">
-        Columnas detectadas automáticamente: <span style="color:var(--dim)">Nombre · Cantidad · Precio ¥ · Peso KG · CBM · SKU</span>
-      </div>
-      <span class="btn-import" style="pointer-events:none;margin-top:12px;display:inline-flex;align-items:center;gap:6px">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        Seleccionar Archivo
-      </span>
-    </label>
-    <!-- Botón plantilla CSV -->
-    <div style="display:flex;flex-direction:column;gap:8px;padding-top:4px">
-      <button onclick="downloadCsvTemplate()" style="background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);color:var(--green);border-radius:10px;padding:10px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Descargar Plantilla CSV
-      </button>
-      <div style="font-size:10.5px;color:var(--muted);text-align:center;line-height:1.5">
-        Llena la plantilla<br>en Excel y súbela como CSV
-      </div>
-    </div>
-  </div>
-  <input type="file" id="file-input" accept=".xlsx,.xls,.csv" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden">
-  <div id="import-status" class="import-status" hidden></div>
-
-  <!-- Config -->
-  <div class="st" style="margin-top:28px">Configuración Financiera</div>
-  <div class="glass" id="config-wrap">
-    <div class="config-grid">
-      <!-- Col 1: Gastos internacionales USD -->
-      <div>
-        <div class="cfg-group-title">⚓ Internacionales (USD)</div>
-        <div class="inp-row"><label class="inp-lbl">Flete marítimo (total contenedor)</label><div class="inp-wrap"><span class="inp-unit">$</span><input class="cfg-input" type="number" min="0" step="100" data-field="freight" value="0"></div></div>
-        <div class="inp-row"><label class="inp-lbl">Seguro marítimo</label><div class="inp-wrap"><span class="inp-unit">$</span><input class="cfg-input" type="number" min="0" step="50" data-field="insurance" value="0"></div></div>
-        <div class="inp-row"><label class="inp-lbl">Gastos portuarios (llegada)</label><div class="inp-wrap"><span class="inp-unit">$</span><input class="cfg-input" type="number" min="0" step="50" data-field="portFees" value="0"></div></div>
-        <div class="inp-row"><label class="inp-lbl">Comisión bancaria</label><div class="inp-wrap"><span class="inp-unit">%</span><input class="cfg-input" type="number" min="0" max="100" step="0.1" data-field="bankCommission" value="0"></div></div>
-      </div>
-      <!-- Col 2: Gastos Colombia COP -->
-      <div>
-        <div class="cfg-group-title">🇨🇴 Colombia (COP)</div>
-        <div class="inp-row"><label class="inp-lbl" id="transport-col-lbl">Transporte Puerto → Cúcuta</label><div class="inp-wrap"><span class="inp-unit">COP</span><input class="cfg-input" type="number" min="0" step="50000" data-field="transportCOL" value="0"></div></div>
-        <div class="inp-row"><label class="inp-lbl">Aduanas / trámites Colombia</label><div class="inp-wrap"><span class="inp-unit">COP</span><input class="cfg-input" type="number" min="0" step="50000" data-field="customsCOL" value="0"></div></div>
-        <div class="inp-row"><label class="inp-lbl">Costos extra Colombia</label><div class="inp-wrap"><span class="inp-unit">COP</span><input class="cfg-input" type="number" min="0" step="50000" data-field="extraCOL" value="0"></div></div>
-      </div>
-      <!-- Col 3: Gastos Venezuela VES -->
-      <div>
-        <div class="cfg-group-title">🇻🇪 Venezuela (VES / %)</div>
-        <div class="inp-row"><label class="inp-lbl">Arancel importación Venezuela</label><div class="inp-wrap"><span class="inp-unit">%</span><input class="cfg-input" type="number" min="0" max="200" step="0.5" data-field="tariffVEN" value="0"></div></div>
-        <div class="inp-row"><label class="inp-lbl">Gastos de nacionalización</label><div class="inp-wrap"><span class="inp-unit">Bs</span><input class="cfg-input" type="number" min="0" step="10000" data-field="nationalizationVEN" value="0"></div></div>
-        <div class="inp-row"><label class="inp-lbl">Transporte Cúcuta → S. Cristóbal</label><div class="inp-wrap"><span class="inp-unit">Bs</span><input class="cfg-input" type="number" min="0" step="10000" data-field="transportVEN" value="0"></div></div>
-        <div class="inp-row"><label class="inp-lbl">Gastos operativos Venezuela</label><div class="inp-wrap"><span class="inp-unit">Bs</span><input class="cfg-input" type="number" min="0" step="10000" data-field="operatingVEN" value="0"></div></div>
-        <div class="inp-row"><label class="inp-lbl">IVA Venezuela (ley)</label><div class="inp-wrap"><span class="inp-unit">%</span><input class="cfg-input" type="number" min="0" max="100" step="1" data-field="iva" value="16"></div></div>
-      </div>
-      <!-- Col 4: Márgenes y distribución -->
-      <div>
-        <div class="cfg-group-title">📊 Márgenes y Distribución</div>
-        <div class="inp-row"><label class="inp-lbl">Margen mayorista</label><div class="inp-wrap"><span class="inp-unit">%</span><input class="cfg-input" type="number" min="0" max="1000" step="5" data-field="marginWholesale" value="0"></div></div>
-        <div class="inp-row"><label class="inp-lbl">Margen detal</label><div class="inp-wrap"><span class="inp-unit">%</span><input class="cfg-input" type="number" min="0" max="1000" step="5" data-field="marginRetail" value="0"></div></div>
-        <div class="inp-row">
-          <label class="inp-lbl">Distribuir gastos por</label>
-          <select class="cfg-input" style="border-radius:7px;padding:7px 9px;flex:1" data-field="distribution" id="dist-select" onchange="onDistChange(this.value)">
-            <option value="weight">⚖️ Peso kg (recomendado)</option>
-            <option value="cbm">📦 Volumen CBM</option>
-            <option value="value">💰 Valor USD</option>
-            <option value="equal">🟰 Igual por producto</option>
-          </select>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Tasas manuales: visibles solo si alguna tasa no cargó -->
-  <div id="manual-rates-section" style="margin-top:16px;display:none">
-    <div class="glass" style="padding:16px 20px;border:1px solid rgba(245,158,11,.3);background:rgba(245,158,11,.04)">
-      <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:12px">⚠️ Las tasas automáticas no pudieron cargarse — ingresa las tasas manualmente para calcular precios</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px 24px">
-        <div class="inp-row"><label class="inp-lbl">Yuan por 1 USD (ej: 7.24)</label><div class="inp-wrap"><span class="inp-unit">¥/$</span><input class="cfg-input manual-rate" type="number" min="0.01" step="0.01" data-rate="yuan" placeholder="ej: 7.24"></div></div>
-        <div class="inp-row"><label class="inp-lbl">COP por 1 USD (ej: 4150)</label><div class="inp-wrap"><span class="inp-unit">COP/$</span><input class="cfg-input manual-rate" type="number" min="1" step="10" data-rate="cop" placeholder="ej: 4150"></div></div>
-        <div class="inp-row"><label class="inp-lbl">Bolívares por 1 USD BCV (ej: 563)</label><div class="inp-wrap"><span class="inp-unit">Bs/$</span><input class="cfg-input manual-rate" type="number" min="1" step="1" data-rate="bcv" placeholder="ej: 563"></div></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Customs file -->
-  <div class="st" style="margin-top:28px">Archivo de Aduana Venezuela <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0">(Opcional · extrae aranceles automáticamente)</span></div>
-  <div class="drop-zone" id="customs-drop-zone" style="padding:16px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-    <span style="font-size:24px">🛃</span>
-    <div style="flex:1;min-width:200px">
-      <div class="drop-title" style="font-size:13px">Subir planilla de aduana venezolana</div>
-      <div class="drop-sub" style="margin-bottom:0">El sistema detecta automáticamente el % de arancel e importación · .xlsx / .csv</div>
-    </div>
-    <button class="btn-import" id="btn-customs" style="padding:8px 16px;white-space:nowrap">
-      🛃 Seleccionar Archivo
-    </button>
-    <input type="file" id="customs-input" accept=".xlsx,.xls,.csv" style="display:none">
-  </div>
-  <div id="customs-status" class="import-status" hidden></div>
-
-  <!-- Products table -->
-  <div class="products-header" style="margin-top:28px">
-    <div class="section-left">
-      <div class="st" style="margin:0">Productos Importados</div>
-      <span class="count-badge" id="prod-count">0</span>
-    </div>
-    <button class="btn-clear" onclick="clearAll()">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-      Limpiar todo
-    </button>
-  </div>
-  <div class="glass">
-    <div id="prod-empty" class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">Sin productos importados</div><div class="empty-sub">Importa un archivo Excel o CSV para comenzar</div></div>
-    <!-- ── Barra de tasas y logística ── -->
-    <div id="rates-info-bar" class="rates-bar" hidden>
-      <span id="rates-bar-rates" style="color:var(--dim)">⏳ Cargando tasas...</span>
-      <span style="color:var(--border)">│</span>
-      <span id="rates-bar-logistics" style="color:var(--gold)">📦 Sin logística configurada</span>
-      <span style="margin-left:auto;color:var(--muted);font-size:10.5px"><strong style="color:var(--green)">Total Bs</strong> = Cant × Costo/Ud · incluye toda la logística + IVA</span>
-    </div>
-    <div class="table-scroll" id="prod-table-wrap" hidden>
-      <table>
-        <thead><tr>
-          <th>Nombre</th><th>SKU</th><th class="r">Cant.</th><th class="r">Precio ¥</th>
-          <th class="r">Peso kg</th><th class="r">CBM m³</th><th class="r">Sub ¥</th>
-          <th class="r" title="Costo del producto en USD (sin logística)">Base $</th>
-          <th class="r" title="Costo por unidad: producto + logística distribuida + IVA">Costo/Ud Bs</th>
-          <th class="r" style="color:var(--green)" title="Inversión total en Bs para todas las unidades de esta referencia">Total Bs ★</th>
-          <th class="r">P.Mayor Bs</th><th class="r">P.Detal Bs</th>
-          <th class="r">ROI %</th><th>Canal</th><th></th>
-        </tr></thead>
-        <tbody id="prod-tbody"></tbody>
-        <tfoot><tr>
-          <td colspan="2">TOTAL — <span id="total-count" style="font-size:11px;opacity:.7">0 prods</span></td>
-          <td class="rc" id="total-qty">—</td><td>—</td><td>—</td><td>—</td>
-          <td class="rc" id="total-cny">—</td><td class="rc" id="total-usd">—</td>
-          <td>—</td><td class="rc" id="total-cost-ves">—</td>
-          <td>—</td><td>—</td>
-          <td class="rc" id="total-roi">—</td><td>—</td><td></td>
-        </tr></tfoot>
+  <div class="card" style="margin-bottom:16px">
+    <div class="tbl-wrap">
+      <table id="tbl-products">
+        <thead><tr><th>#</th><th>Nombre</th><th>Categoría</th><th>Cant.</th><th>Precio ¥</th><th>Precio $</th><th>Peso KG</th><th>CBM</th><th>Total ¥</th><th>Total $</th><th></th></tr></thead>
+        <tbody id="tbody-p"></tbody>
       </table>
     </div>
-  </div>
-
-  <!-- Analysis -->
-  <div class="analysis-grid" id="analysis-section" hidden>
-    <div class="analysis-card glass"><div class="analysis-title">Distribución de Gastos</div><div class="chart-wrap"><canvas id="expense-chart"></canvas></div></div>
-    <div class="analysis-card glass"><div class="analysis-title">Alertas Inteligentes</div><div id="alerts-list" class="alerts-list"><div class="alert-empty">Sin alertas · Importa productos para ver análisis</div></div></div>
-  </div>
-
-</div>
-</div>
-
-<!-- ════════════════════════════════
-     TAB 3: CONTENEDOR
-════════════════════════════════ -->
-<div class="tab-content" id="tab-contenedor">
-<div class="page">
-
-  <div class="st">Simulador de Contenedor</div>
-
-  <!-- Port selector -->
-  <div style="font-size:11px;font-weight:700;color:var(--dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px"><span style="display:inline-block;width:3px;height:12px;background:var(--gold);border-radius:2px"></span>Puerto de Llegada 🇨🇴</div>
-  <div class="container-types" style="margin-bottom:24px">
-    <label class="ctype-lbl"><input type="radio" name="port" value="buenaventura" checked onchange="onPortChange()"><div class="ctype-card"><div class="ctype-name">🚢 Buenaventura</div><div class="ctype-spec">Pacífico · 1.100 km · $350 fees</div></div></label>
-    <label class="ctype-lbl"><input type="radio" name="port" value="barranquilla" onchange="onPortChange()"><div class="ctype-card"><div class="ctype-name">⚓ Barranquilla</div><div class="ctype-spec">Caribe · 470 km · $280 fees</div></div></label>
-    <label class="ctype-lbl"><input type="radio" name="port" value="cartagena" onchange="onPortChange()"><div class="ctype-card"><div class="ctype-name">🏰 Cartagena</div><div class="ctype-spec">Caribe · 600 km · $300 fees</div></div></label>
-  </div>
-  <div id="port-info-bar" style="display:flex;align-items:center;gap:12px;padding:10px 16px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);border-radius:10px;margin-bottom:20px;font-size:12px;color:var(--gold)"><span id="port-info-text">🚢 Puerto Buenaventura seleccionado — Gastos portuarios: $350 USD · Transporte a Cúcuta: $950.000 COP</span></div>
-
-  <!-- Container type selector -->
-  <div class="container-types">
-    <label class="ctype-lbl"><input type="radio" name="ctype" value="20ft" onchange="onCtypeChange()"><div class="ctype-card"><div class="ctype-name">20ft</div><div class="ctype-spec">33 CBM · 18t · $1.500</div></div></label>
-    <label class="ctype-lbl"><input type="radio" name="ctype" value="40ft" onchange="onCtypeChange()" checked><div class="ctype-card"><div class="ctype-name">40ft</div><div class="ctype-spec">67 CBM · 25t · $2.000</div></div></label>
-    <label class="ctype-lbl"><input type="radio" name="ctype" value="consolidada" onchange="onCtypeChange()"><div class="ctype-card"><div class="ctype-name">Consolidada</div><div class="ctype-spec">Flexible · Usuario define</div></div></label>
-  </div>
-  <div id="consolidada-fields" class="custom-fields" hidden>
-    <input type="number" id="c-cbm" placeholder="CBM máximo" min="0" step="1" oninput="renderSimulator()">
-    <input type="number" id="c-weight" placeholder="Peso máx (toneladas)" min="0" step="0.5" oninput="renderSimulator()">
-    <span style="font-size:11px;color:var(--muted);align-self:center">El flete se configura en <em>Configuración Financiera</em></span>
-  </div>
-
-  <div class="sim-layout">
-    <!-- Left: stats + progress + recommendations -->
-    <div>
-      <div class="glass" style="padding:20px">
-        <div class="prog-wrap">
-          <div class="prog-header"><span>📦 Volumen CBM</span><span id="cbm-display">0 / 67 m³ (0%)</span></div>
-          <div class="prog-bar"><div class="prog-fill prog-g" id="cbm-bar" style="width:0%"></div></div>
-        </div>
-        <div class="prog-wrap" style="margin-top:16px">
-          <div class="prog-header"><span>⚖️ Peso</span><span id="weight-display">0 / 25.000 kg (0%)</span></div>
-          <div class="prog-bar"><div class="prog-fill prog-g" id="weight-bar" style="width:0%"></div></div>
-        </div>
-        <div class="sim-stats">
-          <div class="sim-stat"><div class="sim-stat-lbl">CBM restante</div><div class="sim-stat-val" id="cbm-left">— m³</div></div>
-          <div class="sim-stat"><div class="sim-stat-lbl">Peso restante</div><div class="sim-stat-val" id="weight-left">— kg</div></div>
-          <div class="sim-stat"><div class="sim-stat-lbl">Flete total</div><div class="sim-stat-val" id="sim-freight">$ —</div></div>
-          <div class="sim-stat"><div class="sim-stat-lbl">Productos selec.</div><div class="sim-stat-val" id="sim-count">0</div></div>
-        </div>
-        <div class="reco-list" id="reco-list"></div>
-      </div>
-    </div>
-
-    <!-- Right: product checkboxes -->
-    <div>
-      <div class="glass" style="padding:16px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <span style="font-size:12px;font-weight:600;color:var(--dim)">SELECCIONAR PRODUCTOS</span>
-          <div class="sim-actions">
-            <button class="btn-sm" onclick="selectAll(true)">Todos</button>
-            <button class="btn-sm" onclick="selectAll(false)">Ninguno</button>
-          </div>
-        </div>
-        <div class="prod-check-list" id="prod-check-list">
-          <div class="alert-empty">Importa productos en la pestaña Productos</div>
-        </div>
+    <div id="p-totals" style="display:none;padding:10px 0 0;border-top:1px solid var(--border);margin-top:6px">
+      <div style="display:flex;gap:20px;justify-content:flex-end;font-size:13px;flex-wrap:wrap">
+        <span>Unidades: <strong id="t-units">0</strong></span>
+        <span>Peso: <strong id="t-weight">0 KG</strong></span>
+        <span>CBM: <strong id="t-cbm">0</strong></span>
+        <span>Total ¥: <strong class="to" id="t-cny">¥0</strong></span>
+        <span>Total $: <strong class="tg" id="t-usd">$0</strong></span>
       </div>
     </div>
   </div>
 
-  <!-- Container content table -->
-  <div class="st" style="margin-top:24px">Contenido del Contenedor</div>
-  <div class="glass" id="container-table-wrap">
-    <div class="table-scroll">
-      <table>
-        <thead><tr><th>Producto</th><th>SKU</th><th class="r">Cant.</th><th class="r">CBM × cant</th><th class="r">Peso × cant (kg)</th><th class="r">% Flete asignado</th><th class="r">Flete USD</th></tr></thead>
-        <tbody id="container-tbody"></tbody>
-        <tfoot><tr><td colspan="2">TOTAL</td><td class="rc" id="ct-qty">0</td><td class="rc" id="ct-cbm">0 m³</td><td class="rc" id="ct-weight">0 kg</td><td class="rc">100%</td><td class="rc" id="ct-freight">$ 0</td></tr></tfoot>
-      </table>
-    </div>
-    <div class="empty-state" id="container-empty"><div class="empty-icon">🚢</div><div class="empty-title">Sin productos seleccionados</div><div class="empty-sub">Selecciona productos en el panel derecho</div></div>
-  </div>
-
-</div>
-</div>
-
-<!-- ════════════════════════════════
-     TAB 4: EXPORTAR
-════════════════════════════════ -->
-<div class="tab-content" id="tab-exportar">
-<div class="page">
-
-  <!-- Validation checklist -->
-  <div class="st">Verificación Pre-Exportación</div>
-  <div class="glass checklist-wrap">
-    <div class="check-title">Estado del sistema</div>
-    <div class="check-item"><span class="check-status" id="cs-prods">❓</span><span class="check-label">Productos importados</span><span class="check-detail" id="cd-prods">0 productos</span></div>
-    <div class="check-item"><span class="check-status" id="cs-rates">❓</span><span class="check-label">Tasas actualizadas (últimos 30 min)</span><span class="check-detail" id="cd-rates">—</span></div>
-    <div class="check-item"><span class="check-status" id="cs-calcs">❓</span><span class="check-label">Cálculos financieros válidos</span><span class="check-detail" id="cd-calcs">—</span></div>
-    <div class="check-item"><span class="check-status" id="cs-cfg">✅</span><span class="check-label">Configuración financiera completa</span><span class="check-detail" id="cd-cfg">OK</span></div>
-  </div>
-
-  <!-- Export buttons -->
-  <div class="st" style="margin-top:24px">Descargar</div>
-  <div class="export-grid">
-    <div class="export-card glass">
-      <div class="export-icon">📗</div>
-      <div class="export-title">Excel (.xlsx)</div>
-      <div class="export-desc">3 hojas: Productos, Resumen financiero, Simulación contenedor</div>
-      <button class="export-btn btn-excel" onclick="exportExcel()">⬇ Descargar Excel</button>
-    </div>
-    <div class="export-card glass">
-      <div class="export-icon">📄</div>
-      <div class="export-title">PDF</div>
-      <div class="export-desc">Reporte ejecutivo con KPIs, tabla y ruta logística</div>
-      <button class="export-btn btn-pdf" onclick="exportPDF()">⬇ Descargar PDF</button>
-    </div>
-    <div class="export-card glass">
-      <div class="export-icon">📊</div>
-      <div class="export-title">CSV</div>
-      <div class="export-desc">Tabla de productos con todos los cálculos</div>
-      <button class="export-btn btn-csv" onclick="exportCSV()">⬇ Descargar CSV</button>
+  <div id="res-section" style="display:none">
+    <div style="font-size:16px;font-weight:700;margin-bottom:12px">Resultados por Producto</div>
+    <div class="card">
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Producto</th><th>Costo Unit. Bs</th><th>P. Mayor Bs</th><th>P. Detal Bs</th><th>Costo Total Bs</th><th>Ganancia</th><th>Margen %</th><th>Recomendación</th></tr></thead>
+          <tbody id="tbody-r"></tbody>
+        </table>
+      </div>
     </div>
   </div>
+</section>
 
-  <!-- Import history -->
-  <div class="st" style="margin-top:28px">Historial de Importaciones</div>
-  <div class="glass" style="padding:20px">
-    <div id="history-list" class="history-list"><div class="alert-empty">Sin historial</div></div>
+<!-- COSTOS -->
+<section id="sec-costos" class="section">
+  <div class="sec-hdr">
+    <div><div class="sec-title">Costos Logísticos</div><div class="sec-sub">Solo tú ingresas los valores — el sistema no inventa precios</div></div>
+    <button class="btn btn-p" onclick="saveCosts();calcAll()">💾 Guardar y Calcular</button>
   </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-header"><div class="card-title"><span class="icon icon-b">🇨🇳</span>China → Embarque (USD)</div></div>
+      <div class="gform">
+        <div class="field"><label>Flete Marítimo ($)</label><input class="inp" id="c-freight" type="number" min="0" placeholder="0"></div>
+        <div class="field"><label>Seguro ($)</label><input class="inp" id="c-ins" type="number" min="0" placeholder="0"></div>
+        <div class="field"><label>Puerto Origen ($)</label><input class="inp" id="c-portO" type="number" min="0" placeholder="0"></div>
+        <div class="field"><label>Comisión Bancaria (%)</label><input class="inp" id="c-bank" type="number" min="0" max="100" placeholder="0"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title"><span class="icon icon-o">🇨🇴</span>Colombia (USD / COP)</div></div>
+      <div class="gform">
+        <div class="field"><label>Puerto</label><select class="inp" id="c-port"><option value="buenaventura">Buenaventura</option><option value="barranquilla">Barranquilla</option><option value="cartagena">Cartagena</option></select></div>
+        <div class="field"><label>Gastos Puerto COL ($)</label><input class="inp" id="c-portC" type="number" min="0" placeholder="0"></div>
+        <div class="field"><label>Aduana / Nacionalización ($)</label><input class="inp" id="c-custom" type="number" min="0" placeholder="0"></div>
+        <div class="field"><label>Transporte Colombia ($)</label><input class="inp" id="c-trCOL" type="number" min="0" placeholder="0"></div>
+        <div class="field"><label>Cúcuta ($)</label><input class="inp" id="c-cuc" type="number" min="0" placeholder="0"></div>
+        <div class="field"><label>Extras Colombia ($)</label><input class="inp" id="c-exCOL" type="number" min="0" placeholder="0"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title"><span class="icon icon-r">🇻🇪</span>Venezuela (Bs / VES)</div></div>
+      <div class="gform">
+        <div class="field"><label>Transporte VEN / San Cristóbal (Bs)</label><input class="inp" id="c-trVEN" type="number" min="0" placeholder="0"></div>
+        <div class="field"><label>Nacionalización VEN (Bs)</label><input class="inp" id="c-nat" type="number" min="0" placeholder="0"></div>
+        <div class="field"><label>Costos Operativos (Bs)</label><input class="inp" id="c-op" type="number" min="0" placeholder="0"></div>
+        <div class="field"><label>Arancel / Tarifa (%)</label><input class="inp" id="c-tariff" type="number" min="0" max="100" placeholder="0"></div>
+        <div class="field"><label>Extras Venezuela (Bs)</label><input class="inp" id="c-exVEN" type="number" min="0" placeholder="0"></div>
+        <div class="field"><label>IVA (%)</label><input class="inp" id="c-iva" type="number" min="0" max="100" placeholder="16" value="16"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title"><span class="icon icon-g">💰</span>Precios de Venta</div></div>
+      <div class="gform">
+        <div class="field"><label>% Ganancia Mayor</label><input class="inp" id="c-mw" type="number" min="0" placeholder="20"></div>
+        <div class="field"><label>% Ganancia Detal</label><input class="inp" id="c-mr" type="number" min="0" placeholder="40"></div>
+        <div class="field"><label>Distribución de Costos</label><select class="inp" id="c-dist"><option value="weight">Por Peso KG</option><option value="cbm">Por CBM</option><option value="value">Por Valor $</option><option value="equal">Igualitario</option></select></div>
+        <div class="field"><label>Tasa VES a usar</label><select class="inp" id="c-vrate"><option value="bcv">BCV Oficial</option><option value="paralelo">Paralelo (Binance)</option></select></div>
+      </div>
+    </div>
+  </div>
+</section>
 
+<!-- SIMULADOR -->
+<section id="sec-simulador" class="section">
+  <div class="sec-hdr"><div><div class="sec-title">Simulador de Contenedor</div><div class="sec-sub">Verifica espacio y capacidad</div></div></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-header"><div class="card-title"><span class="icon icon-b">🚢</span>Contenedor</div></div>
+      <div class="tabs">
+        <button class="tab active" onclick="simTab(this,'20ft')">20 pies</button>
+        <button class="tab" onclick="simTab(this,'40ft')">40 pies</button>
+        <button class="tab" onclick="simTab(this,'consolidada')">Consolidada</button>
+      </div>
+      <div class="g2" style="gap:12px;margin-bottom:14px">
+        <div class="stat"><div class="stat-label">Max CBM</div><div class="stat-val" id="s-maxC" style="font-size:18px">33</div></div>
+        <div class="stat"><div class="stat-label">Max Peso KG</div><div class="stat-val" id="s-maxW" style="font-size:18px">18,000</div></div>
+      </div>
+      <div style="margin-bottom:4px;display:flex;justify-content:space-between;font-size:12px"><span>Uso CBM</span><span id="s-cpct">0%</span></div>
+      <div class="cbar-wrap"><div class="cbar-fill" id="s-cbar" style="width:0%"></div></div>
+      <div style="margin:8px 0 4px;display:flex;justify-content:space-between;font-size:12px"><span>Uso Peso</span><span id="s-wpct">0%</span></div>
+      <div class="cbar-wrap"><div class="cbar-fill" id="s-wbar" style="width:0%"></div></div>
+      <div class="g2" style="margin-top:14px;gap:10px">
+        <div class="stat"><div class="stat-label">CBM Usado</div><div class="stat-val" id="s-usedC" style="font-size:16px">0</div></div>
+        <div class="stat"><div class="stat-label">CBM Libre</div><div class="stat-val tg" id="s-freeC" style="font-size:16px">0</div></div>
+        <div class="stat"><div class="stat-label">Peso Usado KG</div><div class="stat-val" id="s-usedW" style="font-size:16px">0</div></div>
+        <div class="stat"><div class="stat-label">Peso Libre KG</div><div class="stat-val tg" id="s-freeW" style="font-size:16px">0</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title"><span class="icon icon-o">📋</span>Detalle productos</div></div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Producto</th><th>Cant.</th><th>Peso KG</th><th>CBM</th><th>% CBM</th></tr></thead>
+          <tbody id="sim-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONFIG -->
+<section id="sec-config" class="section">
+  <div class="sec-hdr">
+    <div><div class="sec-title">Configuración</div><div class="sec-sub">Ajustes del sistema</div></div>
+    <button class="btn btn-p" onclick="saveConfig()">💾 Guardar</button>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-header"><div class="card-title"><span class="icon icon-b">⚙</span>General</div></div>
+      <div class="gform">
+        <div class="field"><label>Empresa</label><input class="inp" id="cfg-co" type="text" placeholder="Mi Empresa"></div>
+        <div class="field"><label>Actualizar tasas cada (min)</label><input class="inp" id="cfg-ref" type="number" min="5" max="120" value="30"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title"><span class="icon icon-o">📂</span>Datos</div></div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button class="btn btn-s" onclick="exportData()">⬇ Exportar datos (JSON)</button>
+        <button class="btn btn-s" onclick="document.getElementById('imp-file').click()">⬆ Importar datos (JSON)</button>
+        <input type="file" id="imp-file" accept=".json" style="display:none" onchange="importData(this)">
+        <div class="divider"></div>
+        <button class="btn btn-d" onclick="resetAll()">⚠ Resetear todo</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
 </div>
-</div>
 
-<!-- Footer -->
-<footer>CalcNova ERP v4.0 · © 2025 · Tasas actualizadas cada 5 min · Datos de referencia</footer>
-
-<!-- Toast -->
-<div id="toast" class="toast"></div>
-
-<!-- Hidden PDF content -->
-<div id="pdf-content" style="display:none;font-family:Arial,sans-serif;padding:24px;background:#fff;color:#1E293B;font-size:12px"></div>
+<div id="toast"></div>
 
 <script>
-/* ═══════ UTILS ═══════ */
-const fmt=(n,d=2)=>(isFinite(n)&&n!==null&&n!==undefined)?Number(n).toLocaleString('es-VE',{minimumFractionDigits:d,maximumFractionDigits:d}):null;
-const nowStr=()=>new Date().toLocaleString('es-VE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});
-const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-const LS_RATES='calcnova_rates_v1',LS_PRODS='calcnova_products_v1',LS_CFG='calcnova_config_v1',LS_HIST='calcnova_hist_v1';
-/* ─── Cache: guarda valor display + numérico ─── */
-function saveRateCache(k,v,num){try{const s=JSON.parse(localStorage.getItem(LS_RATES)||'{}');s[k]={val:v,num:num??null,ts:Date.now()};localStorage.setItem(LS_RATES,JSON.stringify(s));}catch(_){}}
-function loadRateCache(k){try{return(JSON.parse(localStorage.getItem(LS_RATES)||'{}')||{})[k]||null;}catch(_){return null;}}
+'use strict';
 
-/* ═══════ CONFIG ═══════ */
-/* Todos los costos operativos en 0 — el usuario los ingresa manualmente.
-   Solo iva:16 es fijo por ley venezolana. */
-const DEF_CFG={
-  freight:0, insurance:0, portFees:0, bankCommission:0,
-  transportCOL:0, customsCOL:0, extraCOL:0,
-  tariffVEN:0, nationalizationVEN:0, transportVEN:0, operatingVEN:0,
-  iva:16,
-  marginWholesale:0, marginRetail:0,
-  distribution:'weight', selectedPort:'buenaventura'
-};
-function loadCfg(){try{return{...DEF_CFG,...JSON.parse(localStorage.getItem(LS_CFG)||'{}')};}catch(_){return{...DEF_CFG};}}
-function saveCfg(c){try{localStorage.setItem(LS_CFG,JSON.stringify(c));}catch(_){}}
-function initCfgInputs(){
-  const c=loadCfg();
-  document.querySelectorAll('.cfg-input[data-field]').forEach(el=>{
-    const val=c[el.dataset.field];
-    if(val!==undefined&&val!==null)el.value=val;
+// ── STATE ──────────────────────────────────────────────────
+let prods = [];
+let cfg = loadCfg();
+let R = {y:null,c:null,v:null,p:null}; // yuan, cop, ves-bcv, ves-paralelo
+let simMode = '20ft';
+let mainChart = null;
+let refreshTimer = null;
+
+const CTYPES = {'20ft':{cbm:33,wt:18000},'40ft':{cbm:67,wt:25000},'consolidada':{cbm:null,wt:null}};
+
+// ── STORAGE ────────────────────────────────────────────────
+function loadCfg(){
+  const def={
+    freight:0,insurance:0,portOrigin:0,bankCommission:0,
+    portCOL:0,customsCOL:0,transportCOL:0,cucuta:0,extraCOL:0,
+    transportVEN:0,nationalizationVEN:0,operatingVEN:0,tariffVEN:0,extraVEN:0,
+    iva:16,marginWholesale:0,marginRetail:0,
+    distribution:'weight',port:'buenaventura',vesRate:'bcv',
+    company:'',refresh:30
+  };
+  try{ const s=localStorage.getItem('cn_cfg'); return s?Object.assign({},def,JSON.parse(s)):def; }
+  catch(e){ return def; }
+}
+function saveCfg(c){ try{ localStorage.setItem('cn_cfg',JSON.stringify(c)); }catch(e){} }
+function loadProds(){ try{ const s=localStorage.getItem('cn_prods'); return s?JSON.parse(s):[]; }catch(e){ return []; } }
+function saveProds(){ try{ localStorage.setItem('cn_prods',JSON.stringify(prods)); }catch(e){} }
+function saveRC(k,v,n){ try{ localStorage.setItem('cn_rc_'+k,JSON.stringify({v,n,ts:Date.now()})); }catch(e){} }
+function loadRC(k){ try{ const s=localStorage.getItem('cn_rc_'+k); return s?JSON.parse(s):null; }catch(e){ return null; } }
+
+// ── NAV ────────────────────────────────────────────────────
+function nav(id){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const sec=document.getElementById('sec-'+id);
+  if(sec) sec.classList.add('active');
+  // match nav button by text
+  Array.from(document.querySelectorAll('.nav-btn')).forEach(b=>{
+    if(b.textContent.toLowerCase().startsWith(id.slice(0,4))) b.classList.add('active');
   });
+  if(id==='dashboard') renderDash();
+  if(id==='costos') loadCostForm();
+  if(id==='simulador') renderSim();
+  if(id==='config') loadCfgForm();
 }
-document.getElementById('config-wrap').addEventListener('input',e=>{
-  const el=e.target;if(!el.classList.contains('cfg-input'))return;
-  const f=el.dataset.field;if(!f)return;
-  const v=parseFloat(el.value);if(!isFinite(v)||v<0)return;
-  const c=loadCfg();c[f]=v;saveCfg(c);recalcAll();
-});
 
-/* ═══════ PASO 1: TASAS ═══════ */
-const liveRates={yuanPerUsd:null,copPerUsd:null,vesPerUsd:null};
-async function fetchRate(url,ms=5000){const ctrl=new AbortController();const t=setTimeout(()=>ctrl.abort(),ms);try{const r=await fetch(url,{signal:ctrl.signal});if(!r.ok)throw new Error(`HTTP ${r.status}`);return await r.json();}finally{clearTimeout(t);}}
-function setLoading(id){const v=document.getElementById(`val-${id}`);v.classList.add('loading-pulse');v.innerHTML='&nbsp;';document.getElementById(`sub-${id}`).textContent='Actualizando...';setDot(id,'loading','Conectando...');const b=document.getElementById(`ico-${id}`);if(b)b.closest('.refresh-btn').classList.add('spinning');document.getElementById(`card-${id}`).classList.remove('has-error');}
-function setOk(id,display,sub){const v=document.getElementById(`val-${id}`);v.classList.remove('loading-pulse');v.textContent=display;document.getElementById(`sub-${id}`).textContent=sub||'';setDot(id,'ok',`Actualizado ${nowStr()}`);stopSpin(id);renderRatesBar();renderManualRatesSection();}
-function setErr(id,fb){
-  const v=document.getElementById(`val-${id}`);v.classList.remove('loading-pulse');
-  if(fb){
-    v.textContent=fb.val;
-    const age=Math.round((Date.now()-fb.ts)/60000);
-    setDot(id,'err',`API falló · Caché de hace ${age} min`);
-    document.getElementById(`sub-${id}`).textContent='Dato en caché';
-    /* CRÍTICO: restaurar valor numérico desde caché para que los cálculos funcionen */
-    if(isFinite(fb.num)&&fb.num>0){
-      if(id==='yuan'){liveRates.yuanPerUsd=fb.num;}
-      else if(id==='cop'){liveRates.copPerUsd=fb.num;}
-      else if(id==='bcv'){liveRates.vesPerUsd=fb.num;}
-      recalcAll();
+// ── RATES ──────────────────────────────────────────────────
+async function jf(url,ms=5000){
+  const ac=new AbortController();
+  const t=setTimeout(()=>ac.abort(),ms);
+  try{const r=await fetch(url,{signal:ac.signal});clearTimeout(t);if(!r.ok)throw new Error(r.status);return await r.json();}
+  catch(e){clearTimeout(t);throw e;}
+}
+
+async function fetchY(){
+  for(const fn of[
+    ()=>jf('https://open.er-api.com/v6/latest/USD').then(d=>{if(!d.rates?.CNY)throw 0;return d.rates.CNY;}),
+    ()=>jf('https://api.frankfurter.app/latest?from=USD&to=CNY').then(d=>{if(!d.rates?.CNY)throw 0;return d.rates.CNY;}),
+    ()=>jf('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json').then(d=>{if(!d.usd?.cny)throw 0;return d.usd.cny;})
+  ]){ try{const v=await fn();if(v>0)return v;}catch(e){} }
+  throw new Error('Yuan fail');
+}
+async function fetchC(){
+  for(const fn of[
+    ()=>jf('https://open.er-api.com/v6/latest/USD').then(d=>{if(!d.rates?.COP)throw 0;return d.rates.COP;}),
+    ()=>jf('https://api.frankfurter.app/latest?from=USD&to=COP').then(d=>{if(!d.rates?.COP)throw 0;return d.rates.COP;}),
+    ()=>jf('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json').then(d=>{if(!d.usd?.cop)throw 0;return d.usd.cop;})
+  ]){ try{const v=await fn();if(v>0)return v;}catch(e){} }
+  throw new Error('COP fail');
+}
+async function fetchB(){
+  for(const fn of[
+    ()=>jf('https://ve.dolarapi.com/v1/dolares/oficial').then(d=>{const v=+(d.promedio||d.precio||0);if(!v)throw 0;return v;}),
+    ()=>jf('https://api.exchangerate-api.com/v4/latest/USD').then(d=>{if(!d.rates?.VES)throw 0;return d.rates.VES;}),
+    ()=>jf('https://open.er-api.com/v6/latest/USD').then(d=>{if(!d.rates?.VES)throw 0;return d.rates.VES;})
+  ]){ try{const v=await fn();if(v>0)return v;}catch(e){} }
+  throw new Error('BCV fail');
+}
+async function fetchP(){
+  try{const d=await jf('https://ve.dolarapi.com/v1/dolares/paralelo');const v=+(d.promedio||d.precio||0);if(v>0)return v;}catch(e){}
+  if(R.v>0) return R.v*1.05;
+  throw new Error('Paralelo fail');
+}
+
+async function refreshRates(){
+  setDot('y','');setDot('c','');setDot('b','');setDot('p','');
+  const [rY,rC,rB,rP]=await Promise.allSettled([fetchY(),fetchC(),fetchB(),fetchP()]);
+  let anyFail=false;
+  function applyR(key,res,rc){
+    if(res.status==='fulfilled'&&res.value>0){
+      R[key]=res.value;
+      saveRC(key,fmt2(res.value),res.value);
+      setDot(rc,'live');
+      return true;
+    }else{
+      anyFail=true;
+      const ca=loadRC(key);
+      if(ca&&ca.n>0){R[key]=ca.n;setDot(rc,'err');}
+      else{R[key]=null;setDot(rc,'err');}
+      return false;
     }
-  }else{
-    v.textContent='Sin datos';
-    setDot(id,'err','Sin conexión · Sin caché');
-    document.getElementById(`sub-${id}`).textContent='Ingresa tasa manual';
   }
-  document.getElementById(`card-${id}`).classList.add('has-error');
-  stopSpin(id);
-  renderManualRatesSection();
-}
-function setDot(id,s,t){document.getElementById(`dot-${id}`).className=`status-dot ${s}`;document.getElementById(`txt-${id}`).textContent=t;}
-function stopSpin(id){const b=document.getElementById(`ico-${id}`);if(b)b.closest('.refresh-btn').classList.remove('spinning');}
-/* ── Yuan/USD ── múltiples fuentes con fallback */
-async function fetchYuan(){
-  const id='yuan';setLoading(id);
-  const tryApis=[
-    async()=>{const d=await fetchRate('https://open.er-api.com/v6/latest/USD');const r=d?.rates?.CNY;if(!isFinite(r))throw 0;return r;},
-    async()=>{const d=await fetchRate('https://api.frankfurter.app/latest?from=USD&to=CNY');const r=d?.rates?.CNY;if(!isFinite(r))throw 0;return r;},
-    async()=>{const d=await fetchRate('https://api.exchangerate-api.com/v4/latest/USD');const r=d?.rates?.CNY;if(!isFinite(r))throw 0;return r;}
-  ];
-  let r=null;
-  for(const fn of tryApis){try{r=await fn();break;}catch(_){}}
-  if(isFinite(r)&&r>0){
-    liveRates.yuanPerUsd=r;
-    const disp=`1 USD = ${fmt(r,4)} CNY`;
-    saveRateCache(id,disp,r);
-    setOk(id,disp,`1 CNY = ${fmt(1/r,4)} USD`);
-    recalcAll();
-  }else{setErr(id,loadRateCache(id));}
+  applyR('y',rY,'y');applyR('c',rC,'c');applyR('v',rB,'b');applyR('p',rP,'p');
+  updateHeaderR();updateDashR();
+  const allMissing=!R.y&&!R.c&&!R.v;
+  document.getElementById('manual-rates').style.display=allMissing?'block':'none';
+  if(anyFail) toast('Algunas tasas desde caché','w');
+  else toast('Tasas actualizadas');
+  calcAll();renderDash();
+  if(refreshTimer) clearTimeout(refreshTimer);
+  refreshTimer=setTimeout(refreshRates,Math.max(5,cfg.refresh||30)*60000);
 }
 
-/* ── USD/COP TRM ── */
-async function fetchCOP(){
-  const id='cop';setLoading(id);
-  const tryApis=[
-    async()=>{const d=await fetchRate('https://api.frankfurter.app/latest?from=USD&to=COP');const r=d?.rates?.COP;if(!isFinite(r))throw 0;return{r,date:d?.date||''};},
-    async()=>{const d=await fetchRate('https://open.er-api.com/v6/latest/USD');const r=d?.rates?.COP;if(!isFinite(r))throw 0;return{r,date:''};},
-    async()=>{const d=await fetchRate('https://api.exchangerate-api.com/v4/latest/USD');const r=d?.rates?.COP;if(!isFinite(r))throw 0;return{r,date:''};}
-  ];
-  let res=null;
-  for(const fn of tryApis){try{res=await fn();break;}catch(_){}}
-  if(res&&isFinite(res.r)&&res.r>0){
-    liveRates.copPerUsd=res.r;
-    const disp=`1 USD = ${fmt(res.r,2)} COP`;
-    saveRateCache(id,disp,res.r);
-    setOk(id,disp,`TRM${res.date?' · '+res.date:''}`);
-    recalcAll();
-  }else{setErr(id,loadRateCache(id));}
+function setDot(k,state){
+  const d=document.getElementById('dot-'+k);
+  if(d) d.className='rate-dot'+(state==='live'?' live':state==='err'?' err':'');
+}
+function updateHeaderR(){
+  setText('hr-y',R.y?'¥/$ '+fmt2(R.y):'¥/$ —');
+  setText('hr-c',R.c?'COP '+fmtN(R.c):'COP —');
+  setText('hr-b',R.v?'BCV '+fmt2(R.v):'BCV —');
+  setText('hr-p',R.p?'PAR '+fmt2(R.p):'PAR —');
+}
+function updateDashR(){
+  const ts=new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
+  if(R.y){setText('rd-y',fmt2(R.y));setText('rd-y2','Live '+ts);}
+  if(R.c){setText('rd-c',fmtN(R.c));setText('rd-c2','Live '+ts);}
+  if(R.v){setText('rd-b',fmt2(R.v));setText('rd-b2','Live '+ts);}
+  if(R.p){setText('rd-p',fmt2(R.p));setText('rd-p2','Live '+ts);}
+}
+function applyManual(){
+  const y=pf('mr-y'),c=pf('mr-c'),b=pf('mr-b');
+  if(y>0)R.y=y;if(c>0)R.c=c;if(b>0)R.v=b;
+  calcAll();renderDash();
 }
 
-/* ── USD/VES BCV ── múltiples fuentes (APIs venezolanas pueden fallar) */
-async function fetchBCV(){
-  const id='bcv';setLoading(id);
-  /* Función auxiliar: extrae el valor numérico de distintos formatos de respuesta */
-  const extract=d=>d?.oficial?.promedio??d?.oficial?.venta??d?.oficial?.price??
-    d?.promedio??d?.venta??d?.price??d?.Precio??
-    d?.usd??d?.USD??d?.rates?.USD??d?.data?.usd??null;
-  const tryApis=[
-    async()=>{const d=await fetchRate('https://ve.dolarapi.com/v1/dolares/oficial');const r=extract(d);if(!isFinite(r))throw 0;return r;},
-    async()=>{const d=await fetchRate('https://pydolarvenezuela-api.azurewebsites.net/api/v1/dollar?page=bcv');const r=d?.price??d?.Precio;if(!isFinite(r))throw 0;return parseFloat(r);},
-    async()=>{const d=await fetchRate('https://api.vzla.io/v2/rates/bcv/');const r=extract(d);if(!isFinite(r))throw 0;return r;},
-    async()=>{const d=await fetchRate('https://docs.vzla.io/api/v2/rates/bcv/');const r=extract(d);if(!isFinite(r))throw 0;return r;},
-    async()=>{const d=await fetchRate('https://open.er-api.com/v6/latest/USD');const r=d?.rates?.VES;if(!isFinite(r)||r<1)throw 0;return r;}
-  ];
-  let r=null;
-  for(const fn of tryApis){try{r=await fn();if(r>1)break;}catch(_){}}
-  if(isFinite(r)&&r>1){
-    liveRates.vesPerUsd=r;
-    const disp=`1 USD = ${fmt(r,2)} VES`;
-    saveRateCache(id,disp,r);
-    setOk(id,disp,'Tasa BCV oficial');
-    recalcAll();
-  }else{setErr(id,loadRateCache(id));}
+// ── PRODUCTS ───────────────────────────────────────────────
+function addProd(){
+  const id=Date.now();
+  prods.push({id,name:'',cat:'general',qty:1,price:0,weight:0,cbm:0});
+  saveProds();renderProds();
+  setTimeout(()=>{const e=document.querySelector(`[data-id="${id}"][data-f="name"]`);if(e)e.focus();},60);
 }
 
-/* ── USDT/VES Paralelo/Binance ── */
-async function fetchBinance(){
-  const id='binance';setLoading(id);
-  const extract=d=>d?.paralelo?.promedio??d?.paralelo?.venta??d?.paralelo?.price??
-    d?.promedio??d?.venta??d?.price??d?.Precio??null;
-  const tryApis=[
-    async()=>{const d=await fetchRate('https://ve.dolarapi.com/v1/dolares/paralelo');const r=extract(d);if(!isFinite(r))throw 0;return r;},
-    async()=>{const d=await fetchRate('https://ve.dolarapi.com/v1/dolares/promedio');const r=extract(d);if(!isFinite(r))throw 0;return r;},
-    async()=>{const d=await fetchRate('https://pydolarvenezuela-api.azurewebsites.net/api/v1/dollar?page=enparalelovzla');const r=d?.price??d?.Precio;if(!isFinite(r))throw 0;return parseFloat(r);}
-  ];
-  let r=null;
-  for(const fn of tryApis){try{r=await fn();if(r>1)break;}catch(_){}}
-  if(isFinite(r)&&r>1){
-    const disp=`1 USDT = ${fmt(r,2)} VES`;
-    saveRateCache(id,disp,r);
-    setOk(id,disp,'Tasa paralelo/P2P');
-  }else{
-    /* Fallback: estimado BCV + 5% (solo referencial) */
-    const bcvR=liveRates.vesPerUsd;
-    if(bcvR&&bcvR>1){
-      const est=+(bcvR*1.05).toFixed(2);
-      const disp=`1 USDT ≈ ${fmt(est,2)} VES`;
-      saveRateCache(id,disp,est);
-      setOk(id,disp,'Estimado BCV+5% · Referencial');
-    }else{setErr(id,loadRateCache(id));}
+function delProd(id){
+  prods=prods.filter(p=>p.id!==id);saveProds();renderProds();calcAll();renderDash();
+}
+
+function upd(id,field,val){
+  const p=prods.find(x=>x.id===id);if(!p)return;
+  const nums=['qty','price','weight','cbm'];
+  p[field]=nums.includes(field)?(parseFloat(val)||0):val;
+  saveProds();updRow(id);calcAll();
+}
+
+function updRow(id){
+  const p=prods.find(x=>x.id===id);if(!p)return;
+  const pu=R.y>0?p.price/R.y:0;
+  const tC=p.qty*p.price, tU=R.y>0?tC/R.y:0;
+  const td=(i,c)=>document.querySelector(`td[data-id="${id}"][data-c="${c}"]`);
+  const ePU=td(id,'pu'),eTC=td(id,'tc'),eTU=td(id,'tu');
+  if(ePU)ePU.textContent='$'+fmt2(pu);
+  if(eTC)eTC.textContent='¥'+fmtN(tC);
+  if(eTU)eTU.textContent='$'+fmt2(tU);
+  updTotals();
+}
+
+function renderProds(){
+  const tb=document.getElementById('tbody-p');
+  const tt=document.getElementById('p-totals');
+  if(!tb)return;
+  if(!prods.length){
+    tb.innerHTML='<tr><td colspan="11"><div class="empty"><div class="empty-ico">📦</div><div class="empty-ttl">Sin productos</div><div class="empty-sub">Clic en "+ Agregar Producto"</div></div></td></tr>';
+    tt.style.display='none';return;
   }
-}
-const refreshers={yuan:fetchYuan,cop:fetchCOP,bcv:fetchBCV,binance:fetchBinance};
-async function refreshSingle(id){await(refreshers[id]||(() =>{}))();}
-async function updateRates(){await Promise.allSettled([fetchYuan(),fetchCOP(),fetchBCV(),fetchBinance()]);}
-function updateClock(){const d=new Date();document.getElementById('clock').textContent=d.toLocaleTimeString('es-VE',{hour:'2-digit',minute:'2-digit',second:'2-digit'});document.getElementById('date-display').textContent=d.toLocaleDateString('es-VE',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});}
-
-/* ═══════ PASO 2: PRODUCTOS ═══════ */
-let products=[];
-function loadProds(){try{products=JSON.parse(localStorage.getItem(LS_PRODS)||'[]');}catch(_){products=[];}}
-function saveProds(){try{localStorage.setItem(LS_PRODS,JSON.stringify(products));}catch(_){}}
-const COL_MAP={
-  name:['product name','product','nombre producto','nombre','descripcion','description','item name','item','articulo','artículo','mercancia','mercancía','goods','detalle','concepto','producto','denominacion','denominación'],
-  qty:['quantity','cantidad','qty','units','unidades','cant','pcs','pieces','amount','total units','unidad','num','número','numero','nro'],
-  price:['unit price','precio unitario','precio unit','price cny','precio yuan','unit cost','costo unitario','precio','price','cost','costo','valor unit','valor','cny','rmb','¥','p.unit'],
-  weight:['gross weight','net weight','peso bruto','peso neto','weight kg','peso kg','weight','peso','wgt','g.w.','g.w','n.w.','n.w','gw','nw','kg'],
-  cbm:['cbm/unit','cbm per unit','m3/unit','volume','volumen','cbm','vol','m3','m³','cubic','cubico','cúbico'],
-  sku:['product code','item code','part number','part no','código producto','codigo producto','sku','code','código','codigo','ref','reference','modelo','art','id','clave'],
-  category:['category','categoría','categoria','type','tipo','cat','linea','línea','grupo','group','clase','class','familia']
-};
-function detectCols(headers){
-  const map={};
-  headers.forEach((h,i)=>{
-    const n=String(h).toLowerCase().trim().replace(/[\-_\.]/g,' ').replace(/\s+/g,' ');
-    if(!n)return;
-    for(const[f,aliases]of Object.entries(COL_MAP)){
-      if(map[f]!==undefined)continue;
-      if(aliases.some(a=>n===a||n.startsWith(a+' ')||n.endsWith(' '+a)||n.includes(a)))map[f]=i;
-    }
-  });
-  return map;
-}
-function parseCSV(text){const lines=[];let cur='',inQ=false;for(let i=0;i<text.length;i++){const ch=text[i];if(ch==='"'){inQ=!inQ;}else if((ch==='\n'||ch==='\r')&&!inQ){if(cur.trim())lines.push(cur);cur='';if(ch==='\r'&&text[i+1]==='\n')i++;}else{cur+=ch;}}if(cur.trim())lines.push(cur);if(lines.length<2)throw new Error('Archivo vacío o sin datos');const delim=lines[0].includes(';')?';':',';const split=row=>{const cells=[];let cell='';let q=false;for(const ch of row){if(ch==='"'){q=!q;}else if(ch===delim&&!q){cells.push(cell.trim());cell='';}else{cell+=ch;}}return[...cells,cell.trim()];};const headers=split(lines[0]);return{headers,colMap:detectCols(headers),rows:lines.slice(1).map(split)};}
-function parseExcel(buf){
-  const wb=XLSX.read(buf,{type:'array'});
-  if(!wb.SheetNames.length)throw new Error('Archivo sin hojas de cálculo');
-  const ws=wb.Sheets[wb.SheetNames[0]];
-  // raw:true (default) returns numbers as numbers — never use raw:false (formats as string)
-  const data=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-  if(!data.length)throw new Error('Hoja vacía');
-  // Find best header row among first 6 rows (skip title/logo rows)
-  let hRow=0,bestScore=0;
-  for(let i=0;i<Math.min(6,data.length);i++){
-    const row=data[i];
-    if(!row||!row.some(c=>String(c??'').trim()))continue;
-    const score=Object.keys(detectCols(row.map(String))).length;
-    if(score>bestScore){bestScore=score;hRow=i;}
-    if(score>=3)break;
-  }
-  const headers=data[hRow].map(String);
-  let colMap=detectCols(headers);
-  // Fallback: if nothing detected, map by position (col0=name, col1=qty, col2=price, col3=weight, col4=cbm, col5=sku)
-  if(!Object.keys(colMap).length&&headers.length>0){
-    const pos=['name','qty','price','weight','cbm','sku'];
-    headers.forEach((_,i)=>{if(i<pos.length)colMap[pos[i]]=i;});
-  }
-  const rows=data.slice(hRow+1).filter(r=>Array.isArray(r)&&r.some(c=>String(c??'').trim()));
-  if(!rows.length)throw new Error('Sin filas de datos. Verifica que el archivo no está vacío.');
-  return{headers,colMap,rows};
-}
-function rowsToProducts(rows,colMap){const skuSet=new Set(products.map(p=>p.sku).filter(Boolean).map(s=>s.toLowerCase()));let added=0,dupes=0;const prods=[];for(const row of rows){if(row.every(c=>String(c).trim()===''))continue;const get=f=>{const i=colMap[f];return i!==undefined?String(row[i]??'').trim():'';};const getN=f=>{const i=colMap[f];if(i===undefined)return 0;const raw=row[i];if(typeof raw==='number')return(isFinite(raw)&&raw>=0)?raw:0;const s=String(raw??'').trim();const v=parseFloat(s.replace(/[^\d.,-]/g,'').replace(/\.(?=.*\.)/g,'').replace(',','.'));return(isFinite(v)&&v>=0)?v:0;};const skuVal=get('sku');if(skuVal&&skuSet.has(skuVal.toLowerCase())){dupes++;continue;}const p={id:'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),name:get('name')||'Producto sin nombre',sku:skuVal,qty:getN('qty')||1,price:getN('price'),weight:getN('weight'),cbm:getN('cbm'),category:get('category')};prods.push(p);if(skuVal)skuSet.add(skuVal.toLowerCase());added++;}return{prods,added,dupes};}
-
-/* ═══════ PASO 3: CÁLCULOS ═══════ */
-function calcAllProducts(){
-  if(!products.length)return[];
-  const cfg=loadCfg();
-  const{yuanPerUsd:yR,copPerUsd:cR,vesPerUsd:vR}=liveRates;
-  const noRates=!yR||!cR||!vR;
-  const n=products.length;
-  const ZERO={id:'',baseProdUSD:null,unitCostVES:null,priceWholesale:null,priceRetail:null,
-              marginWholesalePct:null,roi:null,channel:'—',alert:null,
-              totalCostVES:null,totalUSD:null,totalCOP:null};
-
-  /* ── Totales para distribución proporcional ── */
-  const totWeight=products.reduce((s,p)=>s+(p.qty||0)*(p.weight||0),0);
-  const totCBM   =products.reduce((s,p)=>s+(p.qty||0)*(p.cbm   ||0),0);
-  const totValCNY=products.reduce((s,p)=>s+(p.qty||0)*(p.price ||0),0);
-  const dist=cfg.distribution||'weight';
-
-  function wRatio(p){
-    /* Proporción del producto respecto al lote (para distribuir gastos fijos) */
-    if(dist==='weight'){const w=(p.qty||0)*(p.weight||0);return totWeight>0?w/totWeight:1/n;}
-    if(dist==='cbm')   {const c=(p.qty||0)*(p.cbm   ||0);return totCBM>0   ?c/totCBM   :1/n;}
-    if(dist==='value') {const v=(p.qty||0)*(p.price ||0);return totValCNY>0?v/totValCNY:1/n;}
-    return 1/n; // equal
-  }
-
-  return products.map(p=>{
-    if(noRates)return{...ZERO,id:p.id};
-    try{
-      const qty=Math.max(p.qty||1,1);
-      const wR =wRatio(p);
-
-      /* ═══ ETAPA 1: China → USD (producto) ═══
-         Solo el costo del producto en CNY convertido a USD.
-         Comisión bancaria se aplica sobre el valor en USD. */
-      const prodCNY =(p.qty||0)*(p.price||0);          // total CNY
-      const prodUSD = prodCNY / yR;                    // CNY → USD
-      const bankFee = prodUSD * (cfg.bankCommission||0) / 100;
-      const subtotalUSD = prodUSD + bankFee;            // producto + comisión
-
-      /* ═══ ETAPA 2: Costos marítimos internacionales (USD) ═══
-         Flete, seguro y gastos portuarios distribuidos por proporción. */
-      const freightShare  = (cfg.freight  ||0) * wR;
-      const insuranceShare= (cfg.insurance||0) * wR;
-      const portShare     = (cfg.portFees ||0) * wR;
-      const totalUSD = subtotalUSD + freightShare + insuranceShare + portShare;
-
-      /* ═══ ETAPA 3: Colombia (USD → COP + costos COP) ═══
-         Convertir todo lo acumulado en USD a COP, luego sumar gastos locales. */
-      const baseCOP        = totalUSD * cR;             // USD → COP
-      const transportShare = (cfg.transportCOL     ||0) * wR;
-      const customsShare   = (cfg.customsCOL        ||0) * wR;
-      const extraColShare  = (cfg.extraCOL          ||0) * wR;
-      const totalCOP = baseCOP + transportShare + customsShare + extraColShare;
-
-      /* ═══ ETAPA 4: Venezuela — conversión y aranceles ═══
-         Convertir COP → VES usando tasa cruzada (vesPerUSD / copPerUSD).
-         Luego aplicar arancel venezolano sobre el costo CIF convertido. */
-      const vesPerCOP   = vR / cR;                      // tasa cruzada COP→VES
-      const baseVES     = totalCOP * vesPerCOP;         // costo puesto en frontera VES
-      const tariffVES   = baseVES * (cfg.tariffVEN||0) / 100;  // arancel %
-
-      /* ═══ ETAPA 5: Costos internos Venezuela (VES) ═══
-         Nacionalización, transporte y operativos. Distribuidos por proporción. */
-      const nationalShare  = (cfg.nationalizationVEN||0) * wR;
-      const transportVENsh = (cfg.transportVEN       ||0) * wR;
-      const operatingShare = (cfg.operatingVEN       ||0) * wR;
-
-      const totalPreIVA = baseVES + tariffVES + nationalShare + transportVENsh + operatingShare;
-
-      /* ═══ ETAPA 6: IVA Venezuela 16% ═══
-         Aplicado sobre el total acumulado antes de IVA. */
-      const totalCostVES = totalPreIVA * (1 + (cfg.iva||16) / 100);
-
-      /* ═══ Precios y rentabilidad ═══ */
-      const unitCostVES = totalCostVES / qty;
-      const pw = unitCostVES * (1 + (cfg.marginWholesale||0) / 100);
-      const pr = unitCostVES * (1 + (cfg.marginRetail   ||0) / 100);
-
-      /* Márgenes sobre precio de venta */
-      const mwP = pw > 0 ? (pw - unitCostVES) / pw * 100 : 0;
-      const mrP = pr > 0 ? (pr - unitCostVES) / pr * 100 : 0;
-      /* ROI sobre costo */
-      const roi = unitCostVES > 0 ? (pw - unitCostVES) / unitCostVES * 100 : 0;
-
-      const channel = (p.qty||0)>50 && mwP>25 ? 'MAYOR' : mrP>40 ? 'DETAL' : 'AMBOS';
-      let alert=null;
-      if(roi>50)      alert={icon:'🔥',title:'Producto estrella',sub:`ROI ${fmt(roi,1)}%`};
-      else if(mrP>60) alert={icon:'💎',title:'Excelente detal',  sub:`Margen ${fmt(mrP,1)}%`};
-      else if((p.qty||0)>100&&mwP>25) alert={icon:'📦',title:'Ideal mayorista',sub:`${p.qty} uds`};
-      else if(roi>0&&roi<10) alert={icon:'⚠️',title:'Baja rentabilidad',sub:`ROI ${fmt(roi,1)}%`};
-
-      /* Función de seguridad: si cualquier resultado es NaN/Infinity → null */
-      const safe=v=>isFinite(v)?v:null;
-      return{
-        id:p.id,
-        baseProdUSD      :safe(subtotalUSD),  // solo el costo del producto en USD (sin logística)
-        totalUSD         :safe(totalUSD),
-        totalCOP         :safe(totalCOP),
-        totalCostVES     :safe(totalCostVES),
-        unitCostVES      :safe(unitCostVES),
-        priceWholesale   :safe(pw),
-        priceRetail      :safe(pr),
-        marginWholesalePct:safe(mwP),
-        roi              :safe(roi),
-        channel, alert
-      };
-    }catch(e){
-      console.error('[CalcNova calc]',p.name,e);
-      return{...ZERO,id:p.id};
-    }
-  });
-}
-
-let chartDirty=true,chartInst=null;
-function recalcAll(){renderTable();renderDashboard();renderRoute();if(document.getElementById('tab-productos').classList.contains('active')){renderChart();}else{chartDirty=true;}renderAlerts();renderSimulator();renderExportStatus();renderManualRatesSection();}
-
-/* ═══════ RENDER TABLE ═══════ */
-function renderTable(){
-  const tbody=document.getElementById('prod-tbody'),emptyEl=document.getElementById('prod-empty'),tblWrp=document.getElementById('prod-table-wrap');
-  document.getElementById('prod-count').textContent=products.length;
-  if(!products.length){emptyEl.hidden=false;tblWrp.hidden=true;renderRatesBar();return;}
-  emptyEl.hidden=true;tblWrp.hidden=false;
-  const prev=document.activeElement;const wasEdit=prev?.classList?.contains('editable')&&tbody.contains(prev);
-  const rId=wasEdit?prev.dataset.id:null,rF=wasEdit?prev.dataset.f:null;
-  const calcs=calcAllProducts();const yR=liveRates.yuanPerUsd;const cfg=loadCfg();
-  let tQty=0,tCNY=0,tUSD=0,hasUSD=false,tCVES=0,hasCVES=false,tROI=0,cCnt=0;
-  tbody.innerHTML=products.map(p=>{
-    const c=calcs.find(x=>x.id===p.id)||{};
-    const subCNY=(p.qty||0)*(p.price||0);
-    // Base $: solo el producto (sin logística); usa baseProdUSD de calcAllProducts si existe
-    const baseUSD=c.baseProdUSD!=null?c.baseProdUSD:((yR&&isFinite(yR))?subCNY/yR:null);
-    tQty+=p.qty||0;tCNY+=subCNY;
-    if(baseUSD!=null){tUSD+=baseUSD;hasUSD=true;}
-    if(c.totalCostVES!=null){tCVES+=c.totalCostVES;hasCVES=true;}
-    if(c.roi!=null){tROI+=c.roi;cCnt++;}
-    const rCls=c.roi!=null?(c.roi>30?'roi-g':c.roi>15?'roi-y':'roi-r'):'';
-    const chCls={MAYOR:'ch-mayor',DETAL:'ch-detal',AMBOS:'ch-ambos'}[c.channel]||'';
-    const qty=p.qty||0;
-    return`<tr class="fi" data-id="${p.id}">
-      <td><span class="editable" data-f="name" data-id="${p.id}" contenteditable="true" spellcheck="false">${esc(p.name)}</span></td>
-      <td><span class="editable" data-f="sku" data-id="${p.id}" contenteditable="true" spellcheck="false">${esc(p.sku)}</span></td>
-      <td><span class="editable n" data-f="qty" data-id="${p.id}" contenteditable="true" spellcheck="false">${fmt(p.qty,2)??'0'}</span></td>
-      <td><span class="editable n" data-f="price" data-id="${p.id}" contenteditable="true" spellcheck="false">${fmt(p.price,4)??'0'}</span></td>
-      <td><span class="editable n" data-f="weight" data-id="${p.id}" contenteditable="true" spellcheck="false">${fmt(p.weight,3)??'0'}</span></td>
-      <td><span class="editable n" data-f="cbm" data-id="${p.id}" contenteditable="true" spellcheck="false">${fmt(p.cbm,4)??'0'}</span></td>
-      <td class="rc">${fmt(subCNY,2)??'0'} ¥</td>
-      <td class="${baseUSD!=null?'rc':'dc'}" title="Costo del producto en USD antes de logística">${baseUSD!=null?fmt(baseUSD,2)+' $':'—'}</td>
-      <td class="${c.unitCostVES!=null?'rc':'dc'}" title="Costo por unidad: producto + logística + IVA ${cfg.iva||16}%">${c.unitCostVES!=null?fmt(c.unitCostVES,2)+' Bs':'—'}</td>
-      <td class="${c.totalCostVES!=null?'rc ves-total':'dc'}" title="Inversión total: ${qty} ud × Costo/ud (incluye logística + IVA)">${c.totalCostVES!=null?fmt(c.totalCostVES,2)+' Bs':'—'}</td>
-      <td class="rc">${c.priceWholesale!=null?fmt(c.priceWholesale,2)+' Bs':'—'}</td>
-      <td class="rc">${c.priceRetail!=null?fmt(c.priceRetail,2)+' Bs':'—'}</td>
-      <td class="rc ${rCls}">${c.roi!=null?fmt(c.roi,1)+'%':'—'}</td>
-      <td><span class="ch-badge ${chCls}">${c.channel||'—'}</span></td>
-      <td><button class="del-btn" onclick="deleteProduct('${p.id}')" title="Eliminar"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button></td>
+  tt.style.display='block';
+  const cats=['general','electrónica','ropa','calzado','hogar','juguetes','alimentos','otros'];
+  tb.innerHTML=prods.map((p,i)=>{
+    const pu=R.y>0?p.price/R.y:0;
+    const tC=p.qty*p.price,tU=R.y>0?tC/R.y:0;
+    const catOpts=cats.map(c=>`<option value="${c}"${p.cat===c?' selected':''}>${c}</option>`).join('');
+    return `<tr>
+      <td style="color:var(--muted);font-size:11px">${i+1}</td>
+      <td><input class="tdi" data-id="${p.id}" data-f="name" value="${esc(p.name)}" placeholder="Nombre" style="min-width:140px" onchange="upd(${p.id},'name',this.value)"></td>
+      <td><select class="tdi" style="min-width:100px" onchange="upd(${p.id},'cat',this.value)">${catOpts}</select></td>
+      <td><input class="tdi tn" data-id="${p.id}" data-f="qty" type="number" min="1" value="${p.qty}" style="width:65px;text-align:right" oninput="upd(${p.id},'qty',this.value)"></td>
+      <td><input class="tdi tn" data-id="${p.id}" data-f="price" type="number" min="0" value="${p.price}" style="width:85px;text-align:right" placeholder="¥0" oninput="upd(${p.id},'price',this.value)"></td>
+      <td class="tn tg" data-id="${p.id}" data-c="pu">$${fmt2(pu)}</td>
+      <td><input class="tdi tn" data-id="${p.id}" data-f="weight" type="number" min="0" step="0.01" value="${p.weight}" style="width:75px;text-align:right" oninput="upd(${p.id},'weight',this.value)"></td>
+      <td><input class="tdi tn" data-id="${p.id}" data-f="cbm" type="number" min="0" step="0.001" value="${p.cbm}" style="width:75px;text-align:right" oninput="upd(${p.id},'cbm',this.value)"></td>
+      <td class="tn to" data-id="${p.id}" data-c="tc">¥${fmtN(tC)}</td>
+      <td class="tn tg" data-id="${p.id}" data-c="tu">$${fmt2(tU)}</td>
+      <td><button class="btn btn-d btn-ico btn-sm" onclick="delProd(${p.id})" title="Eliminar">×</button></td>
     </tr>`;
   }).join('');
-  document.getElementById('total-count').textContent=`${products.length} prod${products.length!==1?'s':''}`;
-  document.getElementById('total-qty').textContent=fmt(tQty,2)??'0';
-  document.getElementById('total-cny').textContent=(fmt(tCNY,2)??'0')+' ¥';
-  document.getElementById('total-usd').textContent=hasUSD?(fmt(tUSD,2)??'0')+' $':'—';
-  document.getElementById('total-cost-ves').textContent=hasCVES?(fmt(tCVES,2)??'0')+' Bs':'—';
-  document.getElementById('total-roi').textContent=cCnt?(fmt(tROI/cCnt,1)??'—')+'%':'—';
-  renderRatesBar();
-  if(rId&&rF){const el=tbody.querySelector(`[data-id="${rId}"][data-f="${rF}"]`);if(el){el.focus();try{const r=document.createRange();r.selectNodeContents(el);r.collapse(false);window.getSelection().removeAllRanges();window.getSelection().addRange(r);}catch(_){}}}
+  updTotals();
 }
 
-/* ── Barra de tasas activas y estado de logística ── */
-function renderRatesBar(){
-  const bar=document.getElementById('rates-info-bar');
-  if(!bar)return;
-  bar.hidden=!products.length;
-  if(!products.length)return;
-  const{yuanPerUsd:yR,copPerUsd:cR,vesPerUsd:vR}=liveRates;
-  const cfg=loadCfg();
-  const rEl=document.getElementById('rates-bar-rates');
-  const lEl=document.getElementById('rates-bar-logistics');
-  if(!rEl||!lEl)return;
-  /* Tasas */
-  if(yR&&cR&&vR){
-    rEl.innerHTML=`⚡ <strong>Tasas activas:</strong> ¥${fmt(yR,4)}=US$1  ·  US$1=COP ${fmt(cR,0)}  ·  US$1=Bs ${fmt(vR,2)}`;
-    rEl.style.color='var(--green)';
-  }else{
-    const miss=[];if(!yR)miss.push('Yuan/USD');if(!cR)miss.push('COP/USD');if(!vR)miss.push('VES/USD');
-    rEl.textContent=`⚠️ Tasa${miss.length>1?'s':''} no cargada${miss.length>1?'s':''}: ${miss.join(', ')} — recarga la página`;
-    rEl.style.color='var(--gold)';
+function updTotals(){
+  const u=prods.reduce((s,p)=>s+(p.qty||0),0);
+  const w=prods.reduce((s,p)=>s+(p.qty||0)*(p.weight||0),0);
+  const cb=prods.reduce((s,p)=>s+(p.qty||0)*(p.cbm||0),0);
+  const cn=prods.reduce((s,p)=>s+(p.qty||0)*(p.price||0),0);
+  const ud=R.y>0?cn/R.y:0;
+  setText('t-units',fmtN(u));setText('t-weight',fmt2(w)+' KG');setText('t-cbm',fmt4(cb));setText('t-cny','¥'+fmtN(cn));setText('t-usd','$'+fmt2(ud));
+}
+
+function clearProds(){
+  if(!confirm('¿Eliminar todos los productos?'))return;
+  prods=[];saveProds();renderProds();calcAll();renderDash();
+}
+
+// ── COSTS FORM ─────────────────────────────────────────────
+function loadCostForm(){
+  const sv=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v||0;};
+  sv('c-freight',cfg.freight);sv('c-ins',cfg.insurance);sv('c-portO',cfg.portOrigin);sv('c-bank',cfg.bankCommission);
+  sv('c-portC',cfg.portCOL);sv('c-custom',cfg.customsCOL);sv('c-trCOL',cfg.transportCOL);sv('c-cuc',cfg.cucuta);sv('c-exCOL',cfg.extraCOL);
+  sv('c-trVEN',cfg.transportVEN);sv('c-nat',cfg.nationalizationVEN);sv('c-op',cfg.operatingVEN);sv('c-tariff',cfg.tariffVEN);sv('c-exVEN',cfg.extraVEN);
+  sv('c-iva',cfg.iva||16);sv('c-mw',cfg.marginWholesale);sv('c-mr',cfg.marginRetail);
+  const p=document.getElementById('c-port');if(p)p.value=cfg.port||'buenaventura';
+  const d=document.getElementById('c-dist');if(d)d.value=cfg.distribution||'weight';
+  const vr=document.getElementById('c-vrate');if(vr)vr.value=cfg.vesRate||'bcv';
+}
+
+function saveCosts(){
+  const g=id=>parseFloat(document.getElementById(id)?.value)||0;
+  cfg.freight=g('c-freight');cfg.insurance=g('c-ins');cfg.portOrigin=g('c-portO');cfg.bankCommission=g('c-bank');
+  cfg.portCOL=g('c-portC');cfg.customsCOL=g('c-custom');cfg.transportCOL=g('c-trCOL');cfg.cucuta=g('c-cuc');cfg.extraCOL=g('c-exCOL');
+  cfg.transportVEN=g('c-trVEN');cfg.nationalizationVEN=g('c-nat');cfg.operatingVEN=g('c-op');cfg.tariffVEN=g('c-tariff');cfg.extraVEN=g('c-exVEN');
+  cfg.iva=g('c-iva');cfg.marginWholesale=g('c-mw');cfg.marginRetail=g('c-mr');
+  cfg.port=document.getElementById('c-port')?.value||'buenaventura';
+  cfg.distribution=document.getElementById('c-dist')?.value||'weight';
+  cfg.vesRate=document.getElementById('c-vrate')?.value||'bcv';
+  saveCfg(cfg);toast('Costos guardados');
+}
+
+// ── CALC ───────────────────────────────────────────────────
+function calcAll(){
+  if(!prods.length){
+    const rs=document.getElementById('res-section');if(rs)rs.style.display='none';
+    return null;
   }
-  /* Logística */
-  const intl=(cfg.freight||0)+(cfg.insurance||0)+(cfg.portFees||0);
-  const col =(cfg.transportCOL||0)+(cfg.customsCOL||0)+(cfg.extraCOL||0);
-  const ven =(cfg.nationalizationVEN||0)+(cfg.transportVEN||0)+(cfg.operatingVEN||0);
-  const hasLog=!!(intl||col||ven||cfg.tariffVEN||cfg.bankCommission);
-  if(hasLog){
-    const parts=[];
-    if(intl)parts.push(`Marítimo $${fmt(intl,0)}`);
-    if(cfg.bankCommission)parts.push(`Banco ${cfg.bankCommission}%`);
-    if(col)parts.push(`Colombia COP ${fmt(col,0)}`);
-    if(cfg.tariffVEN)parts.push(`Arancel ${cfg.tariffVEN}%`);
-    if(ven)parts.push(`Venezuela Bs ${fmt(ven,0)}`);
-    parts.push(`IVA ${cfg.iva||16}%`);
-    lEl.innerHTML=`✅ <strong>Logística incluida:</strong> ${parts.join(' · ')}`;
-    lEl.style.color='var(--green)';
-  }else{
-    lEl.innerHTML=`⚠️ <strong>Sin costos de logística</strong> — Costo/Ud Bs = solo conversión del producto + IVA ${cfg.iva||16}%. Configura en <em>Configuración Financiera</em>`;
-    lEl.style.color='var(--gold)';
+  const yr=R.y||0,cr=R.c||0;
+  const vr=cfg.vesRate==='paralelo'?(R.p||R.v||0):(R.v||0);
+  if(yr<=0||cr<=0||vr<=0){
+    const rs=document.getElementById('res-section');if(rs)rs.style.display='none';
+    return null;
   }
+  const totW=prods.reduce((s,p)=>s+(p.qty||0)*(p.weight||0),0);
+  const totCBM=prods.reduce((s,p)=>s+(p.qty||0)*(p.cbm||0),0);
+  const totVal=prods.reduce((s,p)=>s+(p.qty||0)*(p.price||0)/yr,0);
+  const nP=prods.length||1;
+
+  const results=prods.map(p=>{
+    const qty=Math.max(1,p.qty||1);
+    const pW=(p.qty||0)*(p.weight||0);
+    const pCBM=(p.qty||0)*(p.cbm||0);
+    const pVal=(p.qty||0)*(p.price||0)/yr;
+    let wR=0;
+    if(cfg.distribution==='weight') wR=totW>0?pW/totW:1/nP;
+    else if(cfg.distribution==='cbm') wR=totCBM>0?pCBM/totCBM:1/nP;
+    else if(cfg.distribution==='value') wR=totVal>0?pVal/totVal:1/nP;
+    else wR=1/nP;
+
+    // Stage 1: CNY→USD
+    const prodCNY=(p.qty||0)*(p.price||0);
+    const prodUSD=prodCNY/yr;
+    const bankFee=prodUSD*(cfg.bankCommission||0)/100;
+    const sub1=prodUSD+bankFee;
+
+    // Stage 2: Maritime
+    const s2=sub1+(cfg.freight||0)*wR+(cfg.insurance||0)*wR+(cfg.portOrigin||0)*wR;
+
+    // Stage 3: COL
+    const baseCOP=s2*cr;
+    const totalCOP=baseCOP+(cfg.portCOL||0)*wR+(cfg.customsCOL||0)*wR+(cfg.transportCOL||0)*wR+(cfg.cucuta||0)*wR+(cfg.extraCOL||0)*wR;
+
+    // Stage 4: VES + tariff
+    const vPerCOP=vr/cr;
+    const baseVES=totalCOP*vPerCOP;
+    const tariffVES=baseVES*(cfg.tariffVEN||0)/100;
+
+    // Stage 5: VES costs
+    const preIVA=baseVES+tariffVES+(cfg.transportVEN||0)*wR+(cfg.nationalizationVEN||0)*wR+(cfg.operatingVEN||0)*wR+(cfg.extraVEN||0)*wR;
+
+    // Stage 6: IVA
+    const totalVES=preIVA*(1+(cfg.iva||16)/100);
+    const unitVES=totalVES/qty;
+    const pMayor=unitVES*(1+(cfg.marginWholesale||0)/100);
+    const pDetal=unitVES*(1+(cfg.marginRetail||0)/100);
+    const ganancia=(cfg.marginRetail||0)>0?(pDetal*qty-totalVES):0;
+    const margen=totalVES>0?(ganancia/totalVES*100):0;
+    const roi=totalVES>0?(ganancia/totalVES*100):0;
+    let rec='MARGEN BAJO';
+    if(roi>50)rec='ALTA RENTABILIDAD';
+    else if(margen>30)rec='IDEAL DETAL';
+    else if(margen>10)rec='IDEAL MAYOR';
+
+    return {p,qty,totalVES,unitVES,pMayor,pDetal,ganancia,margen,roi,rec,prodUSD,s2};
+  });
+
+  renderResults(results);
+  return results;
 }
 
-document.getElementById('prod-tbody').addEventListener('blur',e=>{
-  const el=e.target;if(!el.classList.contains('editable'))return;
-  const{f,id}=el.dataset;const prod=products.find(p=>p.id===id);if(!prod)return;
-  const raw=el.textContent.trim();const numFields=['qty','price','weight','cbm'];
-  if(numFields.includes(f)){const n=parseFloat(raw.replace(/[^\d.,-]/g,'').replace(',','.'));if(isFinite(n)&&n>=0)prod[f]=n;const dec={qty:2,price:4,weight:3,cbm:4}[f]||2;el.textContent=fmt(prod[f],dec)??'0';}
-  else{prod[f]=raw||(f==='name'?'Producto sin nombre':'');el.textContent=prod[f];}
-  saveProds();setTimeout(()=>recalcAll(),0);
-},true);
-
-function deleteProduct(id){products=products.filter(p=>p.id!==id);saveProds();recalcAll();}
-function clearAll(){if(!products.length)return;if(!confirm('¿Eliminar todos los productos?'))return;products=[];saveProds();recalcAll();showToast('Tabla vaciada','ok');}
-
-/* ═══════ RENDER DASHBOARD ═══════ */
-function renderDashboard(){
-  const calcs=calcAllProducts();
-  document.getElementById('kpi-prods').textContent=products.length;
-  if(!calcs.length||calcs.every(c=>c.totalCostVES===null)){
-    ['kpi-invest','kpi-margin','kpi-roi'].forEach(id=>document.getElementById(id).textContent='—');return;
-  }
-  let inv=0,marg=0,roi=0,cnt=0;
-  for(const c of calcs){if(c.totalCostVES!=null)inv+=c.totalCostVES;if(c.marginWholesalePct!=null){marg+=c.marginWholesalePct;cnt++;}if(c.roi!=null)roi+=c.roi;}
-  document.getElementById('kpi-invest').textContent=(fmt(inv,0)??'—')+' Bs';
-  document.getElementById('kpi-margin').textContent=cnt?(fmt(marg/cnt,1)??'—')+'%':'—';
-  document.getElementById('kpi-roi').textContent=cnt?(fmt(roi/cnt,1)??'—')+'%':'—';
-}
-
-/* ═══════ RENDER ROUTE ═══════ */
-function renderRoute(){
-  const cfg=loadCfg();
-  const port=PORTS[getSelectedPort()]||PORTS.buenaventura;
-  const portNameEl=document.getElementById('route-puerto-name');
-  if(portNameEl)portNameEl.textContent=`${port.name} 🇨🇴`;
-
-  const totalYuan=products.reduce((s,p)=>s+(p.qty||0)*(p.price||0),0);
-  const calcs=calcAllProducts();
-  const totalUSD =calcs.reduce((s,c)=>s+(c.totalUSD||0),0);
-  const totalCOP =calcs.reduce((s,c)=>s+(c.totalCOP||0),0);
-  const totalVES =calcs.reduce((s,c)=>s+(c.totalCostVES||0),0);
-
-  /* China: costo total en Yuan */
-  document.getElementById('route-china').textContent=
-    totalYuan>0?`¥ ${fmt(totalYuan,0)}`:'¥ —';
-
-  /* Flete marítimo: flete + seguro en USD */
-  const fleTotal=(cfg.freight||0)+(cfg.insurance||0);
-  document.getElementById('route-flete').textContent=
-    fleTotal>0?`$ ${fmt(fleTotal,0)} USD`:'—';
-
-  /* Puerto Colombia: gastos portuarios + costo acumulado USD */
-  document.getElementById('route-bvta').textContent=
-    cfg.portFees>0?`$ ${fmt(cfg.portFees,0)} USD`:'$ —';
-
-  /* Transporte Puerto→Cúcuta */
-  document.getElementById('route-transport-col').textContent=
-    cfg.transportCOL>0?`${fmt(cfg.transportCOL,0)} COP`:'—';
-
-  /* Cúcuta: aduanas Colombia */
-  document.getElementById('route-cucuta').textContent=
-    cfg.customsCOL>0?`${fmt(cfg.customsCOL,0)} COP`:'—';
-
-  /* Frontera: arancel Venezuela */
-  document.getElementById('route-frontera').textContent=
-    cfg.tariffVEN>0?`Arancel ${cfg.tariffVEN}%`:'Frontera';
-
-  /* San Antonio: transporte + nacionalización VES */
-  const venFixed=(cfg.transportVEN||0)+(cfg.nationalizationVEN||0);
-  document.getElementById('route-tachira').textContent=
-    venFixed>0?`Bs ${fmt(venFixed,0)}`:'Bs —';
-
-  /* IVA */
-  document.getElementById('route-iva').textContent=`IVA ${cfg.iva||16}%`;
-
-  /* Venezuela final: costo total VES */
-  document.getElementById('route-ve').textContent=
-    totalVES>0?`Bs ${fmt(totalVES,0)}`:'Bs —';
-}
-
-/* ═══════ RENDER CHART ═══════ */
-function renderChart(){
-  chartDirty=false;
-  const sec=document.getElementById('analysis-section');
-  if(!products.length){sec.hidden=true;return;}
-  sec.hidden=false;
-  if(typeof Chart==='undefined')return;
-  const cfg=loadCfg();const cR=liveRates.copPerUsd||1,vR=liveRates.vesPerUsd||1;
-  const calcs=calcAllProducts();
-  let preIVA=0;calcs.forEach(c=>{if(c.totalCostVES!=null)preIVA+=c.totalCostVES/(1+cfg.iva/100);});
-  const data=[cfg.freight,cfg.insurance,Math.max(cfg.portFees+cfg.customsCOL/cR,0),Math.max(cfg.transportCOL/cR+(cfg.transportVEN+cfg.operatingVEN)/vR,0),Math.max(preIVA*(cfg.iva/100)/vR,0)];
-  try{if(chartInst){chartInst.destroy();chartInst=null;}
-  chartInst=new Chart(document.getElementById('expense-chart').getContext('2d'),{type:'doughnut',data:{labels:['Flete','Seguro','Aduanas/Puerto','Transporte','IVA'],datasets:[{data,backgroundColor:['#10B981CC','#F59E0BCC','#3B82F6CC','#8B5CF6CC','#EF4444CC'],borderColor:['#10B981','#F59E0B','#3B82F6','#8B5CF6','#EF4444'],borderWidth:1.5,hoverOffset:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#94A3B8',font:{size:11},padding:10}},tooltip:{callbacks:{label:c=>` ${c.label}: $${fmt(c.raw,0)??'0'} USD`}}}}});}
-  catch(e){console.warn('Chart error:',e);}
-}
-
-/* ═══════ RENDER ALERTS ═══════ */
-function renderAlerts(){
-  const list=document.getElementById('alerts-list');if(!list)return;
-  const calcs=calcAllProducts();
-  const items=calcs.filter(c=>c.alert).map(c=>({...c.alert,product:products.find(p=>p.id===c.id)?.name||'—'}));
-  if(!items.length){list.innerHTML='<div class="alert-empty">Sin alertas · Configura márgenes e importa productos</div>';return;}
-  list.innerHTML=items.slice(0,8).map(a=>`<div class="alert-item"><span class="alert-icon">${a.icon}</span><div><div class="alert-title">${a.title} — ${esc(a.product)}</div><div class="alert-sub">${a.sub||''}</div></div></div>`).join('');
-}
-
-/* ═══════ PASO 4: TABS ═══════ */
-function showTab(tab){
-  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(el=>el.classList.toggle('active',el.dataset.tab===tab||(el.textContent.toLowerCase().includes(tab.split('')[0])&&el.dataset.tab===undefined)));
-  document.querySelectorAll(`[data-tab="${tab}"]`).forEach(el=>el.classList.add('active'));
-  document.getElementById(`tab-${tab}`).classList.add('active');
-  if(tab==='productos'&&chartDirty)renderChart();
-  if(tab==='contenedor')renderSimulator();
-  if(tab==='exportar'){renderExportStatus();renderHistory();}
-  if(tab==='dashboard')renderRoute();
-}
-function toggleMob(){document.getElementById('mob-nav').classList.toggle('open');}
-
-/* ═══════ PASO 4: CONTAINER SIMULATOR ═══════ */
-/* Solo capacidad física — el flete viene de Configuración Financiera, no aquí */
-const CTYPES={
-  '20ft':{cbm:33,weight:18000},
-  '40ft':{cbm:67,weight:25000},
-  'consolidada':null
-};
-/* Los puertos definen la RUTA logística, no costos automáticos.
-   El usuario ingresa sus propios costos reales en la configuración. */
-const PORTS={
-  buenaventura:{name:'Buenaventura',emoji:'🚢',note:'Pacífico · 1.100 km a Cúcuta'},
-  barranquilla: {name:'Barranquilla', emoji:'⚓',note:'Caribe · 470 km a Cúcuta'},
-  cartagena:    {name:'Cartagena',    emoji:'🏰',note:'Caribe · 600 km a Cúcuta'}
-};
-function getSelectedPort(){return document.querySelector('input[name="port"]:checked')?.value||'buenaventura';}
-function onPortChange(){
-  const key=getSelectedPort();const port=PORTS[key];if(!port)return;
-  const cfg=loadCfg();cfg.selectedPort=key;saveCfg(cfg);
-  const lbl=document.getElementById('transport-col-lbl');
-  if(lbl)lbl.textContent=`Transporte ${port.name} → Cúcuta`;
-  const infoEl=document.getElementById('port-info-text');
-  if(infoEl)infoEl.textContent=`${port.emoji} Puerto ${port.name} — ${port.note} · Ingresa los costos reales en Configuración Financiera`;
-  recalcAll();showToast(`${port.emoji} Puerto ${port.name} seleccionado`,'ok');
-}
-let selectedProds=new Set();
-
-function getContainerSpecs(){
-  const type=document.querySelector('input[name="ctype"]:checked')?.value||'40ft';
-  if(type==='consolidada'){
-    return{cbm:parseFloat(document.getElementById('c-cbm').value)||0,weight:(parseFloat(document.getElementById('c-weight').value)||0)*1000};
-  }
-  return CTYPES[type]||CTYPES['40ft'];
-}
-
-function onCtypeChange(){
-  const type=document.querySelector('input[name="ctype"]:checked')?.value;
-  document.getElementById('consolidada-fields').hidden=type!=='consolidada';
-  renderSimulator();
-}
-
-function renderSimulator(){
-  renderCheckList();
-  const specs=getContainerSpecs();
-  const sel=products.filter(p=>selectedProds.has(p.id));
-  let totalCBM=0,totalWeight=0;
-  sel.forEach(p=>{totalCBM+=(p.qty||0)*(p.cbm||0);totalWeight+=(p.qty||0)*(p.weight||0);});
-  /* El flete viene de la Configuración Financiera, no de CTYPES */
-  const specs_freight=loadCfg().freight||0;
-  const cbmPct=specs.cbm>0?Math.min(totalCBM/specs.cbm*100,999):0;
-  const wPct=specs.weight>0?Math.min(totalWeight/specs.weight*100,999):0;
-  const progClass=pct=>pct>90?'prog-r':pct>70?'prog-y':'prog-g';
-  document.getElementById('cbm-bar').style.width=Math.min(cbmPct,100)+'%';
-  document.getElementById('cbm-bar').className='prog-fill '+progClass(cbmPct);
-  document.getElementById('cbm-display').textContent=`${fmt(totalCBM,2)??'0'} / ${fmt(specs.cbm||0,0)} m³ (${fmt(cbmPct,1)??'0'}%)`;
-  document.getElementById('weight-bar').style.width=Math.min(wPct,100)+'%';
-  document.getElementById('weight-bar').className='prog-fill '+progClass(wPct);
-  document.getElementById('weight-display').textContent=`${fmt(totalWeight,0)??'0'} / ${fmt(specs.weight||0,0)} kg (${fmt(wPct,1)??'0'}%)`;
-  document.getElementById('cbm-left').textContent=specs.cbm?`${fmt(Math.max(specs.cbm-totalCBM,0),2)} m³`:'—';
-  document.getElementById('weight-left').textContent=specs.weight?`${fmt(Math.max(specs.weight-totalWeight,0),0)} kg`:'—';
-  document.getElementById('sim-freight').textContent=`$ ${fmt(specs_freight,0)??'0'}`;
-  document.getElementById('sim-count').textContent=sel.length;
-  const recoList=document.getElementById('reco-list');
-  const recos=[];
-  if(sel.length===0){recos.push({cls:'info',msg:'ℹ️ Selecciona productos para comenzar la simulación'});}
-  else if(cbmPct>100||wPct>100){if(cbmPct>100)recos.push({cls:'bad',msg:'❌ Exceso de volumen — Reducir productos o cambiar a contenedor más grande'});if(wPct>100)recos.push({cls:'bad',msg:'❌ Exceso de peso — Cambiar a contenedor 40ft o dividir carga'});}
-  else if(cbmPct>=70&&cbmPct<=90&&wPct<=90){recos.push({cls:'good',msg:`✅ Combinación óptima — Contenedor al ${fmt(Math.max(cbmPct,wPct),0)}% de capacidad`});}
-  else if(cbmPct<50&&sel.length>0){recos.push({cls:'info',msg:'💰 Ahorro potencial — Consolidar con otro proveedor en esta carga'});}
-  else{recos.push({cls:'warn',msg:`⚠️ Uso actual: CBM ${fmt(cbmPct,0)}%, Peso ${fmt(wPct,0)}%`});}
-  recoList.innerHTML=recos.map(r=>`<div class="reco-item ${r.cls}">${r.msg}</div>`).join('');
-  renderContainerTable(sel,specs);
-}
-
-function renderCheckList(){
-  const list=document.getElementById('prod-check-list');
-  if(!products.length){list.innerHTML='<div class="alert-empty">Importa productos en la pestaña Productos</div>';return;}
-  list.innerHTML=products.map(p=>{
-    const totalCBM=(p.qty||0)*(p.cbm||0),totalWeight=(p.qty||0)*(p.weight||0);
-    return`<label class="prod-check-item"><input type="checkbox" value="${p.id}" ${selectedProds.has(p.id)?'checked':''} onchange="onProdCheck(this)"><div class="prod-check-info"><div class="prod-check-name">${esc(p.name)}</div><div class="prod-check-meta">Cant: ${p.qty} · CBM: ${fmt(totalCBM,3)??'0'} · Peso: ${fmt(totalWeight,1)??'0'} kg</div></div></label>`;
+function renderResults(rs){
+  const sec=document.getElementById('res-section');
+  const tb=document.getElementById('tbody-r');
+  if(!sec||!tb)return;
+  sec.style.display='block';
+  tb.innerHTML=rs.map(r=>{
+    const rClass={'ALTA':'b-o','DETAL':'b-b','MAYOR':'b-g','BAJO':'b-r'}[Object.keys({'ALTA':'','DETAL':'','MAYOR':'','BAJO':''}).find(k=>r.rec.includes(k))||'BAJO'];
+    return `<tr>
+      <td><strong>${esc(r.p.name||'Sin nombre')}</strong><div style="font-size:11px;color:var(--muted)">${r.p.cat} · ${r.qty} uds</div></td>
+      <td class="tn">Bs ${fmtN(r.unitVES)}</td>
+      <td class="tn tg">${(cfg.marginWholesale||0)>0?'Bs '+fmtN(r.pMayor):'—'}</td>
+      <td class="tn tb">${(cfg.marginRetail||0)>0?'Bs '+fmtN(r.pDetal):'—'}</td>
+      <td class="tn">Bs ${fmtN(r.totalVES)}</td>
+      <td class="tn ${r.ganancia>0?'tg':'tr'}">${r.ganancia>0?'Bs '+fmtN(r.ganancia):'—'}</td>
+      <td class="tn ${r.margen>15?'tg':r.margen>0?'to':'tr'}">${fmt1(r.margen)}%</td>
+      <td><span class="badge ${rClass}">${r.rec}</span></td>
+    </tr>`;
   }).join('');
 }
 
-function onProdCheck(cb){cb.checked?selectedProds.add(cb.value):selectedProds.delete(cb.value);renderSimulator();}
-function selectAll(val){products.forEach(p=>val?selectedProds.add(p.id):selectedProds.delete(p.id));renderSimulator();}
-
-function renderContainerTable(sel,specs){
-  const tbody=document.getElementById('container-tbody');
-  const emptyEl=document.getElementById('container-empty');
-  const wrap=document.getElementById('container-table-wrap');
-  if(!sel.length){tbody.innerHTML='';emptyEl.hidden=false;return;}
-  emptyEl.hidden=true;
-  const totalCBM=sel.reduce((s,p)=>s+(p.qty||0)*(p.cbm||0),0);
-  /* Flete real del usuario desde Configuración Financiera */
-  const freight=loadCfg().freight||0;
-  let tQty=0,tCBM=0,tW=0;
-  tbody.innerHTML=sel.map(p=>{
-    const pCBM=(p.qty||0)*(p.cbm||0),pW=(p.qty||0)*(p.weight||0);
-    const pct=totalCBM>0?pCBM/totalCBM*100:100/sel.length;
-    const pFreight=freight*pct/100;
-    tQty+=p.qty||0;tCBM+=pCBM;tW+=pW;
-    return`<tr class="fi"><td>${esc(p.name)}</td><td style="color:var(--muted)">${esc(p.sku)}</td><td class="rc">${p.qty}</td><td class="rc">${fmt(pCBM,3)??'0'} m³</td><td class="rc">${fmt(pW,1)??'0'} kg</td><td class="rc">${fmt(pct,1)??'0'}%</td><td class="rc">$${fmt(pFreight,2)??'0'}</td></tr>`;
-  }).join('');
-  document.getElementById('ct-qty').textContent=tQty;
-  document.getElementById('ct-cbm').textContent=(fmt(tCBM,2)??'0')+' m³';
-  document.getElementById('ct-weight').textContent=(fmt(tW,1)??'0')+' kg';
-  document.getElementById('ct-freight').textContent='$'+fmt(freight,0);
-}
-
-/* ═══════ PASO 4: EXPORT ═══════ */
-function renderExportStatus(){
-  const hasProds=products.length>0;
-  const caches=['yuan','cop','bcv'].map(k=>loadRateCache(k));
-  const ages=caches.map(c=>c?Date.now()-c.ts:Infinity);
-  const maxAge=Math.max(...ages);const ratesOk=maxAge<30*60*1000;
-  const calcs=calcAllProducts();const calcsOk=!calcs.some(c=>c.totalCostVES===null&&(liveRates.yuanPerUsd||liveRates.copPerUsd));
-  const set=(csId,cdId,ok,detail)=>{document.getElementById(csId).textContent=ok?'✅':'⚠️';document.getElementById(cdId).textContent=detail;};
-  set('cs-prods','cd-prods',hasProds,`${products.length} productos`);
-  set('cs-rates','cd-rates',ratesOk,ratesOk?`Hace ${Math.round(maxAge/60000)} min`:'Actualiza las tasas');
-  set('cs-calcs','cd-calcs',!products.length||calcsOk,calcsOk?'Sin errores':'Verifica tasas BCV/COP');
-}
-
-function exportExcel(){
-  if(!products.length){showToast('Sin productos para exportar','err');return;}
-  const calcs=calcAllProducts();const cfg=loadCfg();
-  const wb=XLSX.utils.book_new();
-  const headers=['Nombre','SKU','Categoría','Cantidad','Precio ¥','Peso kg','CBM m³','Subtotal ¥','Subtotal $','Costo Bs','P.Mayor Bs','P.Detal Bs','Margen %','ROI %','Canal'];
-  const rows=products.map(p=>{const c=calcs.find(x=>x.id===p.id)||{};const sub=(p.qty||0)*(p.price||0);const yR=liveRates.yuanPerUsd;return[p.name,p.sku,p.category,p.qty,p.price,p.weight,p.cbm,sub,yR?+(sub/yR).toFixed(2):null,c.unitCostVES!=null?+c.unitCostVES.toFixed(2):null,c.priceWholesale!=null?+c.priceWholesale.toFixed(2):null,c.priceRetail!=null?+c.priceRetail.toFixed(2):null,c.marginWholesalePct!=null?+c.marginWholesalePct.toFixed(2):null,c.roi!=null?+c.roi.toFixed(2):null,c.channel];});
-  const ws1=XLSX.utils.aoa_to_sheet([headers,...rows]);ws1['!cols']=[{wch:25},{wch:12},{wch:12},{wch:8},{wch:10},{wch:9},{wch:9},{wch:12},{wch:12},{wch:14},{wch:14},{wch:14},{wch:10},{wch:8},{wch:8}];
-  XLSX.utils.book_append_sheet(wb,ws1,'Productos');
-  const tCVES=calcs.reduce((s,c)=>s+(c.totalCostVES||0),0);const avgM=calcs.filter(c=>c.marginWholesalePct!=null).reduce((s,c,_,a)=>s+c.marginWholesalePct/a.length,0);const avgR=calcs.filter(c=>c.roi!=null).reduce((s,c,_,a)=>s+c.roi/a.length,0);
-  const ws2=XLSX.utils.aoa_to_sheet([['CalcNova ERP — Resumen Financiero'],[''],['Fecha',new Date().toLocaleDateString('es-VE')],[''],['Indicador','Valor'],['Total Productos',products.length],['Inversión Total (Bs)',+tCVES.toFixed(2)],['Margen Promedio (%)',+avgM.toFixed(2)],['ROI Promedio (%)',+avgR.toFixed(2)],[''],['Tasas Usadas'],['Yuan/USD',liveRates.yuanPerUsd??'N/A'],['COP/USD',liveRates.copPerUsd??'N/A'],['VES/USD (BCV)',liveRates.vesPerUsd??'N/A']]);
-  XLSX.utils.book_append_sheet(wb,ws2,'Resumen Financiero');
-  const selProds=products.filter(p=>selectedProds.has(p.id));const specs=getContainerSpecs();const tCBM=selProds.reduce((s,p)=>s+(p.qty||0)*(p.cbm||0),0);const tW=selProds.reduce((s,p)=>s+(p.qty||0)*(p.weight||0),0);
-  const ws3=XLSX.utils.aoa_to_sheet([['Simulación Contenedor'],[''],['Tipo',document.querySelector('input[name="ctype"]:checked')?.value||'40ft'],['CBM Total',+tCBM.toFixed(2)],['Peso Total (kg)',+tW.toFixed(1)],['Flete USD',specs.freight||0],['Productos Seleccionados',selProds.length]]);
-  XLSX.utils.book_append_sheet(wb,ws3,'Simulación Contenedor');
-  XLSX.writeFile(wb,`CalcNova_${new Date().toISOString().slice(0,10)}.xlsx`);
-  showToast('✅ Excel descargado','ok');
-}
-
-function exportCSV(){
-  if(!products.length){showToast('Sin productos para exportar','err');return;}
-  const calcs=calcAllProducts();
-  const rows=[['Nombre','SKU','Categoría','Cantidad','Precio Yuan','Peso kg','CBM m3','Subtotal Yuan','Subtotal USD','Costo Bs','Precio Mayor Bs','Precio Detal Bs','Margen %','ROI %','Canal']];
-  products.forEach(p=>{const c=calcs.find(x=>x.id===p.id)||{};const sub=(p.qty||0)*(p.price||0);const yR=liveRates.yuanPerUsd;rows.push([p.name,p.sku,p.category,p.qty,p.price,p.weight,p.cbm,sub,yR?(sub/yR).toFixed(2):'',c.unitCostVES!=null?c.unitCostVES.toFixed(2):'',c.priceWholesale!=null?c.priceWholesale.toFixed(2):'',c.priceRetail!=null?c.priceRetail.toFixed(2):'',c.marginWholesalePct!=null?c.marginWholesalePct.toFixed(2):'',c.roi!=null?c.roi.toFixed(2):'',c.channel||'']);});
-  const csv=rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
-  const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'})),download:`CalcNova_${new Date().toISOString().slice(0,10)}.csv`});
-  a.click();URL.revokeObjectURL(a.href);showToast('✅ CSV descargado','ok');
-}
-
-function exportPDF(){
-  if(!products.length){showToast('Sin productos para exportar','err');return;}
-  if(typeof html2pdf==='undefined'){showToast('Librería PDF no cargada, espera un momento','wrn');return;}
-  const calcs=calcAllProducts();
-  const tCVES=calcs.reduce((s,c)=>s+(c.totalCostVES||0),0);
-  const avgM=calcs.filter(c=>c.marginWholesalePct!=null).reduce((s,c,_,a)=>s+c.marginWholesalePct/a.length,0);
-  const pdfDiv=document.getElementById('pdf-content');
-  pdfDiv.innerHTML=`
-    <div style="text-align:center;margin-bottom:20px"><h1 style="color:#10B981;font-size:24px">CalcNova ERP</h1><p style="color:#64748B">${new Date().toLocaleDateString('es-VE',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</p></div>
-    <h2 style="border-bottom:2px solid #10B981;padding-bottom:8px;color:#1E293B;margin-bottom:16px">Dashboard Ejecutivo</h2>
-    <table style="width:100%;border-collapse:collapse;margin-bottom:20px">
-      <tr style="background:#10B981;color:white"><td style="padding:10px">Total Productos</td><td style="padding:10px">Inversión Total (Bs)</td><td style="padding:10px">Margen Promedio</td><td style="padding:10px">ROI Promedio</td></tr>
-      <tr style="background:#f8fafc"><td style="padding:10px;font-weight:bold;font-size:18px">${products.length}</td><td style="padding:10px;font-weight:bold;font-size:16px">${fmt(tCVES,0)??'—'}</td><td style="padding:10px;font-weight:bold;font-size:18px">${fmt(avgM,1)??'—'}%</td><td style="padding:10px;font-weight:bold;font-size:18px">${fmt(calcs.reduce((s,c,_,a)=>s+(c.roi||0)/a.length,0),1)??'—'}%</td></tr>
-    </table>
-    <h2 style="border-bottom:2px solid #10B981;padding-bottom:8px;color:#1E293B;margin-bottom:16px">Productos Importados</h2>
-    <table style="width:100%;border-collapse:collapse;font-size:11px">
-      <thead><tr style="background:#1E293B;color:white">${['Nombre','SKU','Cant','Precio ¥','Costo Bs','P.Mayor Bs','P.Detal Bs','ROI %','Canal'].map(h=>`<th style="padding:8px;text-align:left">${h}</th>`).join('')}</tr></thead>
-      <tbody>${products.map((p,i)=>{const c=calcs.find(x=>x.id===p.id)||{};return`<tr style="background:${i%2===0?'#f8fafc':'white'}"><td style="padding:7px">${p.name}</td><td style="padding:7px">${p.sku||'—'}</td><td style="padding:7px">${p.qty}</td><td style="padding:7px">${fmt(p.price,2)??'—'}</td><td style="padding:7px">${c.unitCostVES!=null?fmt(c.unitCostVES,2):'—'}</td><td style="padding:7px">${c.priceWholesale!=null?fmt(c.priceWholesale,2):'—'}</td><td style="padding:7px">${c.priceRetail!=null?fmt(c.priceRetail,2):'—'}</td><td style="padding:7px;color:${c.roi>30?'#10B981':c.roi>15?'#F59E0B':'#EF4444'}">${c.roi!=null?fmt(c.roi,1)+'%':'—'}</td><td style="padding:7px">${c.channel||'—'}</td></tr>`;}).join('')}</tbody>
-    </table>
-    <p style="margin-top:20px;font-size:10px;color:#64748B;text-align:center">Generado por CalcNova ERP · ${nowStr()} · Solo referencial</p>`;
-  pdfDiv.style.display='block';
-  html2pdf().set({margin:8,filename:`CalcNova_${new Date().toISOString().slice(0,10)}.pdf`,image:{type:'jpeg',quality:.97},html2canvas:{scale:2,logging:false},jsPDF:{unit:'mm',format:'a4',orientation:'landscape'}}).from(pdfDiv).save().then(()=>{pdfDiv.style.display='none';showToast('✅ PDF descargado','ok');}).catch(()=>{pdfDiv.style.display='none';showToast('Error generando PDF','err');});
-}
-
-/* ═══════ PASO 4: HISTORY ═══════ */
-function addHistory(filename,count){try{const h=JSON.parse(localStorage.getItem(LS_HIST)||'[]');h.unshift({filename,count,ts:Date.now()});localStorage.setItem(LS_HIST,JSON.stringify(h.slice(0,5)));}catch(_){}}
-function renderHistory(){const list=document.getElementById('history-list');try{const h=JSON.parse(localStorage.getItem(LS_HIST)||'[]');if(!h.length){list.innerHTML='<div class="alert-empty">Sin historial de importaciones</div>';return;}list.innerHTML=h.map(item=>`<div class="hist-item"><span class="hist-file">📁 ${esc(item.filename)}</span><span class="hist-count">${item.count} prods</span><span class="hist-time">${new Date(item.ts).toLocaleDateString('es-VE')}</span></div>`).join('');}catch(_){list.innerHTML='<div class="alert-empty">Sin historial</div>';}}
-
-/* ═══════ IMPORT HANDLER ═══════ */
-function showToast(msg,type='ok'){const el=document.getElementById('toast');el.textContent=msg;el.className=`toast t${type} show`;clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),3500);}
-function setImportStatus(s,msg){const el=document.getElementById('import-status');el.className=`import-status ${s}`;el.textContent=msg;el.hidden=false;}
-async function handleFile(file){
-  if(!file)return;
-  const ext=file.name.split('.').pop().toLowerCase();
-  if(!['xlsx','xls','csv'].includes(ext)){
-    showToast('Formato no soportado. Usa .xlsx, .xls o .csv','err');
-    setImportStatus('err','❌ Formato no soportado. Usa .xlsx, .xls o .csv');
+// ── DASHBOARD ──────────────────────────────────────────────
+function renderDash(){
+  const rs=calcAll();
+  if(!rs||!rs.length){
+    setText('st-inv','Bs 0');setText('st-inv2','$0 USD');
+    setText('st-util','Bs 0');setText('st-util2','0%');
+    setText('st-prods','0');setText('st-units','0 unidades');
+    setText('st-best','—');setText('st-best2','—');
+    const dl=document.getElementById('dash-list');
+    if(dl)dl.innerHTML='<div class="empty"><div class="empty-ico">📦</div><div class="empty-ttl">Sin productos</div><div class="empty-sub">Ve a Productos para agregar</div></div>';
+    if(mainChart){mainChart.destroy();mainChart=null;}
     return;
   }
-  if(file.size>15*1024*1024){showToast('Archivo muy grande (máx. 15 MB)','err');return;}
-  if(file.size>5*1024*1024)showToast(`Archivo grande (${(file.size/1048576).toFixed(1)} MB), procesando...`,'wrn');
-  setImportStatus('loading','⏳ Procesando...');
-  try{
-    let parsed;
-    if(ext==='csv'){
-      parsed=parseCSV(await file.text());
-    } else {
-      // Wait up to 4s for XLSX to load
-      let attempts=0;
-      while(typeof XLSX==='undefined'&&attempts<8){await new Promise(r=>setTimeout(r,500));attempts++;}
-      if(typeof XLSX==='undefined')throw new Error('XLSX_NOT_LOADED');
-      parsed=parseExcel(await file.arrayBuffer());
-    }
-    const detectedCols=Object.keys(parsed.colMap);
-    const{prods,added,dupes}=rowsToProducts(parsed.rows,parsed.colMap);
-    if(added===0&&dupes>0){
-      setImportStatus('warn',`⚠️ ${dupes} fila${dupes!==1?'s':''} omitida${dupes!==1?'s':''} (SKUs duplicados)`);
-      showToast('Todos los SKUs ya existen, nada importado','wrn');
-      return;
-    }
-    if(added===0){
-      setImportStatus('err','❌ No se pudieron importar filas. Verifica que el archivo tiene datos.');
-      return;
-    }
-    products.push(...prods);saveProds();addHistory(file.name,added);recalcAll();
-    let msg=`✅ ${added} producto${added!==1?'s':''} importado${added!==1?'s':''}`;
-    if(dupes>0)msg+=` · ${dupes} duplicado${dupes!==1?'s':''} omitido${dupes!==1?'s':''}`;
-    msg+=` · Columnas: ${detectedCols.join(', ')}`;
-    setImportStatus('ok',msg);showToast(`✅ ${added} productos importados`,'ok');
-  }catch(err){
-    if(err.message==='XLSX_NOT_LOADED'){
-      document.getElementById('xlsx-unavailable-banner').style.display='block';
-      setImportStatus('err','❌ El archivo .xlsx necesita internet para procesarse. Usa CSV: en Excel → Archivo → Guardar Como → CSV UTF-8');
-      showToast('Guarda como CSV y súbelo — siempre funciona','err');
-    }else{
-      setImportStatus('err',`❌ ${err.message}`);
-      showToast(`Error: ${err.message}`,'err');
-    }
-    console.error('[CalcNova import]',err);
+  const totInv=rs.reduce((s,r)=>s+r.totalVES,0);
+  const totUtil=rs.reduce((s,r)=>s+(r.ganancia>0?r.ganancia:0),0);
+  const totUnits=rs.reduce((s,r)=>s+r.qty,0);
+  const totUSD=rs.reduce((s,r)=>s+r.s2,0);
+  const best=rs.slice().sort((a,b)=>b.roi-a.roi)[0];
+  const margPct=totInv>0?(totUtil/totInv*100):0;
+
+  setText('st-inv','Bs '+fmtN(totInv));setText('st-inv2','$'+fmt2(totUSD)+' USD');
+  setText('st-util','Bs '+fmtN(totUtil));setText('st-util2',fmt1(margPct)+'% margen');
+  setText('st-prods',String(rs.length));setText('st-units',fmtN(totUnits)+' unidades');
+  if(best){setText('st-best',best.p.name||'Sin nombre');setText('st-best2','ROI: '+fmt1(best.roi)+'%');}
+
+  // Product list
+  const dl=document.getElementById('dash-list');
+  if(dl) dl.innerHTML=rs.map(r=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)">
+      <div><div style="font-weight:600;font-size:13px">${esc(r.p.name||'—')}</div><div style="font-size:11px;color:var(--dim)">${r.qty} uds · Bs ${fmtN(r.unitVES)}/ud</div></div>
+      <div style="text-align:right"><div style="font-weight:600;color:var(--green);font-size:13px">Bs ${fmtN(r.totalVES)}</div><div style="font-size:11px;color:var(--dim)">${fmt1(r.margen)}% margen</div></div>
+    </div>`).join('');
+
+  // Chart
+  const canvas=document.getElementById('chart-main');
+  if(canvas){
+    if(mainChart){mainChart.destroy();mainChart=null;}
+    const colors=['#10B981','#3B82F6','#F59E0B','#8B5CF6','#EF4444','#06B6D4','#84CC16','#F97316'];
+    mainChart=new Chart(canvas,{
+      type:'doughnut',
+      data:{labels:rs.map(r=>r.p.name||'—'),datasets:[{data:rs.map(r=>r.totalVES),backgroundColor:colors.slice(0,rs.length),borderWidth:0,hoverOffset:6}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{position:'bottom',labels:{color:'#94A3B8',font:{size:11},padding:10,boxWidth:10}},
+        tooltip:{callbacks:{label:c=>' Bs '+fmtN(c.parsed)}}}}
+    });
   }
-  document.getElementById('file-input').value='';
-}
-/* ── Importar archivos ──
-   El <label for="file-input"> ya conecta el click de forma nativa.
-   Solo necesitamos: el change del input + arrastrar y soltar. */
-const fileInput=document.getElementById('file-input');
-const dropZone=document.getElementById('drop-zone');
-fileInput.addEventListener('change',e=>{const f=e.target.files[0];if(f)handleFile(f);});
-/* Drag-and-drop */
-dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('drag-over');});
-dropZone.addEventListener('dragleave',e=>{if(!dropZone.contains(e.relatedTarget))dropZone.classList.remove('drag-over');});
-dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f)handleFile(f);});
-
-/* ═══════ DISTRIBUTION METHOD ═══════ */
-function onDistChange(val){
-  const cfg=loadCfg();cfg.distribution=val;saveCfg(cfg);recalcAll();
-  showToast(`Distribución: ${{'weight':'Peso','cbm':'CBM','value':'Valor','equal':'Igual'}[val]||val}`,'ok');
+  updateDashR();
 }
 
-/* ═══════ TASAS MANUALES ═══════ */
-/* Muestra el panel solo cuando alguna tasa no está cargada */
-function renderManualRatesSection(){
-  const sec=document.getElementById('manual-rates-section');
-  if(!sec)return;
-  const{yuanPerUsd:yR,copPerUsd:cR,vesPerUsd:vR}=liveRates;
-  sec.style.display=(!yR||!cR||!vR)?'block':'none';
+// ── SIMULATOR ──────────────────────────────────────────────
+function simTab(el,mode){
+  document.querySelectorAll('#sec-simulador .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');simMode=mode;renderSim();
 }
-/* Listener para los inputs de tasa manual */
-document.querySelectorAll('.manual-rate').forEach(inp=>{
-  inp.addEventListener('change',e=>{
-    const rate=e.target.dataset.rate;
-    const val=parseFloat(e.target.value);
-    if(!isFinite(val)||val<=0){showToast('Ingresa un número válido mayor a 0','err');return;}
-    if(rate==='yuan'){liveRates.yuanPerUsd=val;saveRateCache('yuan',`¥${fmt(val,4)} (manual)`,val);}
-    else if(rate==='cop') {liveRates.copPerUsd=val;saveRateCache('cop',`COP ${fmt(val,0)} (manual)`,val);}
-    else if(rate==='bcv') {liveRates.vesPerUsd=val;saveRateCache('bcv',`Bs ${fmt(val,2)} (manual)`,val);}
-    recalcAll();renderManualRatesSection();
-    showToast(`Tasa manual aplicada: ${val}`,'ok');
-  });
-});
+function renderSim(){
+  const ct=CTYPES[simMode];
+  const maxC=ct?.cbm,maxW=ct?.wt;
+  setText('s-maxC',maxC?String(maxC):'—');setText('s-maxW',maxW?fmtN(maxW):'—');
+  const totC=prods.reduce((s,p)=>s+(p.qty||0)*(p.cbm||0),0);
+  const totW=prods.reduce((s,p)=>s+(p.qty||0)*(p.weight||0),0);
+  const cp=maxC?Math.min(100,totC/maxC*100):0;
+  const wp=maxW?Math.min(100,totW/maxW*100):0;
+  setText('s-cpct',maxC?fmt1(cp)+'%':'—');setText('s-wpct',maxW?fmt1(wp)+'%':'—');
+  setText('s-usedC',fmt4(totC));setText('s-freeC',maxC?fmt4(maxC-totC):'—');
+  setText('s-usedW',fmt2(totW));setText('s-freeW',maxW?fmt2(maxW-totW):'—');
+  const cb=document.getElementById('s-cbar'),wb=document.getElementById('s-wbar');
+  if(cb){cb.style.width=cp+'%';cb.className='cbar-fill'+(cp>85?' warn':'');}
+  if(wb){wb.style.width=wp+'%';wb.className='cbar-fill'+(wp>85?' warn':'');}
+  const tb=document.getElementById('sim-tbody');
+  if(!tb)return;
+  if(!prods.length){tb.innerHTML='<tr><td colspan="5"><div class="empty"><div class="empty-ico">🚢</div><div class="empty-ttl">Sin productos</div></div></td></tr>';return;}
+  tb.innerHTML=prods.map(p=>{
+    const pC=(p.qty||0)*(p.cbm||0),pW=(p.qty||0)*(p.weight||0);
+    const pct=maxC>0?fmt1(pC/maxC*100)+'%':'—';
+    return `<tr><td><strong>${esc(p.name||'—')}</strong></td><td class="tn">${p.qty}</td><td class="tn">${fmt2(pW)}</td><td class="tn">${fmt4(pC)}</td><td><span class="badge b-b">${pct}</span></td></tr>`;
+  }).join('');
+}
 
-/* ═══════ CUSTOMS FILE (ADUANA VENEZUELA) ═══════ */
-function setCustomsStatus(s,msg){const el=document.getElementById('customs-status');if(!el)return;el.className=`import-status ${s}`;el.textContent=msg;el.hidden=false;}
-async function handleCustomsFile(file){
-  if(!file)return;
-  const ext=file.name.split('.').pop().toLowerCase();
-  if(!['xlsx','xls','csv'].includes(ext)){setCustomsStatus('err','❌ Usa .xlsx o .csv para el archivo de aduana');return;}
-  setCustomsStatus('loading','⏳ Analizando archivo de aduana...');
+// ── CONFIG ─────────────────────────────────────────────────
+function loadCfgForm(){
+  const co=document.getElementById('cfg-co'),ref=document.getElementById('cfg-ref');
+  if(co)co.value=cfg.company||'';if(ref)ref.value=cfg.refresh||30;
+}
+function saveConfig(){
+  cfg.company=document.getElementById('cfg-co')?.value||'';
+  cfg.refresh=parseInt(document.getElementById('cfg-ref')?.value)||30;
+  saveCfg(cfg);toast('Configuración guardada');
+  if(refreshTimer)clearTimeout(refreshTimer);
+  refreshTimer=setTimeout(refreshRates,cfg.refresh*60000);
+}
+function exportData(){
+  dl(JSON.stringify({prods,cfg,at:new Date().toISOString()},null,2),'calcnova-datos.json','application/json');
+}
+function importData(input){
+  const f=input.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const d=JSON.parse(e.target.result);
+      if(d.prods)prods=d.prods;
+      if(d.cfg)cfg=Object.assign(loadCfg(),d.cfg);
+      saveProds();saveCfg(cfg);renderProds();loadCostForm();loadCfgForm();calcAll();renderDash();
+      toast('Datos importados');
+    }catch(err){toast('Error: '+err.message,'err');}
+    input.value='';
+  };
+  r.readAsText(f);
+}
+function resetAll(){
+  if(!confirm('¿Resetear todo? No se puede deshacer.'))return;
+  prods=[];cfg=loadCfg();
+  try{localStorage.removeItem('cn_prods');localStorage.removeItem('cn_cfg');}catch(e){}
+  renderProds();loadCostForm();loadCfgForm();calcAll();renderDash();toast('Todo reseteado');
+}
+
+// ── EXPORT ─────────────────────────────────────────────────
+function exportPDF(){
   try{
-    let rows=[];
-    if(ext==='csv'){
-      const text=await file.text();
-      const lines=text.split(/\r?\n/).filter(l=>l.trim());
-      const delim=lines[0]?.includes(';')?';':',';
-      rows=lines.map(l=>l.split(delim).map(c=>c.trim().replace(/^"|"$/g,'')));
-    }else{
-      let att=0;while(typeof XLSX==='undefined'&&att<6){await new Promise(r=>setTimeout(r,500));att++;}
-      if(typeof XLSX==='undefined')throw new Error('Librería Excel no cargada');
-      const wb=XLSX.read(await file.arrayBuffer(),{type:'array'});
-      const ws=wb.Sheets[wb.SheetNames[0]];
-      rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-    }
-    /* Buscar % de arancel: busca celdas con keywords y extrae el número adyacente */
-    const keys=['arancel','tarifa','tasa aduanal','tasa','impuesto','ad valorem','duty','rate'];
-    let found=null;
-    for(const row of rows){
-      for(let i=0;i<row.length;i++){
-        const cell=String(row[i]||'').toLowerCase().trim();
-        if(keys.some(k=>cell.includes(k))){
-          /* Buscar valor numérico en la misma celda o la siguiente */
-          const same=String(row[i]||'').match(/[\d]+[.,]?[\d]*/);
-          const next=i+1<row.length?String(row[i+1]||'').replace('%','').trim():null;
-          const candidates=[same?same[0]:null,next].filter(Boolean);
-          for(const c of candidates){
-            const v=parseFloat(c.replace(',','.'));
-            if(isFinite(v)&&v>=0&&v<=200){found=v;break;}
-          }
-        }
-        if(found!==null)break;
-      }
-      if(found!==null)break;
-    }
-    if(found!==null){
-      const cfg=loadCfg();cfg.tariffVEN=found;saveCfg(cfg);
-      const el=document.querySelector('.cfg-input[data-field="tariffVEN"]');
-      if(el)el.value=found;
-      recalcAll();
-      setCustomsStatus('ok',`✅ Arancel ${found}% detectado y aplicado automáticamente`);
-      showToast(`Arancel ${found}% aplicado desde aduana`,'ok');
-    }else{
-      setCustomsStatus('warn','⚠️ Archivo procesado — No se detectó el % automáticamente. Ingrésalo manualmente en "Arancel importación Venezuela".');
-    }
-  }catch(e){setCustomsStatus('err',`❌ ${e.message}`);}
-  document.getElementById('customs-input').value='';
+    const rs=calcAll();
+    if(!rs||!rs.length){toast('Sin datos','err');return;}
+    const win=window.open('','_blank','width=900,height=700');
+    win.document.write(`<!DOCTYPE html><html><head><title>CalcNova Export</title><style>
+      body{font-family:sans-serif;padding:20px;color:#1e293b}
+      h1{color:#10B981;margin-bottom:4px}table{width:100%;border-collapse:collapse;margin-top:16px;font-size:12px}
+      th{background:#10B981;color:white;padding:8px;text-align:left}
+      td{padding:7px 8px;border-bottom:1px solid #e2e8f0}tr:nth-child(even)td{background:#f8fafc}
+    </style></head><body>
+      <h1>CalcNova Import Calculator</h1>
+      <p style="color:#64748b">Exportado: ${new Date().toLocaleString('es')} · Tasas: ¥${fmt2(R.y||0)} · BCV Bs${fmt2(R.v||0)}</p>
+      <table><tr><th>Producto</th><th>Cant.</th><th>Costo Unit. Bs</th><th>P.Mayor Bs</th><th>P.Detal Bs</th><th>Total Bs</th><th>Margen%</th><th>Rec.</th></tr>
+        ${rs.map(r=>`<tr><td><b>${esc(r.p.name||'—')}</b></td><td>${r.qty}</td><td>${fmtN(r.unitVES)}</td><td>${cfg.marginWholesale>0?fmtN(r.pMayor):'—'}</td><td>${cfg.marginRetail>0?fmtN(r.pDetal):'—'}</td><td>${fmtN(r.totalVES)}</td><td>${fmt1(r.margen)}%</td><td>${r.rec}</td></tr>`).join('')}
+      </table>
+    </body></html>`);
+    win.document.close();win.print();
+  }catch(e){toast('Error PDF','err');}
 }
-(function(){
-  const cd=document.getElementById('customs-drop-zone');
-  const ci=document.getElementById('customs-input');
-  if(!cd||!ci)return;
-  cd.addEventListener('click',()=>ci.click());
-  document.getElementById('btn-customs')?.addEventListener('click',e=>{e.stopPropagation();ci.click();});
-  ci.addEventListener('change',e=>{if(e.target.files[0])handleCustomsFile(e.target.files[0]);});
-  cd.addEventListener('dragover',e=>{e.preventDefault();cd.classList.add('drag-over');});
-  cd.addEventListener('dragleave',e=>{if(!cd.contains(e.relatedTarget))cd.classList.remove('drag-over');});
-  cd.addEventListener('drop',e=>{e.preventDefault();cd.classList.remove('drag-over');if(e.dataTransfer.files[0])handleCustomsFile(e.dataTransfer.files[0]);});
-})();
-
-/* ═══════ DEMO DATA ═══════ */
-function loadDemo(){
-  if(products.length&&!confirm('¿Reemplazar productos actuales con datos demo?\n(Los costos logísticos debes ingresarlos tú manualmente)'))return;
-  /* Precios en CNY (yuan) tal como vienen de proveedores chinos */
-  products=[
-    {id:'d1',name:'Ventilador 16" Torre',     sku:'VEN-001',qty:100,price:35,  weight:1.8, cbm:0.0080,category:'Electro'},
-    {id:'d2',name:'Hervidor Eléctrico 1.8L',  sku:'HER-002',qty:60, price:28,  weight:1.2, cbm:0.0050,category:'Electro'},
-    {id:'d3',name:'Plancha de Vapor Pro',      sku:'PLA-003',qty:80, price:22,  weight:0.9, cbm:0.0030,category:'Electro'},
-    {id:'d4',name:'Mochila Escolar 30L',       sku:'MOC-004',qty:200,price:15,  weight:0.5, cbm:0.0030,category:'Moda'},
-    {id:'d5',name:'Cargador USB-C 65W',        sku:'CAR-005',qty:500,price:8,   weight:0.1, cbm:0.0005,category:'Accesorios'},
-    {id:'d6',name:'Audífonos Bluetooth 5.0',   sku:'AUD-006',qty:120,price:45,  weight:0.3, cbm:0.0020,category:'Electro'},
-  ];
-  saveProds();recalcAll();showTab('productos');
-  showToast('✅ Productos demo cargados — ingresa los costos logísticos para ver precios reales','ok');
+function exportCSV(){
+  try{
+    const rs=calcAll();if(!rs||!rs.length){toast('Sin datos','err');return;}
+    let csv='Producto,Categoría,Cantidad,Precio CNY,Precio USD,Peso KG,CBM,Costo Unit Bs,P Mayor Bs,P Detal Bs,Costo Total Bs,Ganancia Bs,Margen %,Recomendación\r\n';
+    rs.forEach(r=>{csv+=[`"${r.p.name||''}"`,r.p.cat,r.qty,r.p.price,fmt2(r.prodUSD),r.p.weight,r.p.cbm,fmtN(r.unitVES),fmtN(r.pMayor),fmtN(r.pDetal),fmtN(r.totalVES),fmtN(r.ganancia),fmt1(r.margen),`"${r.rec}"`].join(',')+'\r\n';});
+    dl(csv,'calcnova-export.csv','text/csv;charset=utf-8;');
+    toast('Exportado como CSV');
+  }catch(e){toast('Error exportar','err');}
 }
 
-/* ═══════ PLANTILLA CSV ═══════ */
-function downloadCsvTemplate(){
-  const csv=[
-    'Nombre,SKU,Cantidad,Precio CNY,Peso KG,CBM',
-    'Ventilador 16" Torre,VEN-001,100,35,1.800,0.0080',
-    'Hervidor Eléctrico 1.8L,HER-002,60,28,1.200,0.0050',
-    'Plancha de Vapor Pro,PLA-003,80,22,0.900,0.0030',
-    'Mochila Escolar 30L,MOC-004,200,15,0.500,0.0030',
-    'Cargador USB-C 65W,CAR-005,500,8,0.100,0.0005'
-  ].join('\r\n');
-  const a=document.createElement('a');
-  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download='calcnova_plantilla.csv';
-  a.click();
-  showToast('Plantilla descargada — llena los datos y sube el CSV','ok');
+// ── HELPERS ────────────────────────────────────────────────
+function fmt1(n){return isNaN(n)?'0':(+n).toFixed(1);}
+function fmt2(n){return isNaN(n)?'0.00':(+n).toFixed(2);}
+function fmt4(n){return isNaN(n)?'0.0000':(+n).toFixed(4);}
+function fmtN(n){return isNaN(n)?'0':Math.round(+n).toLocaleString('es');}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function setText(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
+function pf(id){return parseFloat(document.getElementById(id)?.value)||0;}
+function dl(data,name,mime){
+  const b=new Blob([data],{type:mime});const u=URL.createObjectURL(b);
+  const a=document.createElement('a');a.href=u;a.download=name;
+  document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(u);document.body.removeChild(a);},200);
+}
+function toast(msg,type='ok'){
+  const c=document.getElementById('toast');if(!c)return;
+  const d=document.createElement('div');
+  d.className='ti ti-'+(type==='err'?'err':type==='w'?'w':'ok');
+  d.textContent=(type==='err'?'✗ ':type==='w'?'⚠ ':'✓ ')+msg;
+  c.appendChild(d);setTimeout(()=>{try{c.removeChild(d);}catch(e){}},3500);
 }
 
-/* Detecta si XLSX está disponible (necesita internet) y actualiza la UI */
-function checkXlsxAvailability(){
-  const banner=document.getElementById('xlsx-unavailable-banner');
-  const badge=document.getElementById('xlsx-ok-badge');
-  const available=typeof XLSX!=='undefined';
-  if(banner)banner.style.display=available?'none':'block';
-  if(badge)badge.style.display=available?'inline':'none';
-}
-
-/* ═══════ INIT ═══════ */
-initCfgInputs();
-loadProds();
-// Restore port + distribution selections
-(function(){
-  const c=loadCfg();
-  const k=c.selectedPort||'buenaventura';
-  const r=document.querySelector(`input[name="port"][value="${k}"]`);
-  if(r)r.checked=true;
-  const port=PORTS[k]||PORTS.buenaventura;
-  const lbl=document.getElementById('transport-col-lbl');
-  if(lbl)lbl.textContent=`Transporte ${port.name} → Cúcuta`;
-  const infoEl=document.getElementById('port-info-text');
-  if(infoEl)infoEl.textContent=`${port.emoji} Puerto ${port.name} — ${port.note} · Ingresa los costos reales en Configuración Financiera`;
-})();
-recalcAll();
-updateClock();setInterval(updateClock,1000);
-updateRates();setInterval(updateRates,5*60*1000);
-/* Verificar XLSX después de que los scripts externos hayan tenido tiempo de cargar */
-setTimeout(checkXlsxAvailability,3000);
+// ── INIT ───────────────────────────────────────────────────
+prods=loadProds();
+cfg=loadCfg();
+renderProds();
+loadCostForm();
+loadCfgForm();
+refreshRates();
 </script>
 </body>
 </html>
