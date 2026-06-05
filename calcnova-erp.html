@@ -356,18 +356,48 @@
 <div class="tab-content" id="tab-productos">
 <div class="page">
 
-  <!-- Importer — usamos <label for="file-input"> para que el click sea nativo (más confiable) -->
+  <!-- ══ IMPORTAR PRODUCTOS ══ -->
   <div class="st">Importar Productos</div>
-  <label class="drop-zone" id="drop-zone" for="file-input" style="cursor:pointer;display:block">
-    <span class="drop-icon">📂</span>
-    <div class="drop-title">Arrastra tu archivo aquí o haz clic para seleccionar</div>
-    <div class="drop-sub">Soporta .xlsx, .xls y .csv · El sistema detecta las columnas automáticamente</div>
-    <div style="margin-top:8px;font-size:11px;color:var(--muted)">Columnas reconocidas: <span style="color:var(--dim)">Nombre · Cantidad · Precio ¥ · Peso · CBM · SKU</span></div>
-    <span class="btn-import" style="pointer-events:none;margin-top:12px;display:inline-flex;align-items:center;gap:6px">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-      Seleccionar Archivo Excel / CSV
-    </span>
-  </label>
+
+  <!-- Alerta: si XLSX no carga, aparece este panel -->
+  <div id="xlsx-unavailable-banner" style="display:none;margin-bottom:12px">
+    <div class="glass" style="padding:14px 18px;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.05)">
+      <div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:6px">⚠️ No se puede leer archivos .xlsx — la librería Excel requiere conexión a internet</div>
+      <div style="font-size:12px;color:var(--dim);line-height:1.7">
+        <strong style="color:var(--gold)">Solución fácil:</strong> Abre tu Excel →
+        <strong>Archivo → Guardar Como → CSV UTF-8 (con delimitadores de coma)</strong> → sube ese archivo .csv<br>
+        El CSV siempre funciona, sin internet, sin instalaciones.
+      </div>
+    </div>
+  </div>
+
+  <!-- Zona de import -->
+  <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start">
+    <label class="drop-zone" id="drop-zone" for="file-input" style="cursor:pointer;display:block;margin:0">
+      <span class="drop-icon">📂</span>
+      <div class="drop-title">Arrastra tu archivo aquí o haz clic para seleccionar</div>
+      <div class="drop-sub">
+        <span id="xlsx-ok-badge" style="display:none;color:var(--green)">✅ Excel .xlsx disponible · </span>CSV siempre funciona (recomendado)
+      </div>
+      <div style="margin-top:8px;font-size:11px;color:var(--muted)">
+        Columnas detectadas automáticamente: <span style="color:var(--dim)">Nombre · Cantidad · Precio ¥ · Peso KG · CBM · SKU</span>
+      </div>
+      <span class="btn-import" style="pointer-events:none;margin-top:12px;display:inline-flex;align-items:center;gap:6px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Seleccionar Archivo
+      </span>
+    </label>
+    <!-- Botón plantilla CSV -->
+    <div style="display:flex;flex-direction:column;gap:8px;padding-top:4px">
+      <button onclick="downloadCsvTemplate()" style="background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);color:var(--green);border-radius:10px;padding:10px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Descargar Plantilla CSV
+      </button>
+      <div style="font-size:10.5px;color:var(--muted);text-align:center;line-height:1.5">
+        Llena la plantilla<br>en Excel y súbela como CSV
+      </div>
+    </div>
+  </div>
   <input type="file" id="file-input" accept=".xlsx,.xls,.csv" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden">
   <div id="import-status" class="import-status" hidden></div>
 
@@ -1375,7 +1405,7 @@ async function handleFile(file){
       // Wait up to 4s for XLSX to load
       let attempts=0;
       while(typeof XLSX==='undefined'&&attempts<8){await new Promise(r=>setTimeout(r,500));attempts++;}
-      if(typeof XLSX==='undefined')throw new Error('Librería Excel no cargó. Verifica tu conexión a internet y recarga la página');
+      if(typeof XLSX==='undefined')throw new Error('XLSX_NOT_LOADED');
       parsed=parseExcel(await file.arrayBuffer());
     }
     const detectedCols=Object.keys(parsed.colMap);
@@ -1395,8 +1425,14 @@ async function handleFile(file){
     msg+=` · Columnas: ${detectedCols.join(', ')}`;
     setImportStatus('ok',msg);showToast(`✅ ${added} productos importados`,'ok');
   }catch(err){
-    setImportStatus('err',`❌ ${err.message}`);
-    showToast(`Error: ${err.message}`,'err');
+    if(err.message==='XLSX_NOT_LOADED'){
+      document.getElementById('xlsx-unavailable-banner').style.display='block';
+      setImportStatus('err','❌ El archivo .xlsx necesita internet para procesarse. Usa CSV: en Excel → Archivo → Guardar Como → CSV UTF-8');
+      showToast('Guarda como CSV y súbelo — siempre funciona','err');
+    }else{
+      setImportStatus('err',`❌ ${err.message}`);
+      showToast(`Error: ${err.message}`,'err');
+    }
     console.error('[CalcNova import]',err);
   }
   document.getElementById('file-input').value='';
@@ -1522,13 +1558,38 @@ function loadDemo(){
   showToast('✅ Productos demo cargados — ingresa los costos logísticos para ver precios reales','ok');
 }
 
+/* ═══════ PLANTILLA CSV ═══════ */
+function downloadCsvTemplate(){
+  const csv=[
+    'Nombre,SKU,Cantidad,Precio CNY,Peso KG,CBM',
+    'Ventilador 16" Torre,VEN-001,100,35,1.800,0.0080',
+    'Hervidor Eléctrico 1.8L,HER-002,60,28,1.200,0.0050',
+    'Plancha de Vapor Pro,PLA-003,80,22,0.900,0.0030',
+    'Mochila Escolar 30L,MOC-004,200,15,0.500,0.0030',
+    'Cargador USB-C 65W,CAR-005,500,8,0.100,0.0005'
+  ].join('\r\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='calcnova_plantilla.csv';
+  a.click();
+  showToast('Plantilla descargada — llena los datos y sube el CSV','ok');
+}
+
+/* Detecta si XLSX está disponible (necesita internet) y actualiza la UI */
+function checkXlsxAvailability(){
+  const banner=document.getElementById('xlsx-unavailable-banner');
+  const badge=document.getElementById('xlsx-ok-badge');
+  const available=typeof XLSX!=='undefined';
+  if(banner)banner.style.display=available?'none':'block';
+  if(badge)badge.style.display=available?'inline':'none';
+}
+
 /* ═══════ INIT ═══════ */
 initCfgInputs();
 loadProds();
 // Restore port + distribution selections
 (function(){
   const c=loadCfg();
-  // Puerto
   const k=c.selectedPort||'buenaventura';
   const r=document.querySelector(`input[name="port"][value="${k}"]`);
   if(r)r.checked=true;
@@ -1537,11 +1598,12 @@ loadProds();
   if(lbl)lbl.textContent=`Transporte ${port.name} → Cúcuta`;
   const infoEl=document.getElementById('port-info-text');
   if(infoEl)infoEl.textContent=`${port.emoji} Puerto ${port.name} — ${port.note} · Ingresa los costos reales en Configuración Financiera`;
-  // Distribución (initCfgInputs ya lo setea porque dist-select tiene data-field)
 })();
 recalcAll();
 updateClock();setInterval(updateClock,1000);
 updateRates();setInterval(updateRates,5*60*1000);
+/* Verificar XLSX después de que los scripts externos hayan tenido tiempo de cargar */
+setTimeout(checkXlsxAvailability,3000);
 </script>
 </body>
 </html>
