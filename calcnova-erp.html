@@ -356,19 +356,19 @@
 <div class="tab-content" id="tab-productos">
 <div class="page">
 
-  <!-- Importer -->
+  <!-- Importer — usamos <label for="file-input"> para que el click sea nativo (más confiable) -->
   <div class="st">Importar Productos</div>
-  <div class="drop-zone" id="drop-zone">
+  <label class="drop-zone" id="drop-zone" for="file-input" style="cursor:pointer;display:block">
     <span class="drop-icon">📂</span>
     <div class="drop-title">Arrastra tu archivo aquí o haz clic para seleccionar</div>
-    <div class="drop-sub">Soporta .xlsx, .xls y .csv · Columnas detectadas automáticamente</div>
-    <div style="margin-top:8px;font-size:11px;color:var(--muted)">Columnas reconocidas: <span style="color:var(--dim)">Nombre · Cantidad · Precio · Peso · CBM · SKU · Categoría</span></div>
-    <button class="btn-import" id="btn-select">
+    <div class="drop-sub">Soporta .xlsx, .xls y .csv · El sistema detecta las columnas automáticamente</div>
+    <div style="margin-top:8px;font-size:11px;color:var(--muted)">Columnas reconocidas: <span style="color:var(--dim)">Nombre · Cantidad · Precio ¥ · Peso · CBM · SKU</span></div>
+    <span class="btn-import" style="pointer-events:none;margin-top:12px;display:inline-flex;align-items:center;gap:6px">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-      Seleccionar Archivo
-    </button>
-    <input type="file" id="file-input" accept=".xlsx,.xls,.csv" style="display:none">
-  </div>
+      Seleccionar Archivo Excel / CSV
+    </span>
+  </label>
+  <input type="file" id="file-input" accept=".xlsx,.xls,.csv" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden">
   <div id="import-status" class="import-status" hidden></div>
 
   <!-- Config -->
@@ -413,6 +413,18 @@
             <option value="equal">🟰 Igual por producto</option>
           </select>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tasas manuales: visibles solo si alguna tasa no cargó -->
+  <div id="manual-rates-section" style="margin-top:16px;display:none">
+    <div class="glass" style="padding:16px 20px;border:1px solid rgba(245,158,11,.3);background:rgba(245,158,11,.04)">
+      <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:12px">⚠️ Las tasas automáticas no pudieron cargarse — ingresa las tasas manualmente para calcular precios</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px 24px">
+        <div class="inp-row"><label class="inp-lbl">Yuan por 1 USD (ej: 7.24)</label><div class="inp-wrap"><span class="inp-unit">¥/$</span><input class="cfg-input manual-rate" type="number" min="0.01" step="0.01" data-rate="yuan" placeholder="ej: 7.24"></div></div>
+        <div class="inp-row"><label class="inp-lbl">COP por 1 USD (ej: 4150)</label><div class="inp-wrap"><span class="inp-unit">COP/$</span><input class="cfg-input manual-rate" type="number" min="1" step="10" data-rate="cop" placeholder="ej: 4150"></div></div>
+        <div class="inp-row"><label class="inp-lbl">Bolívares por 1 USD BCV (ej: 563)</label><div class="inp-wrap"><span class="inp-unit">Bs/$</span><input class="cfg-input manual-rate" type="number" min="1" step="1" data-rate="bcv" placeholder="ej: 563"></div></div>
       </div>
     </div>
   </div>
@@ -511,7 +523,7 @@
   <div id="consolidada-fields" class="custom-fields" hidden>
     <input type="number" id="c-cbm" placeholder="CBM máximo" min="0" step="1" oninput="renderSimulator()">
     <input type="number" id="c-weight" placeholder="Peso máx (toneladas)" min="0" step="0.5" oninput="renderSimulator()">
-    <input type="number" id="c-freight" placeholder="Flete USD" min="0" step="100" oninput="renderSimulator()">
+    <span style="font-size:11px;color:var(--muted);align-self:center">El flete se configura en <em>Configuración Financiera</em></span>
   </div>
 
   <div class="sim-layout">
@@ -667,7 +679,7 @@ document.getElementById('config-wrap').addEventListener('input',e=>{
 const liveRates={yuanPerUsd:null,copPerUsd:null,vesPerUsd:null};
 async function fetchRate(url,ms=5000){const ctrl=new AbortController();const t=setTimeout(()=>ctrl.abort(),ms);try{const r=await fetch(url,{signal:ctrl.signal});if(!r.ok)throw new Error(`HTTP ${r.status}`);return await r.json();}finally{clearTimeout(t);}}
 function setLoading(id){const v=document.getElementById(`val-${id}`);v.classList.add('loading-pulse');v.innerHTML='&nbsp;';document.getElementById(`sub-${id}`).textContent='Actualizando...';setDot(id,'loading','Conectando...');const b=document.getElementById(`ico-${id}`);if(b)b.closest('.refresh-btn').classList.add('spinning');document.getElementById(`card-${id}`).classList.remove('has-error');}
-function setOk(id,display,sub){const v=document.getElementById(`val-${id}`);v.classList.remove('loading-pulse');v.textContent=display;document.getElementById(`sub-${id}`).textContent=sub||'';setDot(id,'ok',`Actualizado ${nowStr()}`);stopSpin(id);renderRatesBar();}
+function setOk(id,display,sub){const v=document.getElementById(`val-${id}`);v.classList.remove('loading-pulse');v.textContent=display;document.getElementById(`sub-${id}`).textContent=sub||'';setDot(id,'ok',`Actualizado ${nowStr()}`);stopSpin(id);renderRatesBar();renderManualRatesSection();}
 function setErr(id,fb){
   const v=document.getElementById(`val-${id}`);v.classList.remove('loading-pulse');
   if(fb){
@@ -689,6 +701,7 @@ function setErr(id,fb){
   }
   document.getElementById(`card-${id}`).classList.add('has-error');
   stopSpin(id);
+  renderManualRatesSection();
 }
 function setDot(id,s,t){document.getElementById(`dot-${id}`).className=`status-dot ${s}`;document.getElementById(`txt-${id}`).textContent=t;}
 function stopSpin(id){const b=document.getElementById(`ico-${id}`);if(b)b.closest('.refresh-btn').classList.remove('spinning');}
@@ -956,7 +969,7 @@ function calcAllProducts(){
 }
 
 let chartDirty=true,chartInst=null;
-function recalcAll(){renderTable();renderDashboard();renderRoute();if(document.getElementById('tab-productos').classList.contains('active')){renderChart();}else{chartDirty=true;}renderAlerts();renderSimulator();renderExportStatus();}
+function recalcAll(){renderTable();renderDashboard();renderRoute();if(document.getElementById('tab-productos').classList.contains('active')){renderChart();}else{chartDirty=true;}renderAlerts();renderSimulator();renderExportStatus();renderManualRatesSection();}
 
 /* ═══════ RENDER TABLE ═══════ */
 function renderTable(){
@@ -1165,9 +1178,10 @@ function showTab(tab){
 function toggleMob(){document.getElementById('mob-nav').classList.toggle('open');}
 
 /* ═══════ PASO 4: CONTAINER SIMULATOR ═══════ */
+/* Solo capacidad física — el flete viene de Configuración Financiera, no aquí */
 const CTYPES={
-  '20ft':{cbm:33,weight:18000,freight:1500},
-  '40ft':{cbm:67,weight:25000,freight:2000},
+  '20ft':{cbm:33,weight:18000},
+  '40ft':{cbm:67,weight:25000},
   'consolidada':null
 };
 /* Los puertos definen la RUTA logística, no costos automáticos.
@@ -1192,7 +1206,7 @@ let selectedProds=new Set();
 function getContainerSpecs(){
   const type=document.querySelector('input[name="ctype"]:checked')?.value||'40ft';
   if(type==='consolidada'){
-    return{cbm:parseFloat(document.getElementById('c-cbm').value)||0,weight:(parseFloat(document.getElementById('c-weight').value)||0)*1000,freight:parseFloat(document.getElementById('c-freight').value)||0};
+    return{cbm:parseFloat(document.getElementById('c-cbm').value)||0,weight:(parseFloat(document.getElementById('c-weight').value)||0)*1000};
   }
   return CTYPES[type]||CTYPES['40ft'];
 }
@@ -1207,9 +1221,10 @@ function renderSimulator(){
   renderCheckList();
   const specs=getContainerSpecs();
   const sel=products.filter(p=>selectedProds.has(p.id));
-  let totalCBM=0,totalWeight=0,totalFreightUSD=0;
+  let totalCBM=0,totalWeight=0;
   sel.forEach(p=>{totalCBM+=(p.qty||0)*(p.cbm||0);totalWeight+=(p.qty||0)*(p.weight||0);});
-  const specs_freight=specs.freight||0;
+  /* El flete viene de la Configuración Financiera, no de CTYPES */
+  const specs_freight=loadCfg().freight||0;
   const cbmPct=specs.cbm>0?Math.min(totalCBM/specs.cbm*100,999):0;
   const wPct=specs.weight>0?Math.min(totalWeight/specs.weight*100,999):0;
   const progClass=pct=>pct>90?'prog-r':pct>70?'prog-y':'prog-g';
@@ -1253,7 +1268,8 @@ function renderContainerTable(sel,specs){
   if(!sel.length){tbody.innerHTML='';emptyEl.hidden=false;return;}
   emptyEl.hidden=true;
   const totalCBM=sel.reduce((s,p)=>s+(p.qty||0)*(p.cbm||0),0);
-  const freight=specs.freight||0;
+  /* Flete real del usuario desde Configuración Financiera */
+  const freight=loadCfg().freight||0;
   let tQty=0,tCBM=0,tW=0;
   tbody.innerHTML=sel.map(p=>{
     const pCBM=(p.qty||0)*(p.cbm||0),pW=(p.qty||0)*(p.weight||0);
@@ -1385,19 +1401,44 @@ async function handleFile(file){
   }
   document.getElementById('file-input').value='';
 }
-const dropZone=document.getElementById('drop-zone'),fileInput=document.getElementById('file-input');
-dropZone.addEventListener('click',()=>fileInput.click());
-document.getElementById('btn-select').addEventListener('click',e=>{e.stopPropagation();fileInput.click();});
-fileInput.addEventListener('change',e=>{if(e.target.files[0])handleFile(e.target.files[0]);});
+/* ── Importar archivos ──
+   El <label for="file-input"> ya conecta el click de forma nativa.
+   Solo necesitamos: el change del input + arrastrar y soltar. */
+const fileInput=document.getElementById('file-input');
+const dropZone=document.getElementById('drop-zone');
+fileInput.addEventListener('change',e=>{const f=e.target.files[0];if(f)handleFile(f);});
+/* Drag-and-drop */
 dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('drag-over');});
 dropZone.addEventListener('dragleave',e=>{if(!dropZone.contains(e.relatedTarget))dropZone.classList.remove('drag-over');});
-dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.classList.remove('drag-over');if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0]);});
+dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f)handleFile(f);});
 
 /* ═══════ DISTRIBUTION METHOD ═══════ */
 function onDistChange(val){
   const cfg=loadCfg();cfg.distribution=val;saveCfg(cfg);recalcAll();
   showToast(`Distribución: ${{'weight':'Peso','cbm':'CBM','value':'Valor','equal':'Igual'}[val]||val}`,'ok');
 }
+
+/* ═══════ TASAS MANUALES ═══════ */
+/* Muestra el panel solo cuando alguna tasa no está cargada */
+function renderManualRatesSection(){
+  const sec=document.getElementById('manual-rates-section');
+  if(!sec)return;
+  const{yuanPerUsd:yR,copPerUsd:cR,vesPerUsd:vR}=liveRates;
+  sec.style.display=(!yR||!cR||!vR)?'block':'none';
+}
+/* Listener para los inputs de tasa manual */
+document.querySelectorAll('.manual-rate').forEach(inp=>{
+  inp.addEventListener('change',e=>{
+    const rate=e.target.dataset.rate;
+    const val=parseFloat(e.target.value);
+    if(!isFinite(val)||val<=0){showToast('Ingresa un número válido mayor a 0','err');return;}
+    if(rate==='yuan'){liveRates.yuanPerUsd=val;saveRateCache('yuan',`¥${fmt(val,4)} (manual)`,val);}
+    else if(rate==='cop') {liveRates.copPerUsd=val;saveRateCache('cop',`COP ${fmt(val,0)} (manual)`,val);}
+    else if(rate==='bcv') {liveRates.vesPerUsd=val;saveRateCache('bcv',`Bs ${fmt(val,2)} (manual)`,val);}
+    recalcAll();renderManualRatesSection();
+    showToast(`Tasa manual aplicada: ${val}`,'ok');
+  });
+});
 
 /* ═══════ CUSTOMS FILE (ADUANA VENEZUELA) ═══════ */
 function setCustomsStatus(s,msg){const el=document.getElementById('customs-status');if(!el)return;el.className=`import-status ${s}`;el.textContent=msg;el.hidden=false;}
