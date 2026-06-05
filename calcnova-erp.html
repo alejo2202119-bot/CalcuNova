@@ -616,7 +616,8 @@ const fmt=(n,d=2)=>(isFinite(n)&&n!==null&&n!==undefined)?Number(n).toLocaleStri
 const nowStr=()=>new Date().toLocaleString('es-VE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});
 const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const LS_RATES='calcnova_rates_v1',LS_PRODS='calcnova_products_v1',LS_CFG='calcnova_config_v1',LS_HIST='calcnova_hist_v1';
-function saveRateCache(k,v){try{const s=JSON.parse(localStorage.getItem(LS_RATES)||'{}');s[k]={val:v,ts:Date.now()};localStorage.setItem(LS_RATES,JSON.stringify(s));}catch(_){}}
+/* ─── Cache: guarda valor display + numérico ─── */
+function saveRateCache(k,v,num){try{const s=JSON.parse(localStorage.getItem(LS_RATES)||'{}');s[k]={val:v,num:num??null,ts:Date.now()};localStorage.setItem(LS_RATES,JSON.stringify(s));}catch(_){}}
 function loadRateCache(k){try{return(JSON.parse(localStorage.getItem(LS_RATES)||'{}')||{})[k]||null;}catch(_){return null;}}
 
 /* ═══════ CONFIG ═══════ */
@@ -651,13 +652,120 @@ const liveRates={yuanPerUsd:null,copPerUsd:null,vesPerUsd:null};
 async function fetchRate(url,ms=5000){const ctrl=new AbortController();const t=setTimeout(()=>ctrl.abort(),ms);try{const r=await fetch(url,{signal:ctrl.signal});if(!r.ok)throw new Error(`HTTP ${r.status}`);return await r.json();}finally{clearTimeout(t);}}
 function setLoading(id){const v=document.getElementById(`val-${id}`);v.classList.add('loading-pulse');v.innerHTML='&nbsp;';document.getElementById(`sub-${id}`).textContent='Actualizando...';setDot(id,'loading','Conectando...');const b=document.getElementById(`ico-${id}`);if(b)b.closest('.refresh-btn').classList.add('spinning');document.getElementById(`card-${id}`).classList.remove('has-error');}
 function setOk(id,display,sub){const v=document.getElementById(`val-${id}`);v.classList.remove('loading-pulse');v.textContent=display;document.getElementById(`sub-${id}`).textContent=sub||'';setDot(id,'ok',`Actualizado ${nowStr()}`);stopSpin(id);}
-function setErr(id,fb){const v=document.getElementById(`val-${id}`);v.classList.remove('loading-pulse');if(fb){v.textContent=fb.val;const age=Math.round((Date.now()-fb.ts)/60000);setDot(id,'err',`Error · Último valor: hace ${age} min`);document.getElementById(`sub-${id}`).textContent='Dato en caché';}else{v.textContent='Sin datos';setDot(id,'err','Sin conexión y sin caché');document.getElementById(`sub-${id}`).textContent='—';}document.getElementById(`card-${id}`).classList.add('has-error');stopSpin(id);}
+function setErr(id,fb){
+  const v=document.getElementById(`val-${id}`);v.classList.remove('loading-pulse');
+  if(fb){
+    v.textContent=fb.val;
+    const age=Math.round((Date.now()-fb.ts)/60000);
+    setDot(id,'err',`API falló · Caché de hace ${age} min`);
+    document.getElementById(`sub-${id}`).textContent='Dato en caché';
+    /* CRÍTICO: restaurar valor numérico desde caché para que los cálculos funcionen */
+    if(isFinite(fb.num)&&fb.num>0){
+      if(id==='yuan'){liveRates.yuanPerUsd=fb.num;}
+      else if(id==='cop'){liveRates.copPerUsd=fb.num;}
+      else if(id==='bcv'){liveRates.vesPerUsd=fb.num;}
+      recalcAll();
+    }
+  }else{
+    v.textContent='Sin datos';
+    setDot(id,'err','Sin conexión · Sin caché');
+    document.getElementById(`sub-${id}`).textContent='Ingresa tasa manual';
+  }
+  document.getElementById(`card-${id}`).classList.add('has-error');
+  stopSpin(id);
+}
 function setDot(id,s,t){document.getElementById(`dot-${id}`).className=`status-dot ${s}`;document.getElementById(`txt-${id}`).textContent=t;}
 function stopSpin(id){const b=document.getElementById(`ico-${id}`);if(b)b.closest('.refresh-btn').classList.remove('spinning');}
-async function fetchYuan(){const id='yuan';setLoading(id);try{const d=await fetchRate('https://open.er-api.com/v6/latest/USD');const r=d?.rates?.CNY;if(!isFinite(r))throw new Error('dato inválido');liveRates.yuanPerUsd=r;const disp=`1 USD = ${fmt(r,4)} CNY`;saveRateCache(id,disp);setOk(id,disp,`1 CNY = ${fmt(1/r,4)} USD`);recalcAll();}catch(e){setErr(id,loadRateCache(id));}}
-async function fetchCOP(){const id='cop';setLoading(id);try{const d=await fetchRate('https://api.frankfurter.app/latest?from=USD&to=COP');const r=d?.rates?.COP;if(!isFinite(r))throw new Error('dato inválido');liveRates.copPerUsd=r;const disp=`1 USD = ${fmt(r,2)} COP`;saveRateCache(id,disp);setOk(id,disp,`TRM · ${d?.date||''}`);recalcAll();}catch(e){setErr(id,loadRateCache(id));}}
-async function fetchBCV(){const id='bcv';setLoading(id);try{const d=await fetchRate('https://docs.vzla.io/es/api/v2/rates/bcv/');const r=d?.usd??d?.rates?.USD??d?.USD??d?.data?.usd;if(!isFinite(r))throw new Error('dato inválido');liveRates.vesPerUsd=r;const disp=`1 USD = ${fmt(r,2)} VES`;saveRateCache(id,disp);setOk(id,disp,'Tasa BCV oficial');recalcAll();}catch(e){setErr(id,loadRateCache(id));}}
-async function fetchBinance(){const id='binance';setLoading(id);await new Promise(r=>setTimeout(r,300));saveRateCache(id,`1 USDT = ${fmt(2850,2)} VES`);setOk(id,`1 USDT = ${fmt(2850,2)} VES`,'Referencia P2P · Demo');}
+/* ── Yuan/USD ── múltiples fuentes con fallback */
+async function fetchYuan(){
+  const id='yuan';setLoading(id);
+  const tryApis=[
+    async()=>{const d=await fetchRate('https://open.er-api.com/v6/latest/USD');const r=d?.rates?.CNY;if(!isFinite(r))throw 0;return r;},
+    async()=>{const d=await fetchRate('https://api.frankfurter.app/latest?from=USD&to=CNY');const r=d?.rates?.CNY;if(!isFinite(r))throw 0;return r;},
+    async()=>{const d=await fetchRate('https://api.exchangerate-api.com/v4/latest/USD');const r=d?.rates?.CNY;if(!isFinite(r))throw 0;return r;}
+  ];
+  let r=null;
+  for(const fn of tryApis){try{r=await fn();break;}catch(_){}}
+  if(isFinite(r)&&r>0){
+    liveRates.yuanPerUsd=r;
+    const disp=`1 USD = ${fmt(r,4)} CNY`;
+    saveRateCache(id,disp,r);
+    setOk(id,disp,`1 CNY = ${fmt(1/r,4)} USD`);
+    recalcAll();
+  }else{setErr(id,loadRateCache(id));}
+}
+
+/* ── USD/COP TRM ── */
+async function fetchCOP(){
+  const id='cop';setLoading(id);
+  const tryApis=[
+    async()=>{const d=await fetchRate('https://api.frankfurter.app/latest?from=USD&to=COP');const r=d?.rates?.COP;if(!isFinite(r))throw 0;return{r,date:d?.date||''};},
+    async()=>{const d=await fetchRate('https://open.er-api.com/v6/latest/USD');const r=d?.rates?.COP;if(!isFinite(r))throw 0;return{r,date:''};},
+    async()=>{const d=await fetchRate('https://api.exchangerate-api.com/v4/latest/USD');const r=d?.rates?.COP;if(!isFinite(r))throw 0;return{r,date:''};}
+  ];
+  let res=null;
+  for(const fn of tryApis){try{res=await fn();break;}catch(_){}}
+  if(res&&isFinite(res.r)&&res.r>0){
+    liveRates.copPerUsd=res.r;
+    const disp=`1 USD = ${fmt(res.r,2)} COP`;
+    saveRateCache(id,disp,res.r);
+    setOk(id,disp,`TRM${res.date?' · '+res.date:''}`);
+    recalcAll();
+  }else{setErr(id,loadRateCache(id));}
+}
+
+/* ── USD/VES BCV ── múltiples fuentes (APIs venezolanas pueden fallar) */
+async function fetchBCV(){
+  const id='bcv';setLoading(id);
+  /* Función auxiliar: extrae el valor numérico de distintos formatos de respuesta */
+  const extract=d=>d?.oficial?.promedio??d?.oficial?.venta??d?.oficial?.price??
+    d?.promedio??d?.venta??d?.price??d?.Precio??
+    d?.usd??d?.USD??d?.rates?.USD??d?.data?.usd??null;
+  const tryApis=[
+    async()=>{const d=await fetchRate('https://ve.dolarapi.com/v1/dolares/oficial');const r=extract(d);if(!isFinite(r))throw 0;return r;},
+    async()=>{const d=await fetchRate('https://pydolarvenezuela-api.azurewebsites.net/api/v1/dollar?page=bcv');const r=d?.price??d?.Precio;if(!isFinite(r))throw 0;return parseFloat(r);},
+    async()=>{const d=await fetchRate('https://api.vzla.io/v2/rates/bcv/');const r=extract(d);if(!isFinite(r))throw 0;return r;},
+    async()=>{const d=await fetchRate('https://docs.vzla.io/api/v2/rates/bcv/');const r=extract(d);if(!isFinite(r))throw 0;return r;},
+    async()=>{const d=await fetchRate('https://open.er-api.com/v6/latest/USD');const r=d?.rates?.VES;if(!isFinite(r)||r<1)throw 0;return r;}
+  ];
+  let r=null;
+  for(const fn of tryApis){try{r=await fn();if(r>1)break;}catch(_){}}
+  if(isFinite(r)&&r>1){
+    liveRates.vesPerUsd=r;
+    const disp=`1 USD = ${fmt(r,2)} VES`;
+    saveRateCache(id,disp,r);
+    setOk(id,disp,'Tasa BCV oficial');
+    recalcAll();
+  }else{setErr(id,loadRateCache(id));}
+}
+
+/* ── USDT/VES Paralelo/Binance ── */
+async function fetchBinance(){
+  const id='binance';setLoading(id);
+  const extract=d=>d?.paralelo?.promedio??d?.paralelo?.venta??d?.paralelo?.price??
+    d?.promedio??d?.venta??d?.price??d?.Precio??null;
+  const tryApis=[
+    async()=>{const d=await fetchRate('https://ve.dolarapi.com/v1/dolares/paralelo');const r=extract(d);if(!isFinite(r))throw 0;return r;},
+    async()=>{const d=await fetchRate('https://ve.dolarapi.com/v1/dolares/promedio');const r=extract(d);if(!isFinite(r))throw 0;return r;},
+    async()=>{const d=await fetchRate('https://pydolarvenezuela-api.azurewebsites.net/api/v1/dollar?page=enparalelovzla');const r=d?.price??d?.Precio;if(!isFinite(r))throw 0;return parseFloat(r);}
+  ];
+  let r=null;
+  for(const fn of tryApis){try{r=await fn();if(r>1)break;}catch(_){}}
+  if(isFinite(r)&&r>1){
+    const disp=`1 USDT = ${fmt(r,2)} VES`;
+    saveRateCache(id,disp,r);
+    setOk(id,disp,'Tasa paralelo/P2P');
+  }else{
+    /* Fallback: estimado BCV + 5% (solo referencial) */
+    const bcvR=liveRates.vesPerUsd;
+    if(bcvR&&bcvR>1){
+      const est=+(bcvR*1.05).toFixed(2);
+      const disp=`1 USDT ≈ ${fmt(est,2)} VES`;
+      saveRateCache(id,disp,est);
+      setOk(id,disp,'Estimado BCV+5% · Referencial');
+    }else{setErr(id,loadRateCache(id));}
+  }
+}
 const refreshers={yuan:fetchYuan,cop:fetchCOP,bcv:fetchBCV,binance:fetchBinance};
 async function refreshSingle(id){await(refreshers[id]||(() =>{}))();}
 async function updateRates(){await Promise.allSettled([fetchYuan(),fetchCOP(),fetchBCV(),fetchBinance()]);}
