@@ -268,11 +268,30 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
     </div>
   </div>
 
-  <!-- PASTE ZONE -->
+  <!-- PASTE / UPLOAD ZONE -->
+  <input type="file" id="file-upload-input" accept=".xlsx,.xls,.csv,.ods" style="display:none" onchange="handleFileUpload(event)">
+
   <div class="card" style="margin-bottom:14px;border-color:rgba(59,130,246,.3);border-width:1.5px">
     <div class="card-header" style="margin-bottom:14px">
-      <div class="card-title"><span class="icon icon-b">📋</span>Pegar desde Excel</div>
-      <span style="font-size:11px;color:var(--dim)">Copia tus filas en Excel y pégalas aquí</span>
+      <div class="card-title"><span class="icon icon-b">📋</span>Importar Productos</div>
+      <span style="font-size:11px;color:var(--dim)">Sube un archivo o pega desde Excel</span>
+    </div>
+
+    <!-- Upload drop zone -->
+    <div id="drop-zone"
+      onclick="document.getElementById('file-upload-input').click()"
+      ondrop="handleDrop(event)" ondragover="event.preventDefault();this.style.borderColor='var(--blue)';this.style.background='rgba(59,130,246,.08)'" ondragleave="this.style.borderColor='';this.style.background=''"
+      style="border:2px dashed rgba(59,130,246,.35);border-radius:12px;padding:22px 16px;text-align:center;cursor:pointer;margin-bottom:14px;transition:all .2s">
+      <div style="font-size:28px;margin-bottom:6px">📂</div>
+      <div style="font-size:14px;font-weight:700;color:var(--blue)">Haz clic aquí o arrastra tu archivo</div>
+      <div style="font-size:12px;color:var(--dim);margin-top:4px">Excel (.xlsx · .xls) · CSV · ODS</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px">El sistema detecta las columnas automáticamente y te deja confirmar el mapeo antes de importar</div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <div style="flex:1;height:1px;background:rgba(148,163,184,.15)"></div>
+      <span style="font-size:11px;color:var(--muted)">o pega directamente desde Excel</span>
+      <div style="flex:1;height:1px;background:rgba(148,163,184,.15)"></div>
     </div>
 
     <!-- Guía visual de columnas -->
@@ -606,6 +625,66 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
 </div><!-- /.main-app -->
 
 <div id="toast"></div>
+
+<!-- FILE UPLOAD MODAL -->
+<div id="upload-modal" onclick="if(event.target===this)closeUploadModal()"
+  style="display:none;position:fixed;inset:0;z-index:2100;background:rgba(0,0,0,.82);backdrop-filter:blur(8px);overflow-y:auto;padding:20px 12px">
+  <div style="max-width:860px;margin:0 auto;background:#1e293b;border:1px solid rgba(148,163,184,.18);border-radius:18px;padding:0;overflow:hidden">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid rgba(148,163,184,.12);background:rgba(15,23,42,.6)">
+      <div>
+        <div style="font-size:15px;font-weight:700;color:var(--text)">📂 Importar Archivo</div>
+        <div style="font-size:12px;color:var(--dim);margin-top:2px" id="up-fname"></div>
+      </div>
+      <button onclick="closeUploadModal()"
+        style="width:32px;height:32px;background:rgba(148,163,184,.12);border:none;color:var(--dim);font-size:18px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center">×</button>
+    </div>
+
+    <div style="padding:20px 24px">
+
+      <!-- Controls row -->
+      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px">
+        <div>
+          <div style="font-size:10px;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px">Hoja</div>
+          <select id="up-sheet" class="inp" style="font-size:12px;min-width:120px"
+            onchange="switchSheet(this.value)"></select>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px">Fila de encabezados</div>
+          <input id="up-hrow" type="number" class="inp" min="1" value="1" style="width:70px;font-size:12px"
+            oninput="renderUploadPreview()">
+        </div>
+        <div style="font-size:11px;color:var(--muted);padding-bottom:6px">
+          ← Si tu archivo tiene logos o filas vacías arriba, ajusta el número
+        </div>
+      </div>
+
+      <!-- Preview table -->
+      <div style="font-size:10px;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Vista previa (primeras filas)</div>
+      <div id="up-preview" style="overflow-x:auto;max-height:180px;overflow-y:auto;background:rgba(15,23,42,.5);border:1px solid rgba(148,163,184,.12);border-radius:10px;margin-bottom:18px;padding:4px"></div>
+
+      <!-- Column mapping -->
+      <div style="font-size:10px;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Mapeo de columnas — ¿cuál columna del archivo corresponde a cada campo?</div>
+      <div id="up-colmap" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px">
+        <!-- filled by JS -->
+      </div>
+
+      <!-- Bottom actions -->
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding-top:14px;border-top:1px solid rgba(148,163,184,.1)">
+        <select id="up-mode" class="inp" style="width:auto;font-size:12px">
+          <option value="replace">Reemplazar lista actual</option>
+          <option value="append">Agregar a lista actual</option>
+        </select>
+        <button class="btn btn-p" onclick="doImportFile()" style="padding:10px 24px;font-size:13px">
+          ✓ Importar Productos
+        </button>
+        <button class="btn btn-s btn-sm" onclick="closeUploadModal()">Cancelar</button>
+        <span id="up-count" style="font-size:12px;color:var(--green);margin-left:auto"></span>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- DETAIL CALCULATOR MODAL -->
 <div id="calc-modal" onclick="if(event.target===this)this.style.display='none'"
@@ -1625,6 +1704,187 @@ function togglePasteZone(){
 function clearPaste(){
   const a=document.getElementById('paste-input'),b=document.getElementById('paste-prices'),p=document.getElementById('paste-preview');
   if(a)a.value='';if(b)b.value='';if(p)p.style.display='none';
+}
+
+// ── FILE UPLOAD / IMPORT ────────────────────────────────────
+let _uploadWB=null, _uploadRawRows=[];
+
+async function ensureXlsx(){
+  if(window.XLSX)return;
+  await new Promise((res,rej)=>{
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload=res;
+    s.onerror=()=>rej(new Error('No se pudo cargar el lector de Excel'));
+    document.head.appendChild(s);
+  });
+}
+
+function handleDrop(e){
+  e.preventDefault();
+  const dz=document.getElementById('drop-zone');
+  if(dz){dz.style.borderColor='';dz.style.background='';}
+  const file=e.dataTransfer?.files?.[0];
+  if(file)parseUploadFile(file);
+}
+
+async function handleFileUpload(e){
+  const file=e.target.files?.[0];
+  e.target.value='';
+  if(file)parseUploadFile(file);
+}
+
+async function parseUploadFile(file){
+  try{
+    toast('Leyendo archivo…');
+    await ensureXlsx();
+    const buf=await file.arrayBuffer();
+    const wb=XLSX.read(buf,{type:'array',cellDates:true,raw:false});
+    _uploadWB=wb;
+    const sheetSel=document.getElementById('up-sheet');
+    sheetSel.innerHTML=wb.SheetNames.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
+    sheetSel.style.display=wb.SheetNames.length>1?'':'none';
+    document.getElementById('up-hrow').value=1;
+    document.getElementById('up-fname').textContent=file.name;
+    loadSheetRows(wb.SheetNames[0]);
+    document.getElementById('upload-modal').style.display='block';
+  }catch(err){toast('Error: '+err.message,'err');}
+}
+
+function switchSheet(name){
+  if(_uploadWB)loadSheetRows(name);
+}
+
+function loadSheetRows(name){
+  const ws=_uploadWB.Sheets[name];
+  const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',blankrows:false,raw:false});
+  _uploadRawRows=raw.filter(r=>r.some(c=>String(c||'').trim()!==''));
+  renderUploadPreview();
+}
+
+const UP_FIELDS=[
+  {id:'name',  label:'Nombre / Descripción ★', req:true,  pat:/nombre|name|descripci|product|articulo|art[íi]culo|descript|modelo/i},
+  {id:'ref',   label:'Referencia / SKU',        req:false, pat:/^ref|sku|cod|item.?n[úu]?m|part|referencia/i},
+  {id:'brand', label:'Marca',                   req:false, pat:/marca|brand|fabricante|maker/i},
+  {id:'cartons',label:'Cartones (cantidad)',    req:false, pat:/carton|ctn|caja|^box|master.?box|bulto/i},
+  {id:'qtyPerCtn',label:'Uds por Cartón',       req:false, pat:/ud.*(ctn|cart|caja)|pcs.*(ctn|box)|unid.*ctn|pcs\/ctn|qty.*ctn|pcs per/i},
+  {id:'weight',label:'Peso KG (total lote)',     req:false, pat:/peso|weight|g\.?w|n\.?w|kg|gross/i},
+  {id:'cbm',   label:'Volumen M³ (total lote)', req:false, pat:/cbm|m3|volum|volume|cubic|m[íi]3/i},
+  {id:'price', label:'Precio ¥ por unidad',     req:false, pat:/precio|price|unit.?price|yuan|cny|¥|costo/i},
+];
+
+function renderUploadPreview(){
+  const rows=_uploadRawRows;
+  if(!rows.length)return;
+  const hrow=Math.max(0,(parseInt(document.getElementById('up-hrow').value)||1)-1);
+  const headers=(rows[hrow]||[]).map(c=>String(c||'').trim());
+
+  // Preview table
+  const show=Math.min(rows.length,hrow+9);
+  let t='<table style="border-collapse:collapse;font-size:11px;white-space:nowrap">';
+  for(let i=0;i<show;i++){
+    const isH=i===hrow;
+    const row=rows[i]||[];
+    const bg=isH?'background:rgba(59,130,246,.18);font-weight:700':i%2===0?'background:rgba(255,255,255,.02)':'';
+    t+=`<tr style="${bg}"><td style="padding:2px 6px;color:var(--muted);font-size:10px;border-right:1px solid rgba(148,163,184,.1)">${i+1}${isH?' ★':''}</td>`;
+    row.forEach(c=>{
+      const txt=String(c||'').substring(0,22);
+      t+=`<td style="padding:2px 8px;border:1px solid rgba(148,163,184,.07);max-width:110px;overflow:hidden;text-overflow:ellipsis" title="${esc(String(c||''))}">${esc(txt)}</td>`;
+    });
+    t+='</tr>';
+  }
+  if(rows.length>show)t+=`<tr><td colspan="99" style="padding:4px 8px;color:var(--muted);font-size:10px">… ${rows.length-show} filas más</td></tr>`;
+  t+='</table>';
+  document.getElementById('up-preview').innerHTML=t;
+
+  // Column mapping dropdowns
+  const opts=`<option value="">— No importar —</option>`+headers.map((h,i)=>
+    `<option value="${i}">Col ${i+1}${h?' – '+esc(h.substring(0,24)):'(sin encabezado)'}</option>`
+  ).join('');
+
+  const used=new Set();
+  const autoMatch=field=>{
+    let best=-1;
+    headers.forEach((h,i)=>{
+      if(h&&!used.has(i)&&field.pat.test(h)){if(best===-1){best=i;used.add(i);}}
+    });
+    return best;
+  };
+
+  document.getElementById('up-colmap').innerHTML=UP_FIELDS.map(f=>{
+    const auto=autoMatch(f);
+    const sel=`<select id="up-col-${f.id}" class="inp" style="font-size:12px;width:100%" onchange="updateUpCount()">${opts}</select>`;
+    return `<div>
+      <div style="font-size:10px;color:${f.req?'var(--gold)':'var(--dim)'};font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">${f.label}${f.req?' ★':''}</div>
+      ${sel}
+    </div>`;
+  }).join('');
+
+  // Set auto-detected values (re-run after DOM insertion)
+  const usedB=new Set();
+  UP_FIELDS.forEach(f=>{
+    let best=-1;
+    headers.forEach((h,i)=>{
+      if(h&&!usedB.has(i)&&f.pat.test(h)){if(best===-1){best=i;usedB.add(i);}}
+    });
+    if(best>=0){const el=document.getElementById('up-col-'+f.id);if(el)el.value=String(best);}
+  });
+
+  updateUpCount();
+}
+
+function updateUpCount(){
+  const hrow=Math.max(0,(parseInt(document.getElementById('up-hrow').value)||1)-1);
+  const dataRows=_uploadRawRows.slice(hrow+1);
+  const namCol=parseInt(document.getElementById('up-col-name')?.value??'');
+  const count=isNaN(namCol)?0:dataRows.filter(r=>String(r[namCol]||'').trim()!=='').length;
+  const el=document.getElementById('up-count');
+  if(el)el.textContent=count>0?`${count} productos detectados`:'';
+}
+
+function doImportFile(){
+  const hrow=Math.max(0,(parseInt(document.getElementById('up-hrow').value)||1)-1);
+  const dataRows=_uploadRawRows.slice(hrow+1);
+  const gc=id=>{const v=document.getElementById('up-col-'+id)?.value;return(v!==''&&v!=null)?parseInt(v):-1;};
+  const namCol=gc('name');
+  if(namCol<0){toast('Selecciona la columna Nombre/Descripción','err');return;}
+
+  function getStr(row,col){return col>=0?String(row[col]||'').trim():'';}
+  function getNum(row,col){
+    if(col<0)return 0;
+    const raw=String(row[col]||'').replace(/[,$\s€£]/g,'');
+    return parseFloat(raw.replace(',','.'))||0;
+  }
+
+  const imported=[];
+  dataRows.forEach(row=>{
+    const name=getStr(row,namCol);
+    if(!name)return;
+    imported.push({
+      id:Date.now()+Math.random(),
+      ref:getStr(row,gc('ref')),
+      name,
+      brand:getStr(row,gc('brand')),
+      cartons:getNum(row,gc('cartons'))||1,
+      qtyPerCtn:getNum(row,gc('qtyPerCtn'))||1,
+      weight:getNum(row,gc('weight')),
+      cbm:getNum(row,gc('cbm')),
+      price:getNum(row,gc('price')),
+    });
+  });
+
+  if(!imported.length){toast('No se encontraron filas con nombre válido','err');return;}
+  const mode=document.getElementById('up-mode').value;
+  if(mode==='replace')prods=imported;
+  else prods=[...prods,...imported];
+  saveProds();renderProds();calcAll();renderDash();
+  closeUploadModal();
+  toast(`✓ ${imported.length} productos importados`,'ok');
+  showTab('productos');
+}
+
+function closeUploadModal(){
+  document.getElementById('upload-modal').style.display='none';
 }
 
 // Parse prices textarea: one number per line
