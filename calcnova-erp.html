@@ -462,8 +462,8 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
         <button class="tab" onclick="simTab(this,'consolidada')">Consolidada</button>
       </div>
       <div class="g2" style="gap:12px;margin-bottom:14px">
-        <div class="stat"><div class="stat-label">Max CBM</div><div class="stat-val" id="s-maxC" style="font-size:18px">33.2</div></div>
-        <div class="stat"><div class="stat-label">Max Peso KG</div><div class="stat-val" id="s-maxW" style="font-size:18px">21,727</div></div>
+        <div class="stat"><div class="stat-label">Max CBM</div><div class="stat-val" id="s-maxC" style="font-size:18px">33.1</div></div>
+        <div class="stat"><div class="stat-label">Max Peso KG</div><div class="stat-val" id="s-maxW" style="font-size:18px">28,280</div></div>
       </div>
       <div style="margin-bottom:4px;display:flex;justify-content:space-between;font-size:12px"><span>Uso CBM</span><span id="s-cpct">0%</span></div>
       <div class="cbar-wrap"><div class="cbar-fill" id="s-cbar" style="width:0%"></div></div>
@@ -544,8 +544,9 @@ let simMode = '20ft';
 let mainChart = null;
 let refreshTimer = null;
 
-// ISO standard dry containers (GP): internal volume & max payload
-const CTYPES = {'20ft':{cbm:33.2,wt:21727},'40ft':{cbm:67.7,wt:26780},'consolidada':{cbm:null,wt:null}};
+// ISO standard dry containers (GP) — MGW 30,480 kg both sizes (Wikipedia: Intermodal container)
+// 20ft: tare ~2,200 kg → payload 28,280 kg | 40ft: tare ~3,800 kg → payload 26,680 kg
+const CTYPES = {'20ft':{cbm:33.1,wt:28280},'40ft':{cbm:67.5,wt:26680},'consolidada':{cbm:null,wt:null}};
 
 // ── STORAGE ────────────────────────────────────────────────
 function loadCfg(){
