@@ -231,28 +231,51 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
   <!-- PASTE ZONE -->
   <div class="card" style="margin-bottom:14px;border-color:rgba(59,130,246,.25)">
     <div class="card-header" style="margin-bottom:0;cursor:pointer" onclick="togglePasteZone(this)">
-      <div class="card-title"><span class="icon icon-b">📋</span>Pegar desde Excel <span style="font-size:11px;color:var(--dim);font-weight:400;margin-left:6px">— copia celdas en Excel y pégalas aquí</span></div>
+      <div class="card-title"><span class="icon icon-b">📋</span>Pegar desde Excel <span style="font-size:11px;color:var(--dim);font-weight:400;margin-left:6px">— copia las celdas y pégalas aquí</span></div>
       <span id="paste-toggle-icon" style="color:var(--dim);font-size:18px">▼</span>
     </div>
     <div id="paste-body" style="display:none;margin-top:14px">
-      <div style="padding:10px 12px;background:rgba(15,23,42,.6);border-radius:8px;margin-bottom:12px;font-size:12px;color:var(--dim)">
-        <div style="font-weight:600;color:var(--blue);margin-bottom:6px">Orden de columnas esperado:</div>
-        <div style="font-family:monospace;background:rgba(59,130,246,.08);padding:6px 10px;border-radius:6px;border:1px solid rgba(59,130,246,.15)">
-          Nombre &nbsp;│&nbsp; Cantidad &nbsp;│&nbsp; Precio ¥ &nbsp;│&nbsp; Peso KG &nbsp;│&nbsp; CBM &nbsp;│&nbsp; Categoría (opcional)
+      <div style="padding:10px 12px;background:rgba(15,23,42,.6);border-radius:8px;margin-bottom:12px;font-size:12px">
+        <div style="font-weight:600;color:var(--blue);margin-bottom:8px">Orden exacto de columnas en tu Excel:</div>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:11px;font-family:monospace">
+            <tr style="background:rgba(59,130,246,.12)">
+              <td style="padding:5px 8px;border:1px solid rgba(59,130,246,.2);color:var(--blue);font-weight:700">Col 1</td>
+              <td style="padding:5px 8px;border:1px solid rgba(59,130,246,.2);color:var(--blue);font-weight:700">Col 2</td>
+              <td style="padding:5px 8px;border:1px solid rgba(59,130,246,.2);color:var(--blue);font-weight:700">Col 3</td>
+              <td style="padding:5px 8px;border:1px solid rgba(59,130,246,.2);color:var(--blue);font-weight:700">Col 4</td>
+              <td style="padding:5px 8px;border:1px solid rgba(59,130,246,.2);color:var(--blue);font-weight:700">Col 5</td>
+              <td style="padding:5px 8px;border:1px solid rgba(59,130,246,.2);color:var(--blue);font-weight:700">Col 6</td>
+              <td style="padding:5px 8px;border:1px solid rgba(59,130,246,.2);color:var(--blue);font-weight:700">Col 7</td>
+              <td style="padding:5px 8px;border:1px solid rgba(59,130,246,.2);color:var(--blue);font-weight:700">Col 8</td>
+              <td style="padding:5px 8px;border:1px solid rgba(59,130,246,.2);color:var(--blue);font-weight:700">Col 9</td>
+            </tr>
+            <tr style="color:var(--text)">
+              <td style="padding:5px 8px;border:1px solid rgba(148,163,184,.1)">Referencia</td>
+              <td style="padding:5px 8px;border:1px solid rgba(148,163,184,.1)">Descripción</td>
+              <td style="padding:5px 8px;border:1px solid rgba(148,163,184,.1)">Marca</td>
+              <td style="padding:5px 8px;border:1px solid rgba(148,163,184,.1)">Cartones</td>
+              <td style="padding:5px 8px;border:1px solid rgba(148,163,184,.1)">Uds/Cartón</td>
+              <td style="padding:5px 8px;border:1px solid rgba(148,163,184,.1);color:var(--muted)">Total Uds*</td>
+              <td style="padding:5px 8px;border:1px solid rgba(148,163,184,.1)">Peso KG</td>
+              <td style="padding:5px 8px;border:1px solid rgba(148,163,184,.1)">Volumen M3</td>
+              <td style="padding:5px 8px;border:1px solid rgba(148,163,184,.1);color:var(--gold)">Precio ¥</td>
+            </tr>
+          </table>
         </div>
-        <div style="margin-top:6px">También acepta: solo Nombre, Cantidad y Precio ¥ — el resto queda en 0.</div>
+        <div style="margin-top:7px;color:var(--muted)">* Col 6 (Total Uds) se ignora — se calcula automáticamente: Cartones × Uds/Cartón</div>
       </div>
-      <textarea class="inp" id="paste-input" rows="7"
-        placeholder="Selecciona las celdas en Excel → Ctrl+C → haz clic aquí → Ctrl+V"
-        style="resize:vertical;font-family:monospace;font-size:12px;width:100%;line-height:1.6"
-        onpaste="setTimeout(()=>previewPaste(),50)"></textarea>
+      <textarea class="inp" id="paste-input" rows="8"
+        placeholder="Selecciona las celdas en Excel → Ctrl+C → clic aquí → Ctrl+V"
+        style="resize:vertical;font-family:monospace;font-size:12px;width:100%;line-height:1.7"
+        onpaste="setTimeout(()=>previewPaste(),60)"></textarea>
       <div id="paste-preview" style="display:none;margin:8px 0"></div>
       <div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap">
         <select class="inp" id="paste-mode" style="width:auto;flex-shrink:0">
-          <option value="append">Agregar a productos existentes</option>
+          <option value="append">Agregar a los productos actuales</option>
           <option value="replace">Reemplazar todos los productos</option>
         </select>
-        <button class="btn btn-p" onclick="processPaste()">📋 Importar productos</button>
+        <button class="btn btn-p" onclick="processPaste()">📋 Importar</button>
         <button class="btn btn-s btn-sm" onclick="document.getElementById('paste-input').value='';document.getElementById('paste-preview').style.display='none'">✕ Limpiar</button>
       </div>
     </div>
@@ -261,15 +284,32 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
   <div class="card" style="margin-bottom:16px">
     <div class="tbl-wrap">
       <table id="tbl-products">
-        <thead><tr><th>#</th><th>Nombre</th><th>Categoría</th><th>Cant.</th><th>Precio ¥</th><th>Precio $</th><th>Peso KG</th><th>CBM</th><th>Total ¥</th><th>Total $</th><th></th></tr></thead>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Referencia</th>
+            <th>Descripción / Nombre</th>
+            <th>Marca</th>
+            <th>Cartones</th>
+            <th>Uds/Ctn</th>
+            <th style="color:var(--green)">Total Uds</th>
+            <th>Precio ¥</th>
+            <th>Precio $/ud</th>
+            <th>Peso KG</th>
+            <th>Volumen M3</th>
+            <th>Total ¥</th>
+            <th></th>
+          </tr>
+        </thead>
         <tbody id="tbody-p"></tbody>
       </table>
     </div>
     <div id="p-totals" style="display:none;padding:10px 0 0;border-top:1px solid var(--border);margin-top:6px">
       <div style="display:flex;gap:20px;justify-content:flex-end;font-size:13px;flex-wrap:wrap">
+        <span>Cartones: <strong id="t-ctns">0</strong></span>
         <span>Unidades: <strong id="t-units">0</strong></span>
         <span>Peso: <strong id="t-weight">0 KG</strong></span>
-        <span>CBM: <strong id="t-cbm">0</strong></span>
+        <span>Volumen: <strong id="t-cbm">0 M3</strong></span>
         <span>Total ¥: <strong class="to" id="t-cny">¥0</strong></span>
         <span>Total $: <strong class="tg" id="t-usd">$0</strong></span>
       </div>
@@ -281,7 +321,7 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
     <div class="card">
       <div class="tbl-wrap">
         <table>
-          <thead><tr><th>Producto</th><th>Costo Unit. $</th><th>P. Mayor Bs</th><th>P. Detal Bs</th><th>Costo Total $</th><th>Ganancia $</th><th>Margen %</th><th>Recomendación</th></tr></thead>
+          <thead><tr><th>Ref</th><th>Producto</th><th>Marca</th><th>Ctns</th><th>Total Uds</th><th>Costo Unit. $</th><th>P. Mayor Bs</th><th>P. Detal Bs</th><th>Costo Total $</th><th>Ganancia $</th><th>Margen %</th><th>Recomendación</th></tr></thead>
           <tbody id="tbody-r"></tbody>
         </table>
       </div>
@@ -553,9 +593,13 @@ function applyManual(){
 }
 
 // ── PRODUCTS ───────────────────────────────────────────────
+// Product structure: {id, ref, name, brand, cartons, qtyPerCtn, weight, cbm, price}
+// qty (total units) = cartons × qtyPerCtn  — always computed, never stored
+function getQty(p){ return Math.max(1, (p.cartons||1) * (p.qtyPerCtn||1)); }
+
 function addProd(){
   const id=Date.now();
-  prods.push({id,name:'',cat:'general',qty:1,price:0,weight:0,cbm:0});
+  prods.push({id,ref:'',name:'',brand:'',cartons:1,qtyPerCtn:1,weight:0,cbm:0,price:0});
   saveProds();renderProds();
   setTimeout(()=>{const e=document.querySelector(`[data-id="${id}"][data-f="name"]`);if(e)e.focus();},60);
 }
@@ -566,20 +610,21 @@ function delProd(id){
 
 function upd(id,field,val){
   const p=prods.find(x=>x.id===id);if(!p)return;
-  const nums=['qty','price','weight','cbm'];
+  const nums=['cartons','qtyPerCtn','price','weight','cbm'];
   p[field]=nums.includes(field)?(parseFloat(val)||0):val;
   saveProds();updRow(id);calcAll();
 }
 
 function updRow(id){
   const p=prods.find(x=>x.id===id);if(!p)return;
+  const qty=getQty(p);
   const pu=R.y>0?p.price/R.y:0;
-  const tC=p.qty*p.price, tU=R.y>0?tC/R.y:0;
-  const td=(i,c)=>document.querySelector(`td[data-id="${id}"][data-c="${c}"]`);
-  const ePU=td(id,'pu'),eTC=td(id,'tc'),eTU=td(id,'tu');
+  const tC=qty*p.price;
+  const td=c=>document.querySelector(`td[data-id="${id}"][data-c="${c}"]`);
+  const eQ=td('qty'),ePU=td('pu'),eTC=td('tc');
+  if(eQ)eQ.textContent=fmtN(qty);
   if(ePU)ePU.textContent='$'+fmt2(pu);
   if(eTC)eTC.textContent='¥'+fmtN(tC);
-  if(eTU)eTU.textContent='$'+fmt2(tU);
   updTotals();
 }
 
@@ -588,26 +633,27 @@ function renderProds(){
   const tt=document.getElementById('p-totals');
   if(!tb)return;
   if(!prods.length){
-    tb.innerHTML='<tr><td colspan="11"><div class="empty"><div class="empty-ico">📦</div><div class="empty-ttl">Sin productos</div><div class="empty-sub">Clic en "+ Agregar Producto"</div></div></td></tr>';
+    tb.innerHTML='<tr><td colspan="13"><div class="empty"><div class="empty-ico">📦</div><div class="empty-ttl">Sin productos</div><div class="empty-sub">Usa "+ Agregar Producto" o pega desde Excel arriba</div></div></td></tr>';
     tt.style.display='none';return;
   }
   tt.style.display='block';
-  const cats=['general','electrónica','ropa','calzado','hogar','juguetes','alimentos','otros'];
   tb.innerHTML=prods.map((p,i)=>{
+    const qty=getQty(p);
     const pu=R.y>0?p.price/R.y:0;
-    const tC=p.qty*p.price,tU=R.y>0?tC/R.y:0;
-    const catOpts=cats.map(c=>`<option value="${c}"${p.cat===c?' selected':''}>${c}</option>`).join('');
+    const tC=qty*p.price;
     return `<tr>
-      <td style="color:var(--muted);font-size:11px">${i+1}</td>
-      <td><input class="tdi" data-id="${p.id}" data-f="name" value="${esc(p.name)}" placeholder="Nombre" style="min-width:140px" onchange="upd(${p.id},'name',this.value)"></td>
-      <td><select class="tdi" style="min-width:100px" onchange="upd(${p.id},'cat',this.value)">${catOpts}</select></td>
-      <td><input class="tdi tn" data-id="${p.id}" data-f="qty" type="number" min="1" value="${p.qty}" style="width:65px;text-align:right" oninput="upd(${p.id},'qty',this.value)"></td>
-      <td><input class="tdi tn" data-id="${p.id}" data-f="price" type="number" min="0" value="${p.price}" style="width:85px;text-align:right" placeholder="¥0" oninput="upd(${p.id},'price',this.value)"></td>
-      <td class="tn tg" data-id="${p.id}" data-c="pu">$${fmt2(pu)}</td>
-      <td><input class="tdi tn" data-id="${p.id}" data-f="weight" type="number" min="0" step="0.01" value="${p.weight}" style="width:75px;text-align:right" oninput="upd(${p.id},'weight',this.value)"></td>
-      <td><input class="tdi tn" data-id="${p.id}" data-f="cbm" type="number" min="0" step="0.001" value="${p.cbm}" style="width:75px;text-align:right" oninput="upd(${p.id},'cbm',this.value)"></td>
+      <td style="color:var(--muted);font-size:11px;text-align:center">${i+1}</td>
+      <td><input class="tdi" data-id="${p.id}" data-f="ref" value="${esc(p.ref||'')}" placeholder="REF-001" style="width:80px" onchange="upd(${p.id},'ref',this.value)"></td>
+      <td><input class="tdi" data-id="${p.id}" data-f="name" value="${esc(p.name||'')}" placeholder="Descripción del producto" style="min-width:180px" onchange="upd(${p.id},'name',this.value)"></td>
+      <td><input class="tdi" data-id="${p.id}" data-f="brand" value="${esc(p.brand||'')}" placeholder="Marca" style="width:90px" onchange="upd(${p.id},'brand',this.value)"></td>
+      <td><input class="tdi tn" data-id="${p.id}" data-f="cartons" type="number" min="1" value="${p.cartons||1}" style="width:65px;text-align:right" title="Número de cartones" oninput="upd(${p.id},'cartons',this.value)"></td>
+      <td><input class="tdi tn" data-id="${p.id}" data-f="qtyPerCtn" type="number" min="1" value="${p.qtyPerCtn||1}" style="width:65px;text-align:right" title="Unidades por cartón" oninput="upd(${p.id},'qtyPerCtn',this.value)"></td>
+      <td class="tn" data-id="${p.id}" data-c="qty" style="color:var(--green);font-weight:700;text-align:center">${fmtN(qty)}</td>
+      <td><input class="tdi tn" data-id="${p.id}" data-f="price" type="number" min="0" step="0.01" value="${p.price||0}" style="width:85px;text-align:right" placeholder="¥0" oninput="upd(${p.id},'price',this.value)"></td>
+      <td class="tn" data-id="${p.id}" data-c="pu" style="color:var(--green)">$${fmt2(pu)}</td>
+      <td><input class="tdi tn" data-id="${p.id}" data-f="weight" type="number" min="0" step="0.01" value="${p.weight||0}" style="width:75px;text-align:right" oninput="upd(${p.id},'weight',this.value)"></td>
+      <td><input class="tdi tn" data-id="${p.id}" data-f="cbm" type="number" min="0" step="0.0001" value="${p.cbm||0}" style="width:75px;text-align:right" oninput="upd(${p.id},'cbm',this.value)"></td>
       <td class="tn to" data-id="${p.id}" data-c="tc">¥${fmtN(tC)}</td>
-      <td class="tn tg" data-id="${p.id}" data-c="tu">$${fmt2(tU)}</td>
       <td><button class="btn btn-d btn-ico btn-sm" onclick="delProd(${p.id})" title="Eliminar">×</button></td>
     </tr>`;
   }).join('');
@@ -615,12 +661,18 @@ function renderProds(){
 }
 
 function updTotals(){
-  const u=prods.reduce((s,p)=>s+(p.qty||0),0);
-  const w=prods.reduce((s,p)=>s+(p.qty||0)*(p.weight||0),0);
-  const cb=prods.reduce((s,p)=>s+(p.qty||0)*(p.cbm||0),0);
-  const cn=prods.reduce((s,p)=>s+(p.qty||0)*(p.price||0),0);
-  const ud=R.y>0?cn/R.y:0;
-  setText('t-units',fmtN(u));setText('t-weight',fmt2(w)+' KG');setText('t-cbm',fmt4(cb));setText('t-cny','¥'+fmtN(cn));setText('t-usd','$'+fmt2(ud));
+  const totCtns=prods.reduce((s,p)=>s+(p.cartons||1),0);
+  const totUnits=prods.reduce((s,p)=>s+getQty(p),0);
+  const totW=prods.reduce((s,p)=>s+(p.weight||0),0);
+  const totCBM=prods.reduce((s,p)=>s+(p.cbm||0),0);
+  const totCNY=prods.reduce((s,p)=>s+getQty(p)*(p.price||0),0);
+  const totUSD=R.y>0?totCNY/R.y:0;
+  setText('t-ctns',fmtN(totCtns));
+  setText('t-units',fmtN(totUnits));
+  setText('t-weight',fmt2(totW)+' KG');
+  setText('t-cbm',fmt4(totCBM)+' M3');
+  setText('t-cny','¥'+fmtN(totCNY));
+  setText('t-usd','$'+fmt2(totUSD));
 }
 
 function clearProds(){
@@ -676,16 +728,17 @@ function calcAll(){
     const rs=document.getElementById('res-section');if(rs)rs.style.display='none';
     return null;
   }
-  const totW=prods.reduce((s,p)=>s+(p.qty||0)*(p.weight||0),0);
-  const totCBM=prods.reduce((s,p)=>s+(p.qty||0)*(p.cbm||0),0);
-  const totVal=prods.reduce((s,p)=>s+(p.qty||0)*(p.price||0)/yr,0);
+  // weight and cbm are TOTALS for the product (all cartons)
+  const totW=prods.reduce((s,p)=>s+(p.weight||0),0);
+  const totCBM=prods.reduce((s,p)=>s+(p.cbm||0),0);
+  const totVal=prods.reduce((s,p)=>s+getQty(p)*(p.price||0)/yr,0);
   const nP=prods.length||1;
 
   const results=prods.map(p=>{
-    const qty=Math.max(1,p.qty||1);
-    const pW=(p.qty||0)*(p.weight||0);
-    const pCBM=(p.qty||0)*(p.cbm||0);
-    const pVal=(p.qty||0)*(p.price||0)/yr;
+    const qty=getQty(p);
+    const pW=p.weight||0;      // total weight for this product
+    const pCBM=p.cbm||0;       // total volume for this product
+    const pVal=qty*(p.price||0)/yr;
     let wR=1/nP;
     if(cfg.distribution==='weight') wR=totW>0?pW/totW:1/nP;
     else if(cfg.distribution==='cbm') wR=totCBM>0?pCBM/totCBM:1/nP;
@@ -736,7 +789,7 @@ function calcAll(){
     else if(margen>30)rec='IDEAL DETAL';
     else if(margen>10)rec='IDEAL MAYOR';
 
-    return {p,qty,totalUSD,unitUSD,unitBs,pMayorBs,pDetalBs,gananciaUSD,margen,rec,prodUSD,s2};
+    return {p,qty,totalUSD,unitUSD,unitBs,pMayorBs,pDetalBs,gananciaUSD,margen,rec,prodUSD,s2,cartons:p.cartons||1};
   });
 
   renderResults(results);
@@ -753,7 +806,11 @@ function renderResults(rs){
     const hasMW=(cfg.marginWholesale||0)>0;
     const hasMR=(cfg.marginRetail||0)>0;
     return `<tr>
-      <td><strong>${esc(r.p.name||'Sin nombre')}</strong><div style="font-size:11px;color:var(--muted)">${r.p.cat} · ${r.qty} uds</div></td>
+      <td style="font-size:11px;color:var(--dim)">${esc(r.p.ref||'—')}</td>
+      <td><strong>${esc(r.p.name||'Sin nombre')}</strong></td>
+      <td style="font-size:12px;color:var(--dim)">${esc(r.p.brand||'—')}</td>
+      <td class="tn" style="text-align:center">${r.cartons}</td>
+      <td class="tn tg" style="font-weight:700;text-align:center">${fmtN(r.qty)}</td>
       <td class="tn"><span style="font-weight:700">$${fmt2(r.unitUSD)}</span><div style="font-size:11px;color:var(--dim)">Bs ${fmtN(r.unitBs)}</div></td>
       <td class="tn tg">${hasMW?'Bs '+fmtN(r.pMayorBs):'—'}</td>
       <td class="tn tb">${hasMR?'Bs '+fmtN(r.pDetalBs):'—'}</td>
@@ -781,6 +838,7 @@ function renderDash(){
   const totInvUSD=rs.reduce((s,r)=>s+r.totalUSD,0);
   const totUtilUSD=rs.reduce((s,r)=>s+(r.gananciaUSD>0?r.gananciaUSD:0),0);
   const totUnits=rs.reduce((s,r)=>s+r.qty,0);
+  const totCtns=rs.reduce((s,r)=>s+r.cartons,0);
   const vr=R.v||0;
   const best=rs.slice().sort((a,b)=>b.margen-a.margen)[0];
   const margPct=totInvUSD>0?(totUtilUSD/totInvUSD*100):0;
@@ -789,14 +847,15 @@ function renderDash(){
   setText('st-inv2',vr>0?'Bs '+fmtN(totInvUSD*vr)+' equiv. BCV':'Bs — (sin tasa BCV)');
   setText('st-util','$'+fmt2(totUtilUSD));
   setText('st-util2',fmt1(margPct)+'% margen');
-  setText('st-prods',String(rs.length));setText('st-units',fmtN(totUnits)+' unidades');
+  setText('st-prods',String(rs.length));setText('st-units',fmtN(totCtns)+' ctns · '+fmtN(totUnits)+' uds');
   if(best){setText('st-best',best.p.name||'Sin nombre');setText('st-best2','Margen: '+fmt1(best.margen)+'%');}
 
   // Product list — show USD cost, and Bs unit price
   const dl=document.getElementById('dash-list');
   if(dl) dl.innerHTML=rs.map(r=>`
     <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)">
-      <div><div style="font-weight:600;font-size:13px">${esc(r.p.name||'—')}</div><div style="font-size:11px;color:var(--dim)">${r.qty} uds · $${fmt2(r.unitUSD)}/ud${r.unitBs>0?' · Bs '+fmtN(r.unitBs):''}</div></div>
+      <div><div style="font-weight:600;font-size:13px">${esc(r.p.name||'—')}${r.p.brand?` <span style="font-size:11px;color:var(--muted);font-weight:400">${esc(r.p.brand)}</span>`:''}</div>
+      <div style="font-size:11px;color:var(--dim)">${r.cartons} ctns · ${fmtN(r.qty)} uds · $${fmt2(r.unitUSD)}/ud${r.unitBs>0?' · Bs '+fmtN(r.unitBs):''}</div></div>
       <div style="text-align:right"><div style="font-weight:700;color:var(--green);font-size:13px">$${fmt2(r.totalUSD)}</div><div style="font-size:11px;color:var(--dim)">${fmt1(r.margen)}% margen</div></div>
     </div>`).join('');
 
@@ -825,8 +884,8 @@ function renderSim(){
   const ct=CTYPES[simMode];
   const maxC=ct?.cbm,maxW=ct?.wt;
   setText('s-maxC',maxC?String(maxC):'—');setText('s-maxW',maxW?fmtN(maxW):'—');
-  const totC=prods.reduce((s,p)=>s+(p.qty||0)*(p.cbm||0),0);
-  const totW=prods.reduce((s,p)=>s+(p.qty||0)*(p.weight||0),0);
+  const totC=prods.reduce((s,p)=>s+(p.cbm||0),0);
+  const totW=prods.reduce((s,p)=>s+(p.weight||0),0);
   const cp=maxC?Math.min(100,totC/maxC*100):0;
   const wp=maxW?Math.min(100,totW/maxW*100):0;
   setText('s-cpct',maxC?fmt1(cp)+'%':'—');setText('s-wpct',maxW?fmt1(wp)+'%':'—');
@@ -839,9 +898,10 @@ function renderSim(){
   if(!tb)return;
   if(!prods.length){tb.innerHTML='<tr><td colspan="5"><div class="empty"><div class="empty-ico">🚢</div><div class="empty-ttl">Sin productos</div></div></td></tr>';return;}
   tb.innerHTML=prods.map(p=>{
-    const pC=(p.qty||0)*(p.cbm||0),pW=(p.qty||0)*(p.weight||0);
+    const pC=p.cbm||0,pW=p.weight||0;
+    const qty=getQty(p);
     const pct=maxC>0?fmt1(pC/maxC*100)+'%':'—';
-    return `<tr><td><strong>${esc(p.name||'—')}</strong></td><td class="tn">${p.qty}</td><td class="tn">${fmt2(pW)}</td><td class="tn">${fmt4(pC)}</td><td><span class="badge b-b">${pct}</span></td></tr>`;
+    return `<tr><td><strong>${esc(p.name||'—')}</strong>${p.ref?`<div style="font-size:10px;color:var(--muted)">${esc(p.ref)}</div>`:''}</td><td class="tn">${p.cartons||1} ctns / ${fmtN(qty)} uds</td><td class="tn">${fmt2(pW)}</td><td class="tn">${fmt4(pC)}</td><td><span class="badge b-b">${pct}</span></td></tr>`;
   }).join('');
 }
 
@@ -914,7 +974,10 @@ function exportCSV(){
 }
 
 // ── PASTE FROM EXCEL ───────────────────────────────────────
-function togglePasteZone(hdr){
+// Expected columns: Ref | Nombre | Marca | Cartones | Uds/Ctn | TotalUds* | Peso KG | Volumen M3 | Precio ¥
+// * Col 6 (TotalUds) is ignored — computed as Cartones × Uds/Ctn
+
+function togglePasteZone(){
   const body=document.getElementById('paste-body');
   const icon=document.getElementById('paste-toggle-icon');
   const open=body.style.display==='none';
@@ -922,51 +985,74 @@ function togglePasteZone(hdr){
   if(icon)icon.textContent=open?'▲':'▼';
 }
 
-// Parses numbers accepting both European (1.234,56) and US (1,234.56) formats
+// Parse numbers: accepts European 1.234,56 and US 1,234.56 and plain 1234.56
 function parseXlNum(s){
   if(s==null||s==='')return 0;
-  let n=String(s).trim().replace(/\s/g,'');
-  if(!n)return 0;
-  // Detect format by position of last comma vs last dot
+  let n=String(s).trim().replace(/\s/g,'').replace(/[$¥€]/g,'');
+  if(!n||n==='-')return 0;
   const lc=n.lastIndexOf(','),ld=n.lastIndexOf('.');
   if(lc>-1&&ld>-1){
-    if(lc>ld){n=n.replace(/\./g,'').replace(',','.');}  // European: 1.234,56
-    else{n=n.replace(/,/g,'');}                          // US: 1,234.56
+    n=lc>ld?n.replace(/\./g,'').replace(',','.'):n.replace(/,/g,'');
   }else if(lc>-1){
-    // Comma only — decimal if 1-2 digits after, else thousands
     const after=n.substring(lc+1);
-    n=(after.length<=2)?n.replace(',','.'):n.replace(/,/g,'');
+    n=after.length<=2?n.replace(',','.'):n.replace(/,/g,'');
   }
   return parseFloat(n)||0;
 }
 
-// Detect if a row is a header row
-function isHeader(cols){
-  const headers=['nombre','name','producto','description','descripcion','qty','cant',
-                 'cantidad','price','precio','weight','peso','cbm','category','categoria'];
-  const first=(cols[0]||'').toLowerCase().trim();
-  return headers.some(h=>first.includes(h)||h.includes(first.slice(0,4)));
+// Detect header row: if 2+ cells look like labels (not numbers)
+function isHeaderRow(cols){
+  const labels=['ref','nombre','descripci','marca','carton','ctn','unid','peso','volum','cbm','precio','price','qty','cant','weight','brand'];
+  const textCols=cols.filter(c=>{const v=(c||'').trim();return v&&isNaN(parseXlNum(v));});
+  if(textCols.length<2)return false;
+  return labels.some(l=>cols.some(c=>(c||'').toLowerCase().includes(l)));
+}
+
+// Split a line by tab or semicolon, trim each cell
+function splitLine(line){
+  const sep=line.includes('\t')?'\t':line.includes(';')?';':'\t';
+  return line.split(sep).map(c=>c.trim());
 }
 
 function parsePasteText(text){
-  const validCats=['general','electrónica','ropa','calzado','hogar','juguetes','alimentos','otros'];
   const lines=text.split(/\r?\n/);
-  const rows=[]; let skipped=0;
+  const rows=[];let skipped=0;
   for(const line of lines){
     if(!line.trim()){continue;}
-    // Support both tab (Excel) and semicolon (CSV) separators
-    const sep=line.includes('\t')?'\t':line.includes(';')?';':null;
-    const cols=sep?line.split(sep):[line];
-    const name=(cols[0]||'').trim();
+    const cols=splitLine(line);
+    // Skip empty or header rows
+    if(cols.every(c=>!c.trim())){skipped++;continue;}
+    if(isHeaderRow(cols)){skipped++;continue;}
+
+    // Map columns positionally:
+    // [0]=Ref [1]=Nombre [2]=Marca [3]=Cartones [4]=Uds/Ctn [5]=TotalUds(skip) [6]=Peso [7]=Volumen [8]=Precio
+    const ref  =(cols[0]||'').trim();
+    const name =(cols[1]||cols[0]||'').trim();  // fallback: if only 1 text col, use it as name
+    const brand=(cols[2]||'').trim();
+    const cartons   =Math.max(1,parseXlNum(cols[3])||1);
+    const qtyPerCtn =Math.max(1,parseXlNum(cols[4])||1);
+    // col[5] = total units — skip (auto-calculated)
+    const weight=parseXlNum(cols[6]);
+    const cbm   =parseXlNum(cols[7]);
+    const price =parseXlNum(cols[8]);
+
+    // If fewer columns (e.g. 5 cols without ref/brand) try to detect
+    if(cols.length<=6 && !cols[8]){
+      // Compact format without ref/brand: Nombre | Cartones | Uds/Ctn | Peso | CBM | Precio
+      const n2=(cols[0]||'').trim();
+      if(!n2){skipped++;continue;}
+      const c2=Math.max(1,parseXlNum(cols[1])||1);
+      const q2=Math.max(1,parseXlNum(cols[2])||1);
+      const w2=parseXlNum(cols[3]);
+      const v2=parseXlNum(cols[4]);
+      const p2=parseXlNum(cols[5]);
+      if(!n2){skipped++;continue;}
+      rows.push({id:Date.now()+Math.random()*9999,ref:'',name:n2,brand:'',cartons:c2,qtyPerCtn:q2,weight:w2,cbm:v2,price:p2});
+      continue;
+    }
+
     if(!name){skipped++;continue;}
-    if(isHeader(cols)){skipped++;continue;}
-    const qty=Math.max(1,parseXlNum(cols[1])||1);
-    const price=parseXlNum(cols[2]);
-    const weight=parseXlNum(cols[3]);
-    const cbm=parseXlNum(cols[4]);
-    let cat=(cols[5]||'').trim().toLowerCase();
-    if(!validCats.includes(cat))cat='general';
-    rows.push({id:Date.now()+Math.random()*1000,name,cat,qty,price,weight,cbm});
+    rows.push({id:Date.now()+Math.random()*9999,ref,name,brand,cartons,qtyPerCtn,weight,cbm,price});
   }
   return{rows,skipped};
 }
@@ -978,25 +1064,30 @@ function previewPaste(){
   const{rows,skipped}=parsePasteText(text);
   if(!rows.length){
     prev.style.display='block';
-    prev.innerHTML=`<div style="padding:8px 12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;font-size:12px;color:var(--red)">✗ No se detectaron datos. Verifica que el formato sea: Nombre · Cantidad · Precio ¥ · Peso · CBM</div>`;
+    prev.innerHTML=`<div style="padding:8px 12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;font-size:12px;color:var(--red)">✗ No se detectaron datos válidos. Verifica el orden de columnas.</div>`;
     return;
   }
-  // Show preview table
-  const rowsHtml=rows.slice(0,5).map(r=>`<tr>
-    <td style="padding:4px 8px;border-bottom:1px solid var(--border)">${esc(r.name)}</td>
-    <td style="padding:4px 8px;border-bottom:1px solid var(--border);text-align:right">${r.qty}</td>
-    <td style="padding:4px 8px;border-bottom:1px solid var(--border);text-align:right;color:var(--gold)">¥${r.price}</td>
-    <td style="padding:4px 8px;border-bottom:1px solid var(--border);text-align:right">${r.weight} KG</td>
+  const cols=['Ref','Nombre','Marca','Ctns','Uds/Ctn','Total Uds','Peso KG','Vol M3','Precio ¥'];
+  const rowsHtml=rows.slice(0,6).map(r=>`<tr>
+    <td style="padding:4px 8px;border-bottom:1px solid var(--border);color:var(--dim);font-size:11px">${esc(r.ref||'—')}</td>
+    <td style="padding:4px 8px;border-bottom:1px solid var(--border);font-weight:600">${esc(r.name)}</td>
+    <td style="padding:4px 8px;border-bottom:1px solid var(--border);color:var(--dim)">${esc(r.brand||'—')}</td>
+    <td style="padding:4px 8px;border-bottom:1px solid var(--border);text-align:right">${r.cartons}</td>
+    <td style="padding:4px 8px;border-bottom:1px solid var(--border);text-align:right">${r.qtyPerCtn}</td>
+    <td style="padding:4px 8px;border-bottom:1px solid var(--border);text-align:right;color:var(--green);font-weight:700">${r.cartons*r.qtyPerCtn}</td>
+    <td style="padding:4px 8px;border-bottom:1px solid var(--border);text-align:right">${r.weight}</td>
     <td style="padding:4px 8px;border-bottom:1px solid var(--border);text-align:right">${r.cbm}</td>
+    <td style="padding:4px 8px;border-bottom:1px solid var(--border);text-align:right;color:var(--gold)">¥${r.price}</td>
   </tr>`).join('');
-  const more=rows.length>5?`<div style="font-size:11px;color:var(--dim);margin-top:4px">... y ${rows.length-5} más</div>`:'';
+  const more=rows.length>6?`<div style="font-size:11px;color:var(--dim);margin-top:4px;padding:0 8px">... y ${rows.length-6} productos más</div>`:'';
   prev.style.display='block';
-  prev.innerHTML=`<div style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:10px;font-size:12px">
-    <div style="color:var(--green);font-weight:600;margin-bottom:8px">✓ ${rows.length} productos detectados${skipped?` · ${skipped} filas ignoradas`:''}</div>
+  prev.innerHTML=`<div style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:12px;font-size:12px">
+    <div style="color:var(--green);font-weight:700;margin-bottom:10px;font-size:13px">✓ ${rows.length} productos detectados${skipped?` <span style="color:var(--muted);font-weight:400">· ${skipped} filas ignoradas</span>`:''}
+    </div>
     <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px">
-      <thead><tr style="color:var(--dim)">${['Nombre','Cant.','Precio ¥','Peso KG','CBM'].map(h=>`<th style="padding:3px 8px;text-align:left">${h}</th>`).join('')}</tr></thead>
+      <thead><tr style="color:var(--dim)">${cols.map(h=>`<th style="padding:4px 8px;text-align:left;border-bottom:1px solid var(--border)">${h}</th>`).join('')}</tr></thead>
       <tbody>${rowsHtml}</tbody>
-    </table></div>${more}
+    </table>${more}</div>
   </div>`;
 }
 
