@@ -1977,7 +1977,8 @@ function renderUploadPreview(){
   // ── Fallback: detect price column from data values if not found by header ──
   const priceEl=document.getElementById('up-col-price');
   if(priceEl&&(priceEl.value===''||priceEl.value==='-1'||parseInt(priceEl.value)<0)){
-    const sampleRows=dataRows.slice(0,Math.min(10,dataRows.length));
+    const _dr=rows.slice(hrow+1);
+    const sampleRows=_dr.slice(0,Math.min(10,_dr.length));
     let bestCol=-1, bestScore=0;
     const numCols=headers.length;
     for(let ci=0;ci<numCols;ci++){
