@@ -639,60 +639,69 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
 
 <!-- FILE UPLOAD MODAL -->
 <div id="upload-modal" onclick="if(event.target===this)closeUploadModal()"
-  style="display:none;position:fixed;inset:0;z-index:2100;background:rgba(0,0,0,.82);backdrop-filter:blur(8px);overflow-y:auto;padding:20px 12px">
-  <div style="max-width:860px;margin:0 auto;background:#1e293b;border:1px solid rgba(148,163,184,.18);border-radius:18px;padding:0;overflow:hidden">
+  style="display:none;position:fixed;inset:0;z-index:2100;background:rgba(0,0,0,.85);backdrop-filter:blur(10px);overflow-y:auto;padding:20px 12px">
+  <div style="max-width:900px;margin:0 auto;background:#1e293b;border:1px solid rgba(148,163,184,.18);border-radius:20px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.6)">
 
-    <!-- Header -->
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid rgba(148,163,184,.12);background:rgba(15,23,42,.6)">
-      <div>
-        <div style="font-size:15px;font-weight:700;color:var(--text)">📂 Importar Archivo</div>
-        <div style="font-size:12px;color:var(--dim);margin-top:2px" id="up-fname"></div>
+    <!-- Header bar -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 24px;background:rgba(15,23,42,.7);border-bottom:1px solid rgba(148,163,184,.1)">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:22px">📂</span>
+        <div>
+          <div style="font-size:14px;font-weight:800;color:var(--text)" id="up-fname">Analizando archivo...</div>
+          <div style="font-size:11px;color:var(--dim);margin-top:1px" id="up-sheet-info"></div>
+        </div>
       </div>
       <button onclick="closeUploadModal()"
-        style="width:32px;height:32px;background:rgba(148,163,184,.12);border:none;color:var(--dim);font-size:18px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center">×</button>
+        style="width:32px;height:32px;background:rgba(148,163,184,.1);border:none;color:var(--dim);font-size:20px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s"
+        onmouseover="this.style.background='rgba(239,68,68,.2)'" onmouseout="this.style.background='rgba(148,163,184,.1)'">×</button>
     </div>
 
-    <div style="padding:20px 24px">
+    <!-- Smart detection result (primary action area) -->
+    <div id="up-smart" style="padding:18px 24px;border-bottom:1px solid rgba(148,163,184,.08)">
+      <div id="up-smart-inner" style="text-align:center;color:var(--muted);padding:12px 0;font-size:13px">Analizando...</div>
+    </div>
 
-      <!-- Controls row -->
-      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px">
+    <!-- Preview -->
+    <div style="padding:0 24px 6px">
+      <div style="font-size:10px;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:14px 0 6px">Vista previa del archivo</div>
+      <div id="up-preview" style="overflow-x:auto;max-height:200px;overflow-y:auto;background:rgba(15,23,42,.6);border:1px solid rgba(148,163,184,.1);border-radius:10px;padding:4px"></div>
+    </div>
+
+    <!-- Manual adjust toggle -->
+    <div style="padding:10px 24px 4px">
+      <button id="up-toggle-map" onclick="toggleUpMap()"
+        style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;padding:4px 0;display:flex;align-items:center;gap:5px">
+        <span id="up-toggle-icon">▶</span> Ajustar columnas manualmente
+      </button>
+    </div>
+
+    <!-- Manual mapping (collapsed by default) -->
+    <div id="up-manual" style="display:none;padding:0 24px 18px">
+      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px;padding:12px;background:rgba(15,23,42,.4);border-radius:10px">
         <div>
-          <div style="font-size:10px;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px">Hoja</div>
-          <select id="up-sheet" class="inp" style="font-size:12px;min-width:120px"
-            onchange="switchSheet(this.value)"></select>
+          <div style="font-size:10px;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Hoja</div>
+          <select id="up-sheet" class="inp" style="font-size:12px;min-width:130px" onchange="switchSheet(this.value)"></select>
         </div>
         <div>
-          <div style="font-size:10px;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px">Fila de encabezados</div>
-          <input id="up-hrow" type="number" class="inp" min="1" value="1" style="width:70px;font-size:12px"
-            oninput="renderUploadPreview()">
+          <div style="font-size:10px;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Fila de encabezados</div>
+          <input id="up-hrow" type="number" class="inp" min="1" value="1" style="width:70px;font-size:12px" oninput="renderUploadPreview()">
         </div>
-        <div style="font-size:11px;color:var(--muted);padding-bottom:6px">
-          ← Si tu archivo tiene logos o filas vacías arriba, ajusta el número
-        </div>
+        <button class="btn btn-s btn-sm" onclick="autoDetectAndRender()" style="font-size:11px">↺ Re-detectar</button>
       </div>
+      <div style="font-size:10px;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Mapeo de columnas</div>
+      <div id="up-colmap" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+    </div>
 
-      <!-- Preview table -->
-      <div style="font-size:10px;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Vista previa (primeras filas)</div>
-      <div id="up-preview" style="overflow-x:auto;max-height:180px;overflow-y:auto;background:rgba(15,23,42,.5);border:1px solid rgba(148,163,184,.12);border-radius:10px;margin-bottom:18px;padding:4px"></div>
-
-      <!-- Column mapping -->
-      <div style="font-size:10px;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Mapeo de columnas — ¿cuál columna del archivo corresponde a cada campo?</div>
-      <div id="up-colmap" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px">
-        <!-- filled by JS -->
-      </div>
-
-      <!-- Bottom actions -->
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding-top:14px;border-top:1px solid rgba(148,163,184,.1)">
-        <select id="up-mode" class="inp" style="width:auto;font-size:12px">
-          <option value="replace">Reemplazar lista actual</option>
-          <option value="append">Agregar a lista actual</option>
-        </select>
-        <button class="btn btn-p" onclick="doImportFile()" style="padding:10px 24px;font-size:13px">
-          ✓ Importar Productos
-        </button>
-        <button class="btn btn-s btn-sm" onclick="closeUploadModal()">Cancelar</button>
-        <span id="up-count" style="font-size:12px;color:var(--green);margin-left:auto"></span>
-      </div>
+    <!-- Bottom bar -->
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px 24px;border-top:1px solid rgba(148,163,184,.08);background:rgba(15,23,42,.4)">
+      <select id="up-mode" class="inp" style="width:auto;font-size:12px">
+        <option value="replace">Reemplazar lista actual</option>
+        <option value="append">Agregar a lista actual</option>
+      </select>
+      <button id="up-btn-import" class="btn btn-p" onclick="doImportFile()" style="padding:10px 28px;font-size:13px;font-weight:700;opacity:.4;cursor:default" disabled>
+        ✓ Importar Productos
+      </button>
+      <button class="btn btn-s btn-sm" onclick="closeUploadModal()">Cancelar</button>
     </div>
   </div>
 </div>
@@ -1799,141 +1808,256 @@ async function handleFileUpload(e){
 
 async function parseUploadFile(file){
   try{
-    toast('Leyendo archivo…');
+    // Show modal immediately with loading state
+    document.getElementById('upload-modal').style.display='block';
+    document.getElementById('up-fname').textContent=file.name;
+    document.getElementById('up-smart-inner').innerHTML='<div style="color:var(--muted);font-size:13px">Analizando archivo...</div>';
+    document.getElementById('up-preview').innerHTML='<div style="padding:16px;color:var(--muted);font-size:12px">Leyendo...</div>';
+
     await ensureXlsx();
     const buf=await file.arrayBuffer();
     const wb=XLSX.read(buf,{type:'array',cellDates:true,raw:false});
     _uploadWB=wb;
+
+    // Sheet selector
     const sheetSel=document.getElementById('up-sheet');
     sheetSel.innerHTML=wb.SheetNames.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
-    sheetSel.style.display=wb.SheetNames.length>1?'':'none';
+    const infoEl=document.getElementById('up-sheet-info');
+    if(infoEl)infoEl.textContent=wb.SheetNames.length>1?`${wb.SheetNames.length} hojas — selecciona arriba`:'';
+
+    // Reset header row and load
     document.getElementById('up-hrow').value=1;
-    document.getElementById('up-fname').textContent=file.name;
     loadSheetRows(wb.SheetNames[0]);
-    document.getElementById('upload-modal').style.display='block';
-  }catch(err){toast('Error: '+err.message,'err');}
+  }catch(err){
+    document.getElementById('up-smart-inner').innerHTML=`<div style="color:var(--red);font-size:13px">✗ Error leyendo archivo: ${esc(err.message)}</div>`;
+    toast('Error: '+err.message,'err');
+  }
 }
 
 function switchSheet(name){
-  if(_uploadWB)loadSheetRows(name);
+  if(!_uploadWB)return;
+  document.getElementById('up-hrow').value=1;
+  loadSheetRows(name);
 }
 
 function loadSheetRows(name){
-  const ws=_uploadWB.Sheets[name];
+  const ws=_uploadWB?.Sheets[name];
+  if(!ws){return;}
   const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',blankrows:false,raw:false});
   _uploadRawRows=raw.filter(r=>r.some(c=>String(c||'').trim()!==''));
+  // Auto-detect header row, then render
+  autoDetectHeaderRow();
   renderUploadPreview();
 }
 
 const UP_FIELDS=[
   {id:'name',     label:'Nombre / Descripción ★', req:true,
-    pat:/nombre|name|descripci|product|articulo|art[íi]culo|descript|modelo|item|goods|commodity|mercader[íi]a/i},
-  {id:'ref',      label:'Referencia / SKU / Código', req:false,
-    pat:/^ref|^sku|^cod|^art[íi]c|item.?n[úu]?m|item.?no|part.?no|^no\.?$|referencia|código|编号|型号/i},
+    pat:/descripti|descripci|nombre|^name$|product.?name|goods.?name|commodity|item.?desc|article|articulo|art[íi]culo|modelo|^item$|^goods$/i},
+  {id:'ref',      label:'Referencia / No. / SKU', req:false,
+    pat:/^no\.?$|^item.?no|^s\.?no|^#$|^ref|^sku|^cod|^part.?no|item.?num|referencia|código|编号|型号|序号/i},
   {id:'brand',    label:'Marca / Fabricante',    req:false,
-    pat:/marca|brand|fabricante|maker|manufacturer|品牌/i},
+    pat:/marca|^brand$|fabricante|maker|manufacturer|品牌/i},
   {id:'cartons',  label:'Cartones / Cajas',       req:false,
-    pat:/^carton|^ctn$|^cajas?$|^box(es)?$|master.?(box|ctn|qty)|bulto|^cja|箱数/i},
+    pat:/^carton|^ctn$|^cajas?$|^box(es)?$|^pkgs?$|master.?(box|ctn|qty)|bulto|箱数|^cases$/i},
   {id:'qtyPerCtn',label:'Uds por Cartón',         req:false,
-    pat:/ud.*(ctn|cart|caja)|pcs.*(ctn|box)|unid.*ctn|pcs\/ctn|qty.*ctn|pcs\s*per|每箱|units.*box/i},
+    pat:/ud.*(ctn|cart|caja)|pcs.*(ctn|box)|unid.*ctn|pcs\/ctn|qty.*ctn|pcs\s*per|每箱|units.*box|q[/.]?ctn/i},
   {id:'totalQty', label:'Cantidad Total de Uds',  req:false,
-    pat:/^qty$|^quantity$|^cantidad$|^total.*(uds?|units?|pcs)|^uds?$|^pcs?$|^units?$|数量/i},
-  {id:'weight',   label:'Peso KG (total lote)',    req:false,
-    pat:/peso|weight|g\.?\s*w|n\.?\s*w|gross|neto|^kg$|kilo|毛重|净重/i},
-  {id:'cbm',      label:'Volumen M³ (total lote)', req:false,
-    pat:/^cbm$|m[íi]?3|volum|volume|cubic|cub\.?m|体积/i},
-  {id:'price',    label:'Precio ¥ (por unidad)',   req:false,
-    pat:/precio|unit.?price|price.?unit|^price$|costo.?unit|unit.?cost|^cny$|yuan|¥|单价|unit.?amount/i},
-  {id:'totalAmt', label:'Monto Total (opcional)',  req:false,
-    pat:/^total$|total.?amount|amount.?total|importe|^amount$|金额/i},
+    pat:/^qty$|^quantity$|^cantidad$|^total.?(qty|uds?|units?|pcs)|^uds?$|^pcs?$|^units?$|^total.?quantity|数量/i},
+  {id:'weight',   label:'Peso KG (total)',         req:false,
+    pat:/^weight$|g\.?\s*w\.?$|n\.?\s*w\.?$|gross.?weight|net.?weight|^peso$|total.?weight|^kg$|kilo|毛重|净重/i},
+  {id:'cbm',      label:'Volumen M³ (total)',      req:false,
+    pat:/^cbm$|^m3$|^m\.?3$|volum|cubic|^volume$|体积|total.?cbm/i},
+  {id:'price',    label:'Precio ¥ / Unitario',     req:false,
+    pat:/unit.?price|price.?unit|^price$|^unit.?cost|costo.?unit|^cny$|^yuan$|^u\.?p\.?$|单价|^amount\/|^unit$/i},
+  {id:'totalAmt', label:'Monto Total',             req:false,
+    pat:/^amount$|^total$|total.?amount|amount.?total|^importe$|^subtotal$|金额|total.?price/i},
 ];
 
+// ── SMART HEADER DETECTION ─────────────────────────────────
+// Scans up to 50 rows; scores each row by how many distinct field patterns it matches.
+// Also rewards rows that have 4+ filled cells (a real product header, not a label).
 function autoDetectHeaderRow(){
-  // Find the first row that looks like a header (has text labels matching known field patterns)
-  const allPats=UP_FIELDS.map(f=>f.pat);
-  for(let i=0;i<Math.min(_uploadRawRows.length,10);i++){
-    const row=_uploadRawRows[i]||[];
-    const textCells=row.filter(c=>c&&isNaN(parseXlNum(String(c))));
-    if(textCells.length>=2){
-      const hasKeyword=textCells.some(c=>allPats.some(p=>p.test(String(c))));
-      if(hasKeyword){
-        document.getElementById('up-hrow').value=i+1;
-        return;
-      }
+  if(!_uploadRawRows.length)return 0;
+  let bestRow=0, bestScore=-1;
+
+  for(let i=0;i<Math.min(_uploadRawRows.length,50);i++){
+    const row=(_uploadRawRows[i]||[]).map(c=>String(c||'').trim());
+    const nonEmpty=row.filter(Boolean);
+    if(nonEmpty.length<2)continue;
+
+    const matched=new Set();
+    nonEmpty.forEach(cell=>{
+      UP_FIELDS.forEach((f,fi)=>{
+        if(f.pat.test(cell))matched.add(fi);
+      });
+    });
+
+    // Bonus for rows with many filled cells (product header has many columns)
+    const colBonus=nonEmpty.length>=4?1:0;
+    const score=matched.size+colBonus;
+
+    if(matched.size>=2&&score>bestScore){
+      bestScore=score;
+      bestRow=i;
     }
   }
+
+  const el=document.getElementById('up-hrow');
+  if(el)el.value=bestRow+1;
+  return bestRow;
+}
+
+function autoDetectAndRender(){
+  autoDetectHeaderRow();
+  renderUploadPreview();
+}
+
+function toggleUpMap(){
+  const m=document.getElementById('up-manual');
+  const icon=document.getElementById('up-toggle-icon');
+  const open=m.style.display==='none';
+  m.style.display=open?'block':'none';
+  if(icon)icon.textContent=open?'▼':'▶';
 }
 
 function renderUploadPreview(){
   const rows=_uploadRawRows;
   if(!rows.length)return;
-  // Auto-detect header row on first render
-  if(document.getElementById('up-hrow').value==='1')autoDetectHeaderRow();
-  const hrow=Math.max(0,(parseInt(document.getElementById('up-hrow').value)||1)-1);
+
+  const hrow=Math.max(0,(parseInt(document.getElementById('up-hrow')?.value||1))-1);
   const headers=(rows[hrow]||[]).map(c=>String(c||'').trim());
 
-  // Preview table
-  const show=Math.min(rows.length,hrow+9);
-  let t='<table style="border-collapse:collapse;font-size:11px;white-space:nowrap">';
-  for(let i=0;i<show;i++){
+  // Preview: 3 rows before header + header + 7 product rows
+  const from=Math.max(0,hrow-3);
+  const to  =Math.min(rows.length,hrow+8);
+  let t='<table style="border-collapse:collapse;font-size:11px;white-space:nowrap;width:100%">';
+  if(from>0) t+=`<tr><td colspan="99" style="padding:3px 8px;color:var(--muted);font-size:10px;font-style:italic">↑ ${from} filas arriba (encabezado del documento)</td></tr>`;
+  for(let i=from;i<to;i++){
     const isH=i===hrow;
+    const isData=i>hrow;
     const row=rows[i]||[];
-    const bg=isH?'background:rgba(59,130,246,.18);font-weight:700':i%2===0?'background:rgba(255,255,255,.02)':'';
-    t+=`<tr style="${bg}"><td style="padding:2px 6px;color:var(--muted);font-size:10px;border-right:1px solid rgba(148,163,184,.1)">${i+1}${isH?' ★':''}</td>`;
+    const bg=isH?'background:rgba(59,130,246,.2);font-weight:700':isData&&i%2===0?'background:rgba(255,255,255,.02)':'';
+    t+=`<tr style="${bg}">`;
+    t+=`<td style="padding:3px 6px;color:${isH?'var(--blue)':'var(--muted)'};font-size:10px;border-right:1px solid rgba(148,163,184,.1);white-space:nowrap">${i+1}${isH?' ▶':''}</td>`;
     row.forEach(c=>{
-      const txt=String(c||'').substring(0,22);
-      t+=`<td style="padding:2px 8px;border:1px solid rgba(148,163,184,.07);max-width:110px;overflow:hidden;text-overflow:ellipsis" title="${esc(String(c||''))}">${esc(txt)}</td>`;
+      const txt=String(c||'').substring(0,26);
+      const style=`padding:3px 8px;border:1px solid rgba(148,163,184,.07);max-width:130px;overflow:hidden;text-overflow:ellipsis${isH?';color:var(--blue)':''}`;
+      t+=`<td style="${style}" title="${esc(String(c||''))}">${esc(txt)||'&nbsp;'}</td>`;
     });
     t+='</tr>';
   }
-  if(rows.length>show)t+=`<tr><td colspan="99" style="padding:4px 8px;color:var(--muted);font-size:10px">… ${rows.length-show} filas más</td></tr>`;
+  if(rows.length>to) t+=`<tr><td colspan="99" style="padding:3px 8px;color:var(--muted);font-size:10px;font-style:italic">↓ ${rows.length-to} filas más de datos...</td></tr>`;
   t+='</table>';
   document.getElementById('up-preview').innerHTML=t;
 
-  // Column mapping dropdowns
-  const opts=`<option value="">— No importar —</option>`+headers.map((h,i)=>
-    `<option value="${i}">Col ${i+1}${h?' – '+esc(h.substring(0,24)):'(sin encabezado)'}</option>`
+  // ── Build column option list ──
+  const opts='<option value="">— No importar —</option>'+headers.map((h,i)=>
+    `<option value="${i}">Col ${i+1}${h?' – '+esc(h.substring(0,28)):''}</option>`
   ).join('');
 
-  const used=new Set();
-  const autoMatch=field=>{
-    let best=-1;
-    headers.forEach((h,i)=>{
-      if(h&&!used.has(i)&&field.pat.test(h)){if(best===-1){best=i;used.add(i);}}
-    });
-    return best;
-  };
+  // ── Render mapping dropdowns ──
+  document.getElementById('up-colmap').innerHTML=UP_FIELDS.map(f=>`<div>
+    <div style="font-size:10px;color:${f.req?'var(--gold)':'var(--dim)'};font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">${f.label}${f.req?' ★':''}</div>
+    <select id="up-col-${f.id}" class="inp" style="font-size:12px;width:100%" onchange="buildSmartSummary()">${opts}</select>
+  </div>`).join('');
 
-  document.getElementById('up-colmap').innerHTML=UP_FIELDS.map(f=>{
-    const auto=autoMatch(f);
-    const sel=`<select id="up-col-${f.id}" class="inp" style="font-size:12px;width:100%" onchange="updateUpCount()">${opts}</select>`;
-    return `<div>
-      <div style="font-size:10px;color:${f.req?'var(--gold)':'var(--dim)'};font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">${f.label}${f.req?' ★':''}</div>
-      ${sel}
-    </div>`;
-  }).join('');
-
-  // Set auto-detected values (re-run after DOM insertion)
-  const usedB=new Set();
+  // ── Auto-match columns (greedy, each column used once) ──
+  const usedCols=new Set();
   UP_FIELDS.forEach(f=>{
     let best=-1;
     headers.forEach((h,i)=>{
-      if(h&&!usedB.has(i)&&f.pat.test(h)){if(best===-1){best=i;usedB.add(i);}}
+      if(h&&!usedCols.has(i)&&f.pat.test(h)){if(best===-1){best=i;usedCols.add(i);}}
     });
-    if(best>=0){const el=document.getElementById('up-col-'+f.id);if(el)el.value=String(best);}
+    if(best>=0){
+      const el=document.getElementById('up-col-'+f.id);
+      if(el)el.value=String(best);
+    }
   });
 
+  buildSmartSummary();
+}
+
+// Build the smart summary panel and enable/disable import button
+function buildSmartSummary(){
+  const hrow=Math.max(0,(parseInt(document.getElementById('up-hrow')?.value||1))-1);
+  const dataRows=_uploadRawRows.slice(hrow+1);
+
+  const gc=id=>{const v=document.getElementById('up-col-'+id)?.value;return(v!==''&&v!=null)?parseInt(v):-1;};
+  const namCol=gc('name');
+
+  // Count valid product rows
+  const count=namCol<0?0:dataRows.filter(r=>String(r[namCol]||'').trim()!=='').length;
+
+  // Which fields were mapped?
+  const mapped=UP_FIELDS.filter(f=>{
+    if(f.id==='totalQty'||f.id==='totalAmt')return false; // secondary fields
+    return gc(f.id)>=0;
+  });
+
+  // Build summary HTML
+  const smartEl=document.getElementById('up-smart-inner');
+  const btnImport=document.getElementById('up-btn-import');
+
+  if(count<=0||namCol<0){
+    smartEl.innerHTML=`<div style="color:var(--muted);font-size:13px;padding:8px 0">
+      No se detectaron productos. Ajusta la fila de encabezados manualmente. →
+      <button class="btn btn-s btn-sm" onclick="toggleUpMap()" style="margin-left:8px">Ajustar</button>
+    </div>`;
+    btnImport.disabled=true;btnImport.style.opacity='0.4';btnImport.style.cursor='default';
+    return;
+  }
+
+  const chips=mapped.map(f=>{
+    const col=gc(f.id);
+    const hdr=(_uploadRawRows[hrow]||[])[col];
+    const lbl=String(hdr||f.label.split('/')[0]).trim().substring(0,18);
+    const colors={name:'#10B981',price:'#F59E0B',cartons:'#3B82F6',qtyPerCtn:'#3B82F6',
+                  totalQty:'#3B82F6',weight:'#8B5CF6',cbm:'#06B6D4',ref:'#94A3B8',brand:'#94A3B8'};
+    const c=colors[f.id]||'#94A3B8';
+    return `<span style="background:${c}22;color:${c};border:1px solid ${c}44;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">${lbl} ✓</span>`;
+  }).join(' ');
+
+  const hasPriceCol=gc('price')>=0;
+  const priceWarn=hasPriceCol?'':'<span style="color:var(--gold);font-size:11px"> ⚠ Sin precio (puedes añadirlo luego)</span>';
+
+  smartEl.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:22px;font-weight:800;color:var(--green);margin-bottom:4px">
+          ✓ ${count} producto${count!==1?'s':''} detectado${count!==1?'s':''}
+          <span style="font-size:13px;font-weight:400;color:var(--dim)"> · Fila de encabezados: ${hrow+1}</span>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">${chips}${priceWarn}</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <select id="up-mode-top" class="inp" style="width:auto;font-size:11px;background:rgba(15,23,42,.6)">
+          <option value="replace">Reemplazar lista</option>
+          <option value="append">Agregar a lista</option>
+        </select>
+        <button id="up-btn-import-top" class="btn btn-p"
+          onclick="syncModeAndImport()"
+          style="padding:11px 28px;font-size:14px;font-weight:800;background:linear-gradient(135deg,#10B981,#059669);border:none;border-radius:10px;color:#0F172A;cursor:pointer">
+          ↓ Importar ${count} Productos
+        </button>
+      </div>
+    </div>`;
+
+  // Enable bottom import button too
+  btnImport.disabled=false;btnImport.style.opacity='1';btnImport.style.cursor='pointer';
+  btnImport.textContent=`✓ Importar ${count} Productos`;
   updateUpCount();
 }
 
+function syncModeAndImport(){
+  // Sync the top mode selector to the bottom one before importing
+  const top=document.getElementById('up-mode-top');
+  const bot=document.getElementById('up-mode');
+  if(top&&bot)bot.value=top.value;
+  doImportFile();
+}
+
 function updateUpCount(){
-  const hrow=Math.max(0,(parseInt(document.getElementById('up-hrow').value)||1)-1);
-  const dataRows=_uploadRawRows.slice(hrow+1);
-  const raw=document.getElementById('up-col-name')?.value;
-  const namCol=(raw!==''&&raw!=null)?parseInt(raw):-1;
-  const count=namCol<0?0:dataRows.filter(r=>String(r[namCol]||'').trim()!=='').length;
-  const el=document.getElementById('up-count');
-  if(el)el.textContent=count>0?`✓ ${count} productos detectados`:'Selecciona la columna Nombre';
+  // No-op: count is shown in buildSmartSummary
 }
 
 function doImportFile(){
