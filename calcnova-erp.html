@@ -215,9 +215,10 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
 <section id="sec-dashboard" class="section active">
   <div class="sec-hdr">
     <div><div class="sec-title">Dashboard</div><div class="sec-sub">Resumen general de importación</div></div>
-    <div style="display:flex;gap:8px">
-      <button class="btn btn-s btn-sm" onclick="exportPDF()">⬇ PDF</button>
-      <button class="btn btn-s btn-sm" onclick="exportCSV()">⬇ Excel/CSV</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-p btn-sm" onclick="exportCotizacion()" style="background:linear-gradient(135deg,#8B5CF6,#3B82F6)">📄 Generar Cotización</button>
+      <button class="btn btn-s btn-sm" onclick="exportPDF()">⬇ Reporte PDF</button>
+      <button class="btn btn-s btn-sm" onclick="exportCSV()">⬇ Excel</button>
     </div>
   </div>
   <div class="g4" style="margin-bottom:18px">
@@ -251,7 +252,8 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
 <section id="sec-productos" class="section">
   <div class="sec-hdr">
     <div><div class="sec-title">Productos</div><div class="sec-sub">Agrega los productos de tu importación</div></div>
-    <div style="display:flex;gap:8px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-p btn-sm" onclick="exportCotizacion()" style="background:linear-gradient(135deg,#8B5CF6,#3B82F6)">📄 Cotización</button>
       <button class="btn btn-d btn-sm" onclick="clearProds()">🗑 Limpiar</button>
       <button class="btn btn-p" onclick="addProd()">+ Agregar Producto</button>
     </div>
@@ -267,74 +269,69 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
   </div>
 
   <!-- PASTE ZONE -->
-  <div class="card" style="margin-bottom:14px;border-color:rgba(59,130,246,.25)">
-    <div class="card-header" style="margin-bottom:0;cursor:pointer" onclick="togglePasteZone()">
-      <div class="card-title"><span class="icon icon-b">📋</span>Pegar desde Excel <span style="font-size:11px;color:var(--dim);font-weight:400;margin-left:6px">— 2 pasos: datos + precios por separado</span></div>
-      <span id="paste-toggle-icon" style="color:var(--dim);font-size:18px">▼</span>
+  <div class="card" style="margin-bottom:14px;border-color:rgba(59,130,246,.3);border-width:1.5px">
+    <div class="card-header" style="margin-bottom:14px">
+      <div class="card-title"><span class="icon icon-b">📋</span>Pegar desde Excel</div>
+      <span style="font-size:11px;color:var(--dim)">Copia tus filas en Excel y pégalas aquí</span>
     </div>
-    <div id="paste-body" style="display:none;margin-top:16px">
 
-      <!-- PASO 1: datos -->
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-        <div style="width:22px;height:22px;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0">1</div>
-        <div style="font-weight:600;font-size:13px">Datos del producto <span style="font-weight:400;color:var(--dim);font-size:12px">— sin precio, solo copia estas columnas</span></div>
+    <!-- Guía visual de columnas -->
+    <div style="background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);border-radius:10px;padding:12px;margin-bottom:14px">
+      <div style="font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Tu Excel debe tener estas columnas en este orden:</div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap">
+        <span style="background:rgba(59,130,246,.15);color:var(--blue);padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap">1 Referencia</span>
+        <span style="background:rgba(59,130,246,.15);color:var(--blue);padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap">2 Descripción</span>
+        <span style="background:rgba(59,130,246,.15);color:var(--blue);padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap">3 Marca</span>
+        <span style="background:rgba(59,130,246,.15);color:var(--blue);padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap">4 Cartones</span>
+        <span style="background:rgba(59,130,246,.15);color:var(--blue);padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap">5 Uds/Cartón</span>
+        <span style="background:rgba(100,116,139,.1);color:var(--muted);padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap">6 Total Uds <em>(se ignora)</em></span>
+        <span style="background:rgba(59,130,246,.15);color:var(--blue);padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap">7 Peso KG</span>
+        <span style="background:rgba(59,130,246,.15);color:var(--blue);padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap">8 Volumen M³</span>
+        <span style="background:rgba(245,158,11,.15);color:var(--gold);padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap">9 Precio ¥ <em>(opcional)</em></span>
       </div>
-      <div style="overflow-x:auto;margin-bottom:8px">
-        <table style="border-collapse:collapse;font-size:11px;font-family:monospace;white-space:nowrap">
-          <tr style="background:rgba(59,130,246,.12)">
-            <td style="padding:4px 10px;border:1px solid rgba(59,130,246,.2);color:var(--blue);font-weight:700">Col 1</td>
-            <td style="padding:4px 10px;border:1px solid rgba(59,130,246,.2);color:var(--blue);font-weight:700">Col 2</td>
-            <td style="padding:4px 10px;border:1px solid rgba(59,130,246,.2);color:var(--blue);font-weight:700">Col 3</td>
-            <td style="padding:4px 10px;border:1px solid rgba(59,130,246,.2);color:var(--blue);font-weight:700">Col 4</td>
-            <td style="padding:4px 10px;border:1px solid rgba(59,130,246,.2);color:var(--blue);font-weight:700">Col 5</td>
-            <td style="padding:4px 10px;border:1px solid rgba(59,130,246,.2);color:var(--muted);font-weight:700">Col 6 *</td>
-            <td style="padding:4px 10px;border:1px solid rgba(59,130,246,.2);color:var(--blue);font-weight:700">Col 7</td>
-            <td style="padding:4px 10px;border:1px solid rgba(59,130,246,.2);color:var(--blue);font-weight:700">Col 8</td>
-          </tr>
-          <tr style="color:var(--text)">
-            <td style="padding:4px 10px;border:1px solid rgba(148,163,184,.1)">Referencia</td>
-            <td style="padding:4px 10px;border:1px solid rgba(148,163,184,.1)">Descripción</td>
-            <td style="padding:4px 10px;border:1px solid rgba(148,163,184,.1)">Marca</td>
-            <td style="padding:4px 10px;border:1px solid rgba(148,163,184,.1)">Cartones</td>
-            <td style="padding:4px 10px;border:1px solid rgba(148,163,184,.1)">Uds/Cartón</td>
-            <td style="padding:4px 10px;border:1px solid rgba(148,163,184,.1);color:var(--muted)">Total Uds (ignorado)</td>
-            <td style="padding:4px 10px;border:1px solid rgba(148,163,184,.1)">Peso KG</td>
-            <td style="padding:4px 10px;border:1px solid rgba(148,163,184,.1)">Volumen M3</td>
-          </tr>
-        </table>
-      </div>
-      <textarea class="inp" id="paste-input" rows="7"
-        placeholder="Selecciona las 8 columnas en Excel → Ctrl+C → clic aquí → Ctrl+V"
-        style="resize:vertical;font-family:monospace;font-size:12px;width:100%;line-height:1.7"
-        onpaste="setTimeout(()=>previewPaste(),60)"></textarea>
+    </div>
 
-      <!-- PASO 2: precios -->
-      <div style="display:flex;align-items:center;gap:8px;margin:14px 0 8px">
-        <div style="width:22px;height:22px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#0F172A;flex-shrink:0">2</div>
-        <div style="font-weight:600;font-size:13px">Precios en Yuan ¥ <span style="font-weight:400;color:var(--dim);font-size:12px">— uno por línea, mismo orden que los productos</span></div>
-      </div>
-      <div style="display:flex;gap:10px;align-items:flex-start">
-        <textarea class="inp" id="paste-prices" rows="7"
-          placeholder="25.50&#10;18.00&#10;42.00&#10;..."
-          style="resize:vertical;font-family:monospace;font-size:13px;width:130px;flex-shrink:0;line-height:1.7;text-align:right"
-          oninput="previewPaste()"></textarea>
-        <div style="flex:1;font-size:12px;color:var(--dim);padding-top:4px;line-height:1.8">
-          Pega aquí solo la columna de precios de tu lista de proveedores.<br>
-          Un precio por línea, en el mismo orden que los productos del Paso 1.<br>
-          <span style="color:var(--green)">✓ Se convierte a USD automáticamente con la tasa del día.</span>
+    <div style="display:flex;gap:12px;align-items:flex-start">
+      <!-- Textarea principal -->
+      <div style="flex:1;min-width:0">
+        <div style="font-size:11px;font-weight:700;color:var(--dim);margin-bottom:6px;display:flex;align-items:center;gap:6px">
+          <span style="width:20px;height:20px;background:var(--blue);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:#fff;font-weight:800;flex-shrink:0">1</span>
+          DATOS DEL PRODUCTO — selecciona las filas en Excel y pega aquí
         </div>
+        <textarea class="inp" id="paste-input" rows="8"
+          placeholder="Ctrl+C en Excel → clic aquí → Ctrl+V&#10;&#10;Los productos quedarán en el mismo orden que los pegaste."
+          style="resize:vertical;font-family:monospace;font-size:12px;width:100%;line-height:1.8"
+          onpaste="setTimeout(()=>previewPaste(),60)"></textarea>
       </div>
 
-      <div id="paste-preview" style="display:none;margin:10px 0"></div>
-
-      <div style="display:flex;gap:8px;margin-top:12px;align-items:center;flex-wrap:wrap">
-        <select class="inp" id="paste-mode" style="width:auto;flex-shrink:0">
-          <option value="append">Agregar a los productos actuales</option>
-          <option value="replace">Reemplazar todos los productos</option>
-        </select>
-        <button class="btn btn-p" onclick="processPaste()">📋 Importar productos</button>
-        <button class="btn btn-s btn-sm" onclick="clearPaste()">✕ Limpiar</button>
+      <!-- Columna de precios -->
+      <div style="flex-shrink:0;width:160px">
+        <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:6px;display:flex;align-items:center;gap:6px">
+          <span style="width:20px;height:20px;background:var(--gold);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:#0F172A;font-weight:800;flex-shrink:0">2</span>
+          PRECIOS EN ¥
+        </div>
+        <textarea class="inp" id="paste-prices" rows="8"
+          placeholder="25.50&#10;18.00&#10;42.00&#10;..."
+          style="resize:vertical;font-family:monospace;font-size:13px;width:100%;line-height:1.8;text-align:right;border-color:rgba(245,158,11,.3)"
+          oninput="previewPaste()"></textarea>
+        <div style="font-size:10px;color:var(--dim);margin-top:5px;line-height:1.5">Un precio por línea,<br>mismo orden.<br><span style="color:var(--green)">→ Se convierte a $ automáticamente</span></div>
       </div>
+    </div>
+
+    <!-- Preview -->
+    <div id="paste-preview" style="display:none;margin:12px 0 0"></div>
+
+    <!-- Acciones -->
+    <div style="display:flex;gap:8px;margin-top:14px;align-items:center;flex-wrap:wrap;padding-top:12px;border-top:1px solid var(--border)">
+      <select class="inp" id="paste-mode" style="width:auto;flex-shrink:0;font-size:12px">
+        <option value="replace">Reemplazar lista actual</option>
+        <option value="append">Agregar a la lista actual</option>
+      </select>
+      <button class="btn btn-p" onclick="processPaste()" style="font-size:13px;padding:9px 20px">
+        ✓ Importar y ver en tabla
+      </button>
+      <button class="btn btn-s btn-sm" onclick="clearPaste()">✕ Limpiar</button>
+      <span style="font-size:11px;color:var(--dim);margin-left:4px">Los productos quedan en el mismo orden que los pegaste</span>
     </div>
   </div>
 
@@ -1855,6 +1852,152 @@ function initApp(){
   loadCostForm();
   loadCfgForm();
   refreshRates();
+}
+
+// ── COTIZACIÓN ─────────────────────────────────────────────
+function exportCotizacion(){
+  const rs=calcAll();
+  if(!rs||!rs.length){toast('Agrega productos primero','err');return;}
+  const yr=R.y||0,vr=R.v||0,cr=R.c||0;
+  const hasMW=(cfg.marginWholesale||0)>0;
+  const hasMR=(cfg.marginRetail||0)>0;
+  const co=cfg.company||'CalcNova Import';
+  const fecha=new Date().toLocaleDateString('es',{year:'numeric',month:'long',day:'numeric'});
+  const totInvUSD=rs.reduce((s,r)=>s+r.totalUSD,0);
+  const totUnits=rs.reduce((s,r)=>s+r.qty,0);
+  const totCtns=rs.reduce((s,r)=>s+r.cartons,0);
+
+  const filas=rs.map((r,i)=>`
+    <tr style="${i%2===0?'background:#f8fafc':'background:#fff'}">
+      <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;color:#94A3B8;font-size:11px;text-align:center">${i+1}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0">
+        <div style="font-weight:700;font-size:13px;color:#0F172A">${esc(r.p.name||'—')}</div>
+        ${r.p.ref?`<div style="font-size:10px;color:#94A3B8;margin-top:1px">${esc(r.p.ref)}</div>`:''}
+      </td>
+      <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;color:#64748B;font-size:12px">${esc(r.p.brand||'—')}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:center;font-weight:600">${r.cartons}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:center;font-weight:800;color:#0F172A">${fmtN(r.qty)}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:right;color:#1d4ed8;font-weight:700">$${fmt2(r.unitUSD)}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:right;font-weight:700;color:#0F172A">$${fmt2(r.totalUSD)}</td>
+      ${hasMW?`<td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:right;color:#15803d;font-weight:700">${vr>0?'Bs '+fmtN(Math.round(r.pMayorBs)):'—'}</td>`:''}
+      ${hasMR?`<td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:right;color:#1d4ed8;font-weight:700">${vr>0?'Bs '+fmtN(Math.round(r.pDetalBs)):'—'}</td>`:''}
+    </tr>`).join('');
+
+  const thStyle='padding:10px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:white;white-space:nowrap';
+  const thR=thStyle+';text-align:right';
+
+  const win=window.open('','_blank','width=900,height=750');
+  win.document.write(`<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="UTF-8">
+<title>Cotización — ${esc(co)}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8fafc;color:#1e293b}
+  @media print{.no-print{display:none!important}body{background:white}@page{margin:12mm 10mm}}
+</style>
+</head><body>
+
+<!-- BARRA DE ACCION -->
+<div class="no-print" style="background:#1e293b;padding:10px 24px;display:flex;gap:10px;align-items:center">
+  <button onclick="window.print()" style="background:linear-gradient(135deg,#8B5CF6,#3B82F6);color:white;border:none;padding:9px 22px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">🖨 Imprimir / Guardar PDF</button>
+  <button onclick="window.close()" style="background:rgba(255,255,255,.1);color:#94A3B8;border:none;padding:9px 16px;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit">✕ Cerrar</button>
+  <span style="color:#64748B;font-size:12px;margin-left:8px">En el diálogo de impresión selecciona <strong style="color:#94A3B8">Guardar como PDF</strong></span>
+</div>
+
+<div style="max-width:860px;margin:0 auto;padding:32px 24px">
+
+  <!-- ENCABEZADO -->
+  <div style="background:linear-gradient(135deg,#0F172A 0%,#1e293b 100%);border-radius:16px;padding:28px 32px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-start">
+    <div style="display:flex;align-items:center;gap:14px">
+      <div style="width:56px;height:56px;background:linear-gradient(135deg,#10B981,#3B82F6);border-radius:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="white"><path d="M13 2L4.5 13.5H11L10 22L19.5 10.5H13L13 2Z"/></svg>
+      </div>
+      <div>
+        <div style="font-size:22px;font-weight:900;color:white">CalcNova <span style="color:#10B981">Import</span></div>
+        <div style="font-size:11px;color:#64748B;margin-top:3px">Sistema de Importación China → Colombia → Venezuela</div>
+      </div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:26px;font-weight:900;color:white;letter-spacing:-.5px">COTIZACIÓN</div>
+      <div style="font-size:13px;font-weight:700;color:#10B981;margin-top:4px">${esc(co)}</div>
+      <div style="font-size:11px;color:#64748B;margin-top:3px">${fecha}</div>
+      <div style="font-size:10px;color:#475569;margin-top:2px">Válida por 15 días · Sujeta a disponibilidad de tasas</div>
+    </div>
+  </div>
+
+  <!-- TASAS Y RESUMEN -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px">
+    <div style="background:white;border:1px solid #e2e8f0;border-radius:12px;padding:16px 20px">
+      <div style="font-size:10px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Tasas de cambio usadas</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#64748B">Yuan (¥) por USD</span><strong>¥ ${fmt2(yr)}</strong></div>
+        ${vr>0?`<div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#64748B">BCV Bs por USD</span><strong>Bs ${fmt2(vr)}</strong></div>`:''}
+        ${cr>0?`<div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#64748B">COP por USD</span><strong>${fmtN(Math.round(cr))}</strong></div>`:''}
+        <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#64748B">IVA aplicado</span><strong>${cfg.iva||16}%</strong></div>
+      </div>
+    </div>
+    <div style="background:white;border:1px solid #e2e8f0;border-radius:12px;padding:16px 20px">
+      <div style="font-size:10px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Resumen del pedido</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#64748B">Total productos</span><strong>${rs.length}</strong></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#64748B">Total cartones</span><strong>${fmtN(totCtns)}</strong></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#64748B">Total unidades</span><strong>${fmtN(totUnits)}</strong></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#64748B">Inversión total USD</span><strong style="color:#1d4ed8">$${fmt2(totInvUSD)}</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLA DE PRODUCTOS -->
+  <div style="background:white;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;margin-bottom:24px">
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead>
+        <tr style="background:#0F172A">
+          <th style="${thStyle};text-align:center;width:36px">#</th>
+          <th style="${thStyle}">Producto</th>
+          <th style="${thStyle}">Marca</th>
+          <th style="${thStyle};text-align:center">Ctns</th>
+          <th style="${thStyle};text-align:center">Uds</th>
+          <th style="${thR}">Costo Unit $</th>
+          <th style="${thR}">Total $</th>
+          ${hasMW?`<th style="${thR}">P. Mayor Bs</th>`:''}
+          ${hasMR?`<th style="${thR}">P. Detal Bs</th>`:''}
+        </tr>
+      </thead>
+      <tbody>${filas}</tbody>
+      <tfoot>
+        <tr style="background:#0F172A">
+          <td colspan="4" style="padding:12px;color:white;font-weight:700;font-size:12px">TOTALES</td>
+          <td style="padding:12px;text-align:center;color:white;font-weight:700">${fmtN(totUnits)}</td>
+          <td style="padding:12px;text-align:right;color:white">—</td>
+          <td style="padding:12px;text-align:right;color:#10B981;font-weight:800;font-size:13px">$${fmt2(totInvUSD)}</td>
+          ${hasMW?'<td style="padding:12px;color:white">—</td>':''}
+          ${hasMR?'<td style="padding:12px;color:white">—</td>':''}
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <!-- NOTAS -->
+  <div style="background:white;border:1px solid #e2e8f0;border-radius:12px;padding:16px 20px;margin-bottom:24px">
+    <div style="font-size:10px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Notas</div>
+    <div style="font-size:11px;color:#64748B;line-height:1.7">
+      • Los precios en USD incluyen todos los costos logísticos configurados (flete, aduana, IVA).<br>
+      • Los precios en Bs se calculan con la tasa BCV del día de emisión (Bs ${fmt2(vr)}).<br>
+      • Esta cotización es válida por 15 días sujeta a variación de tasas de cambio.<br>
+      • Distribución de costos: ${{weight:'Por Peso KG',cbm:'Por Volumen CBM',value:'Por Valor $',equal:'Igualitario'}[cfg.distribution||'weight']}.
+    </div>
+  </div>
+
+  <!-- PIE -->
+  <div style="display:flex;justify-content:space-between;align-items:center;font-size:10px;color:#94A3B8;padding-top:12px;border-top:1px solid #e2e8f0">
+    <span>⚡ CalcNova Import Calculator · Sistema privado</span>
+    <span>Generado el ${fecha} · Tasas en tiempo real</span>
+  </div>
+
+</div>
+</body></html>`);
+  win.document.close();
 }
 
 // ── BOX CALCULATOR ─────────────────────────────────────────
