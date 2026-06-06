@@ -227,6 +227,17 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
     <div class="stat border-o"><div class="stat-label">Productos / Unidades</div><div class="stat-val to" id="st-prods">0</div><div class="stat-sub" id="st-units">0 unidades</div></div>
     <div class="stat"><div class="stat-label">Mejor ROI</div><div class="stat-val" id="st-best" style="font-size:14px;color:var(--purple)">—</div><div class="stat-sub" id="st-best2">—</div></div>
   </div>
+  <!-- Adaptive logistic panel — shown only when weight/CBM data exists -->
+  <div id="dash-logistic" style="display:none;margin-bottom:14px;padding:12px 18px;background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:12px">
+    <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+      <div style="font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.07em">📦 Datos Logísticos</div>
+      <div style="font-size:12px;color:var(--dim)">Peso total: <strong style="color:var(--text)" id="dash-kg">—</strong></div>
+      <div style="font-size:12px;color:var(--dim)">Volumen total: <strong style="color:var(--text)" id="dash-cbm3">—</strong></div>
+      <div style="font-size:12px;color:var(--blue)" id="dash-ctn-hint"></div>
+      <button class="btn btn-s btn-sm" style="margin-left:auto" onclick="nav('simulador')">→ Simulador</button>
+    </div>
+  </div>
+
   <div class="g2" style="margin-bottom:18px">
     <div class="card">
       <div class="card-header"><div class="card-title"><span class="icon icon-g">📦</span>Productos</div><button class="btn btn-p btn-sm" onclick="nav('productos')">+ Agregar</button></div>
@@ -875,8 +886,8 @@ function upd(id,field,val){
 function updRow(id){
   const p=prods.find(x=>x.id===id);if(!p)return;
   const qty=getQty(p);
-  const pu=R.y>0?p.price/R.y:0;
-  const tC=qty*p.price;
+  const pu=R.y>0?safeN(p.price/R.y):0;
+  const tC=safeN(qty*safeN(p.price));
   const td=c=>document.querySelector(`td[data-id="${id}"][data-c="${c}"]`);
   const eQ=td('qty'),ePU=td('pu'),eTC=td('tc');
   if(eQ)eQ.textContent=fmtN(qty);
@@ -922,8 +933,8 @@ function updTotals(){
   const totUnits=prods.reduce((s,p)=>s+getQty(p),0);
   const totW=prods.reduce((s,p)=>s+(p.weight||0),0);
   const totCBM=prods.reduce((s,p)=>s+(p.cbm||0),0);
-  const totCNY=prods.reduce((s,p)=>s+getQty(p)*(p.price||0),0);
-  const totUSD=R.y>0?totCNY/R.y:0;
+  const totCNY=safeN(prods.reduce((s,p)=>s+safeN(getQty(p))*safeN(p.price),0));
+  const totUSD=R.y>0?safeDiv(totCNY,R.y):0;
   setText('t-ctns',fmtN(totCtns));
   setText('t-units',fmtN(totUnits));
   setText('t-weight',fmt2(totW)+' KG');
@@ -970,84 +981,101 @@ function saveCosts(){
 
 // ── CALC ───────────────────────────────────────────────────
 // Pipeline: CNY→USD | Maritime(USD) | Colombia(COP÷rate→USD) | Aduana VEN(Bs÷BCV→USD) | VEN interno(USD) | IVA
-// Dashboard shows USD. Selling prices in Bs (USD × BCV).
 function calcAll(){
   if(!prods.length){
     const rs=document.getElementById('res-section');if(rs)rs.style.display='none';
     return null;
   }
-  const yr=R.y||0;  // yuan per USD
-  const cr=R.c||0;  // COP per USD
-  const vr=R.v||0;   // BCV Bs/USD — nationalization only
+  const yr=safeN(R.y);   // yuan per USD
+  const cr=safeN(R.c);   // COP per USD
+  const vr=safeN(R.v);   // BCV Bs/USD — nationalization only
   if(yr<=0){
     const rs=document.getElementById('res-section');if(rs)rs.style.display='none';
     return null;
   }
-  // weight and cbm are TOTALS for the product (all cartons)
-  const totW=prods.reduce((s,p)=>s+(p.weight||0),0);
-  const totCBM=prods.reduce((s,p)=>s+(p.cbm||0),0);
-  const totVal=prods.reduce((s,p)=>s+getQty(p)*(p.price||0)/yr,0);
+
+  // Aggregate totals — needed for distribution ratio
+  const totW  =safeN(prods.reduce((s,p)=>s+safeN(p.weight),0));
+  const totCBM=safeN(prods.reduce((s,p)=>s+safeN(p.cbm),0));
+  const totVal=safeN(prods.reduce((s,p)=>s+safeN(getQty(p))*safeN(p.price)/yr,0));
   const nP=prods.length||1;
 
+  // ── Adaptive distribution: fall back gracefully when data is missing ──
+  let effDist=cfg.distribution||'weight';
+  if(effDist==='weight'&&totW<=0) effDist=totCBM>0?'cbm':totVal>0?'value':'equal';
+  if(effDist==='cbm'  &&totCBM<=0) effDist=totW>0?'weight':totVal>0?'value':'equal';
+  if(effDist==='value'&&totVal<=0) effDist='equal';
+
   const results=prods.map(p=>{
-    const qty=getQty(p);
-    const pW=p.weight||0;      // total weight for this product
-    const pCBM=p.cbm||0;       // total volume for this product
-    const pVal=qty*(p.price||0)/yr;
-    let wR=1/nP;
-    if(cfg.distribution==='weight') wR=totW>0?pW/totW:1/nP;
-    else if(cfg.distribution==='cbm') wR=totCBM>0?pCBM/totCBM:1/nP;
-    else if(cfg.distribution==='value') wR=totVal>0?pVal/totVal:1/nP;
+    const qty=Math.max(1,safeN(getQty(p),1));
+    const pW  =safeN(p.weight);
+    const pCBM=safeN(p.cbm);
+    const pVal=safeN(qty*safeN(p.price)/yr);
+
+    // Cost-sharing weight ratio (always sums to 1 across products)
+    let wR;
+    if     (effDist==='weight') wR=safeDiv(pW,   totW,   1/nP);
+    else if(effDist==='cbm')    wR=safeDiv(pCBM, totCBM, 1/nP);
+    else if(effDist==='value')  wR=safeDiv(pVal, totVal, 1/nP);
+    else                         wR=1/nP;
+    wR=safeN(wR,1/nP);
 
     // Stage 1: CNY → USD
-    const prodCNY=qty*(p.price||0);           // TOTAL yuan for all units
-    const prodUSD=yr>0?prodCNY/yr:0;          // convert to USD
-    const bankFee=prodUSD*(cfg.bankCommission||0)/100;
-    const s1=prodUSD+bankFee;
+    const prodCNY=safeN(qty*safeN(p.price));
+    const prodUSD=safeDiv(prodCNY,yr);
+    const bankFee=safeN(prodUSD*safeN(cfg.bankCommission)/100);
+    const s1=safeN(prodUSD+bankFee);
 
     // Stage 2: Maritime costs (USD)
-    const freightShare=(cfg.freight||0)*wR;
-    const insShare=(cfg.insurance||0)*wR;
-    const portOShare=(cfg.portOrigin||0)*wR;
-    const s2=s1+freightShare+insShare+portOShare;
+    const freightShare=safeN(safeN(cfg.freight)*wR);
+    const insShare    =safeN(safeN(cfg.insurance)*wR);
+    const portOShare  =safeN(safeN(cfg.portOrigin)*wR);
+    const s2=safeN(s1+freightShare+insShare+portOShare);
 
     // Stage 3: Colombia costs — all COP → convert to USD
-    const colCOP_total=(cfg.portCOL||0)+(cfg.customsCOL||0)+(cfg.transportCOL||0)+
-                       (cfg.cucuta||0)+(cfg.cucutaSC||0)+(cfg.extraCOL||0);
-    const colCOP=colCOP_total*wR;
-    const colUSD=cr>0?colCOP/cr:0;
-    const s3=s2+colUSD;
+    const colCOP_total=safeN((cfg.portCOL||0)+(cfg.customsCOL||0)+(cfg.transportCOL||0)+
+                             (cfg.cucuta||0)+(cfg.cucutaSC||0)+(cfg.extraCOL||0));
+    const colCOP=safeN(colCOP_total*wR);
+    const colUSD=safeDiv(colCOP,cr);
+    const s3=safeN(s2+colUSD);
 
-    // Stage 4: Venezuelan customs/nationalization (Bs → USD via BCV) + tariff % on USD value
-    const natBs=(cfg.nationalizationBs||0)*wR;
-    const natUSD=vr>0?natBs/vr:0;
-    const tariffUSD=s3*(cfg.tariffVEN||0)/100;
-    const s4=s3+natUSD+tariffUSD;
+    // Stage 4: VEN aduana (Bs÷BCV→USD) + aranceles %
+    const natBs  =safeN(safeN(cfg.nationalizationBs)*wR);
+    const natUSD =safeDiv(natBs,vr);
+    const tariffUSD=safeN(s3*safeN(cfg.tariffVEN)/100);
+    const s4=safeN(s3+natUSD+tariffUSD);
 
     // Stage 5: Venezuela internal costs (USD)
-    const venCosts=((cfg.transportVEN||0)+(cfg.operatingVEN||0)+(cfg.extraVEN||0))*wR;
-    const s5=s4+venCosts;
+    const venCosts=safeN((safeN(cfg.transportVEN)+safeN(cfg.operatingVEN)+safeN(cfg.extraVEN))*wR);
+    const s5=safeN(s4+venCosts);
 
-    // Stage 6: IVA on total USD
-    const ivaAmt=s5*(cfg.iva??16)/100;
-    const totalUSD=s5+ivaAmt;
-    const unitUSD=qty>0?totalUSD/qty:0;
+    // Stage 6: IVA
+    const ivaRate=safeN(cfg.iva??16);
+    const ivaAmt=safeN(s5*ivaRate/100);
+    const totalUSD=safeN(s5+ivaAmt);
+    const unitUSD=safeDiv(totalUSD,qty);
 
-    // Selling prices in USD with margin
-    const pMayorUSD=unitUSD*(1+(cfg.marginWholesale||0)/100);
-    const pDetalUSD=unitUSD*(1+(cfg.marginRetail||0)/100);
-    const gananciaUSD=(cfg.marginRetail||0)>0?(pDetalUSD*qty-totalUSD):0;
-    const margen=totalUSD>0?(gananciaUSD/totalUSD*100):0;
+    // Selling prices (USD + margin)
+    const mw=safeN(cfg.marginWholesale);
+    const mr=safeN(cfg.marginRetail);
+    const pMayorUSD=safeN(unitUSD*(1+mw/100));
+    const pDetalUSD=safeN(unitUSD*(1+mr/100));
+    const gananciaUSD=mr>0?safeN(pDetalUSD*qty-totalUSD):0;
+    const margen=totalUSD>0?safeN(gananciaUSD/totalUSD*100):0;
+
+    // Recommendation
+    const hasLogistic=(cfg.freight||0)+(cfg.transportCOL||0)+(cfg.transportVEN||0)>0;
+    const logCostShare=totalUSD>0?safeN((freightShare+colUSD+venCosts)/totalUSD*100):0;
     let rec='MARGEN BAJO';
     if(margen>50)rec='ALTA RENTABILIDAD';
     else if(margen>30)rec='IDEAL DETAL';
     else if(margen>10)rec='IDEAL MAYOR';
+    else if(hasLogistic&&logCostShare>60)rec='ALTO COSTO LOGÍSTICO';
 
     return {p,qty,totalUSD,unitUSD,pMayorUSD,pDetalUSD,gananciaUSD,margen,rec,
-      // detailed stages for breakdown modal:
       prodCNY,prodUSD,bankFee,s1,freightShare,insShare,portOShare,s2,
       colCOP_total,colCOP,colUSD,s3,natBs,natUSD,tariffUSD,s4,venCosts,s5,ivaAmt,
-      wR,cartons:p.cartons||1};
+      wR,cartons:p.cartons||1,effDist,logCostShare};
   });
 
   renderResults(results);
@@ -1060,7 +1088,7 @@ function renderResults(rs){
   if(!sec||!tb)return;
   sec.style.display='block';
   tb.innerHTML=rs.map(r=>{
-    const rClass={'ALTA':'b-o','DETAL':'b-b','MAYOR':'b-g','BAJO':'b-r'}[Object.keys({'ALTA':'','DETAL':'','MAYOR':'','BAJO':''}).find(k=>r.rec.includes(k))||'BAJO'];
+    const rClass=r.rec.includes('ALTA')?'b-o':r.rec.includes('DETAL')?'b-b':r.rec.includes('MAYOR')?'b-g':r.rec.includes('LOGÍS')?'b-r':'b-r';
     const hasMW=(cfg.marginWholesale||0)>0;
     const hasMR=(cfg.marginRetail||0)>0;
     return `<tr>
@@ -1207,28 +1235,63 @@ function renderDash(){
     if(mainChart){mainChart.destroy();mainChart=null;}
     return;
   }
-  const totInvUSD=rs.reduce((s,r)=>s+r.totalUSD,0);
-  const totUtilUSD=rs.reduce((s,r)=>s+(r.gananciaUSD>0?r.gananciaUSD:0),0);
-  const totUnits=rs.reduce((s,r)=>s+r.qty,0);
-  const totCtns=rs.reduce((s,r)=>s+r.cartons,0);
-  const best=rs.slice().sort((a,b)=>b.margen-a.margen)[0];
-  const margPct=totInvUSD>0?(totUtilUSD/totInvUSD*100):0;
+  const totInvUSD =safeN(rs.reduce((s,r)=>s+safeN(r.totalUSD),0));
+  const totUtilUSD=safeN(rs.reduce((s,r)=>s+(r.gananciaUSD>0?safeN(r.gananciaUSD):0),0));
+  const totUnits  =safeN(rs.reduce((s,r)=>s+safeN(r.qty),0));
+  const totCtns   =safeN(rs.reduce((s,r)=>s+safeN(r.cartons),0));
+  const totWKg    =safeN(prods.reduce((s,p)=>s+safeN(p.weight),0));
+  const totCBM3   =safeN(prods.reduce((s,p)=>s+safeN(p.cbm),0));
+  const hasWeight =totWKg>0;
+  const hasCBM    =totCBM3>0;
+  const hasMargin =(cfg.marginRetail||0)>0;
+  const best=rs.slice().sort((a,b)=>safeN(b.margen)-safeN(a.margen))[0];
+  const margPct=safeDiv(totUtilUSD,totInvUSD)*100;
 
   setText('st-inv','$'+fmt2(totInvUSD));
   setText('st-inv2',rs.length+' producto'+(rs.length!==1?'s':''));
-  setText('st-util','$'+fmt2(totUtilUSD));
-  setText('st-util2',fmt1(margPct)+'% margen');
-  setText('st-prods',String(rs.length));setText('st-units',fmtN(totCtns)+' ctns · '+fmtN(totUnits)+' uds');
-  if(best){setText('st-best',best.p.name||'Sin nombre');setText('st-best2','Margen: '+fmt1(best.margen)+'%');}
+  setText('st-util',hasMargin?'$'+fmt2(totUtilUSD):'Sin margen');
+  setText('st-util2',hasMargin?fmt1(margPct)+'% margen':'Configura márgenes');
+  setText('st-prods',String(rs.length));
+  setText('st-units',fmtN(totCtns)+' ctns · '+fmtN(totUnits)+' uds');
+  if(best){setText('st-best',best.p.name||'Sin nombre');setText('st-best2','Margen: '+fmt1(safeN(best.margen))+'%');}
 
-  // Product list — show USD cost, and Bs unit price
+  // Adaptive logistic summary — only show if we have weight/CBM data
+  const logEl=document.getElementById('dash-logistic');
+  if(logEl){
+    if(hasWeight||hasCBM){
+      logEl.style.display='';
+      setText('dash-kg',  hasWeight?fmtN(Math.round(totWKg))+' KG':'—');
+      setText('dash-cbm3',hasCBM  ?fmt4(totCBM3)+' M³':'—');
+      // container hint
+      const c20=CTYPES['20ft'],c40=CTYPES['40ft'];
+      let hint='';
+      if(hasCBM){
+        const pct20=totCBM3/c20.cbm*100,pct40=totCBM3/c40.cbm*100;
+        if(pct20<=100)hint=`Cabe en 20ft (${fmt1(pct20)}%)`;
+        else if(pct40<=100)hint=`Requiere 40ft (${fmt1(pct40)}%)`;
+        else hint=`+${Math.ceil(totCBM3/c40.cbm)} contenedores 40ft`;
+      }
+      setText('dash-ctn-hint',hint);
+    }else{
+      logEl.style.display='none';
+    }
+  }
+
+  // Product list
   const dl=document.getElementById('dash-list');
-  if(dl) dl.innerHTML=rs.map(r=>`
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)">
-      <div><div style="font-weight:600;font-size:13px">${esc(r.p.name||'—')}${r.p.brand?` <span style="font-size:11px;color:var(--muted);font-weight:400">${esc(r.p.brand)}</span>`:''}</div>
-      <div style="font-size:11px;color:var(--dim)">${r.cartons} ctns · ${fmtN(r.qty)} uds · $${fmt2(r.unitUSD)}/ud</div></div>
-      <div style="text-align:right"><div style="font-weight:700;color:var(--green);font-size:13px">$${fmt2(r.totalUSD)}</div><div style="font-size:11px;color:var(--dim)">${fmt1(r.margen)}% margen</div></div>
-    </div>`).join('');
+  if(dl) dl.innerHTML=rs.map(r=>{
+    const recColor=r.rec.includes('ALTA')?'#10B981':r.rec.includes('DETAL')?'#3B82F6':r.rec.includes('MAYOR')?'#F59E0B':r.rec.includes('LOGÍS')?'#EF4444':'#94A3B8';
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.p.name||'—')}${r.p.brand?` <span style="font-size:11px;color:var(--muted);font-weight:400">${esc(r.p.brand)}</span>`:''}</div>
+        <div style="font-size:11px;color:var(--dim)">${fmtN(r.qty)} uds · $${fmt2(r.unitUSD)}/ud · <span style="color:${recColor}">${r.rec}</span></div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;margin-left:12px">
+        <div style="font-weight:700;color:var(--green);font-size:13px">$${fmt2(r.totalUSD)}</div>
+        <div style="font-size:11px;color:var(--dim)">${hasMargin?fmt1(safeN(r.margen))+'% margen':''}</div>
+      </div>
+    </div>`;
+  }).join('');
 
   // Chart — distribute by USD cost
   const canvas=document.getElementById('chart-main');
@@ -1255,10 +1318,10 @@ function renderSim(){
   const ct=CTYPES[simMode];
   const maxC=ct?.cbm,maxW=ct?.wt;
   setText('s-maxC',maxC?String(maxC):'—');setText('s-maxW',maxW?fmtN(maxW):'—');
-  const totC=prods.reduce((s,p)=>s+(p.cbm||0),0);
-  const totW=prods.reduce((s,p)=>s+(p.weight||0),0);
-  const cp=maxC?Math.min(100,totC/maxC*100):0;
-  const wp=maxW?Math.min(100,totW/maxW*100):0;
+  const totC=safeN(prods.reduce((s,p)=>s+safeN(p.cbm),0));
+  const totW=safeN(prods.reduce((s,p)=>s+safeN(p.weight),0));
+  const cp=maxC&&totC>0?Math.min(100,safeN(totC/maxC*100)):0;
+  const wp=maxW&&totW>0?Math.min(100,safeN(totW/maxW*100)):0;
   setText('s-cpct',maxC?fmt1(cp)+'%':'—');setText('s-wpct',maxW?fmt1(wp)+'%':'—');
   setText('s-usedC',fmt4(totC));setText('s-freeC',maxC?fmt4(maxC-totC):'—');
   setText('s-usedW',fmt2(totW));setText('s-freeW',maxW?fmt2(maxW-totW):'—');
@@ -1319,12 +1382,12 @@ function exportPDF(){
     const rs=calcAll();
     if(!rs||!rs.length){toast('Sin datos para exportar','err');return;}
     const yr=R.y||0,cr=R.c||0,vr=R.v||0;
-    const totInvUSD=rs.reduce((s,r)=>s+r.totalUSD,0);
-    const totUtilUSD=rs.reduce((s,r)=>s+(r.gananciaUSD>0?r.gananciaUSD:0),0);
-    const totUnits=rs.reduce((s,r)=>s+r.qty,0);
-    const totCtns=rs.reduce((s,r)=>s+r.cartons,0);
-    const totCNY=rs.reduce((s,r)=>s+r.prodCNY,0);
-    const margPct=totInvUSD>0?(totUtilUSD/totInvUSD*100):0;
+    const totInvUSD=safeN(rs.reduce((s,r)=>s+safeN(r.totalUSD),0));
+    const totUtilUSD=safeN(rs.reduce((s,r)=>s+(r.gananciaUSD>0?safeN(r.gananciaUSD):0),0));
+    const totUnits=safeN(rs.reduce((s,r)=>s+safeN(r.qty),0));
+    const totCtns=safeN(rs.reduce((s,r)=>s+safeN(r.cartons),0));
+    const totCNY=safeN(rs.reduce((s,r)=>s+safeN(r.prodCNY),0));
+    const margPct=safeDiv(totUtilUSD,totInvUSD)*100;
     const hasMW=(cfg.marginWholesale||0)>0;
     const hasMR=(cfg.marginRetail||0)>0;
     const co=cfg.company||'CalcNova Import';
@@ -1598,12 +1661,12 @@ function exportCSV(){
     const N=v=>String((+v||0).toFixed(2));
     const NI=v=>String(Math.round(+v||0));
 
-    const totInvUSD=rs.reduce((s,r)=>s+r.totalUSD,0);
-    const totUtilUSD=rs.reduce((s,r)=>s+(r.gananciaUSD>0?r.gananciaUSD:0),0);
-    const totUnits=rs.reduce((s,r)=>s+r.qty,0);
-    const totCtns=rs.reduce((s,r)=>s+r.cartons,0);
-    const totCNY=rs.reduce((s,r)=>s+r.prodCNY,0);
-    const margPct=totInvUSD>0?(totUtilUSD/totInvUSD*100):0;
+    const totInvUSD=safeN(rs.reduce((s,r)=>s+safeN(r.totalUSD),0));
+    const totUtilUSD=safeN(rs.reduce((s,r)=>s+(r.gananciaUSD>0?safeN(r.gananciaUSD):0),0));
+    const totUnits=safeN(rs.reduce((s,r)=>s+safeN(r.qty),0));
+    const totCtns=safeN(rs.reduce((s,r)=>s+safeN(r.cartons),0));
+    const totCNY=safeN(rs.reduce((s,r)=>s+safeN(r.prodCNY),0));
+    const margPct=safeDiv(totUtilUSD,totInvUSD)*100;
 
     let out='﻿'; // BOM — para que Excel abra con UTF-8
 
@@ -1763,19 +1826,49 @@ function loadSheetRows(name){
 }
 
 const UP_FIELDS=[
-  {id:'name',  label:'Nombre / Descripción ★', req:true,  pat:/nombre|name|descripci|product|articulo|art[íi]culo|descript|modelo/i},
-  {id:'ref',   label:'Referencia / SKU',        req:false, pat:/^ref|sku|cod|item.?n[úu]?m|part|referencia/i},
-  {id:'brand', label:'Marca',                   req:false, pat:/marca|brand|fabricante|maker/i},
-  {id:'cartons',label:'Cartones (cantidad)',    req:false, pat:/carton|ctn|caja|^box|master.?box|bulto/i},
-  {id:'qtyPerCtn',label:'Uds por Cartón',       req:false, pat:/ud.*(ctn|cart|caja)|pcs.*(ctn|box)|unid.*ctn|pcs\/ctn|qty.*ctn|pcs per/i},
-  {id:'weight',label:'Peso KG (total lote)',     req:false, pat:/peso|weight|g\.?w|n\.?w|kg|gross/i},
-  {id:'cbm',   label:'Volumen M³ (total lote)', req:false, pat:/cbm|m3|volum|volume|cubic|m[íi]3/i},
-  {id:'price', label:'Precio ¥ por unidad',     req:false, pat:/precio|price|unit.?price|yuan|cny|¥|costo/i},
+  {id:'name',     label:'Nombre / Descripción ★', req:true,
+    pat:/nombre|name|descripci|product|articulo|art[íi]culo|descript|modelo|item|goods|commodity|mercader[íi]a/i},
+  {id:'ref',      label:'Referencia / SKU / Código', req:false,
+    pat:/^ref|^sku|^cod|^art[íi]c|item.?n[úu]?m|item.?no|part.?no|^no\.?$|referencia|código|编号|型号/i},
+  {id:'brand',    label:'Marca / Fabricante',    req:false,
+    pat:/marca|brand|fabricante|maker|manufacturer|品牌/i},
+  {id:'cartons',  label:'Cartones / Cajas',       req:false,
+    pat:/^carton|^ctn$|^cajas?$|^box(es)?$|master.?(box|ctn|qty)|bulto|^cja|箱数/i},
+  {id:'qtyPerCtn',label:'Uds por Cartón',         req:false,
+    pat:/ud.*(ctn|cart|caja)|pcs.*(ctn|box)|unid.*ctn|pcs\/ctn|qty.*ctn|pcs\s*per|每箱|units.*box/i},
+  {id:'totalQty', label:'Cantidad Total de Uds',  req:false,
+    pat:/^qty$|^quantity$|^cantidad$|^total.*(uds?|units?|pcs)|^uds?$|^pcs?$|^units?$|数量/i},
+  {id:'weight',   label:'Peso KG (total lote)',    req:false,
+    pat:/peso|weight|g\.?\s*w|n\.?\s*w|gross|neto|^kg$|kilo|毛重|净重/i},
+  {id:'cbm',      label:'Volumen M³ (total lote)', req:false,
+    pat:/^cbm$|m[íi]?3|volum|volume|cubic|cub\.?m|体积/i},
+  {id:'price',    label:'Precio ¥ (por unidad)',   req:false,
+    pat:/precio|unit.?price|price.?unit|^price$|costo.?unit|unit.?cost|^cny$|yuan|¥|单价|unit.?amount/i},
+  {id:'totalAmt', label:'Monto Total (opcional)',  req:false,
+    pat:/^total$|total.?amount|amount.?total|importe|^amount$|金额/i},
 ];
+
+function autoDetectHeaderRow(){
+  // Find the first row that looks like a header (has text labels matching known field patterns)
+  const allPats=UP_FIELDS.map(f=>f.pat);
+  for(let i=0;i<Math.min(_uploadRawRows.length,10);i++){
+    const row=_uploadRawRows[i]||[];
+    const textCells=row.filter(c=>c&&isNaN(parseXlNum(String(c))));
+    if(textCells.length>=2){
+      const hasKeyword=textCells.some(c=>allPats.some(p=>p.test(String(c))));
+      if(hasKeyword){
+        document.getElementById('up-hrow').value=i+1;
+        return;
+      }
+    }
+  }
+}
 
 function renderUploadPreview(){
   const rows=_uploadRawRows;
   if(!rows.length)return;
+  // Auto-detect header row on first render
+  if(document.getElementById('up-hrow').value==='1')autoDetectHeaderRow();
   const hrow=Math.max(0,(parseInt(document.getElementById('up-hrow').value)||1)-1);
   const headers=(rows[hrow]||[]).map(c=>String(c||'').trim());
 
@@ -1836,40 +1929,72 @@ function renderUploadPreview(){
 function updateUpCount(){
   const hrow=Math.max(0,(parseInt(document.getElementById('up-hrow').value)||1)-1);
   const dataRows=_uploadRawRows.slice(hrow+1);
-  const namCol=parseInt(document.getElementById('up-col-name')?.value??'');
-  const count=isNaN(namCol)?0:dataRows.filter(r=>String(r[namCol]||'').trim()!=='').length;
+  const raw=document.getElementById('up-col-name')?.value;
+  const namCol=(raw!==''&&raw!=null)?parseInt(raw):-1;
+  const count=namCol<0?0:dataRows.filter(r=>String(r[namCol]||'').trim()!=='').length;
   const el=document.getElementById('up-count');
-  if(el)el.textContent=count>0?`${count} productos detectados`:'';
+  if(el)el.textContent=count>0?`✓ ${count} productos detectados`:'Selecciona la columna Nombre';
 }
 
 function doImportFile(){
   const hrow=Math.max(0,(parseInt(document.getElementById('up-hrow').value)||1)-1);
   const dataRows=_uploadRawRows.slice(hrow+1);
-  const gc=id=>{const v=document.getElementById('up-col-'+id)?.value;return(v!==''&&v!=null)?parseInt(v):-1;};
+  const gc=id=>{const v=document.getElementById('up-col-'+id)?.value;return(v!==''&&v!=null&&v!=='-1')?parseInt(v):-1;};
   const namCol=gc('name');
   if(namCol<0){toast('Selecciona la columna Nombre/Descripción','err');return;}
 
   function getStr(row,col){return col>=0?String(row[col]||'').trim():'';}
   function getNum(row,col){
     if(col<0)return 0;
-    const raw=String(row[col]||'').replace(/[,$\s€£]/g,'');
-    return parseFloat(raw.replace(',','.'))||0;
+    const raw=String(row[col]||'').replace(/[,$\s€£¥]/g,'');
+    return safeN(parseFloat(raw.replace(',','.')));
   }
 
+  const colCartons=gc('cartons'), colQpctn=gc('qtyPerCtn'), colTotalQty=gc('totalQty');
+  const colPrice=gc('price'), colTotalAmt=gc('totalAmt');
+  let noPrices=0, noQty=0;
+
   const imported=[];
-  dataRows.forEach(row=>{
+  dataRows.forEach((row,rowIdx)=>{
     const name=getStr(row,namCol);
     if(!name)return;
+
+    // ── Quantity logic ─────────────────────────────────────
+    // Priority: (cartons × qtyPerCtn) > totalQty > 1
+    let cartons=getNum(row,colCartons);
+    let qtyPerCtn=getNum(row,colQpctn);
+    const totalQty=getNum(row,colTotalQty);
+    if(cartons<=0&&qtyPerCtn<=0&&totalQty>0){
+      cartons=1; qtyPerCtn=totalQty;          // total qty as single "lot"
+    } else if(cartons>0&&qtyPerCtn<=0&&totalQty>0){
+      qtyPerCtn=Math.round(totalQty/cartons)||1; // derive qtyPerCtn
+    } else if(cartons<=0&&qtyPerCtn>0&&totalQty>0){
+      cartons=Math.round(totalQty/qtyPerCtn)||1;
+    }
+    if(cartons<=0)cartons=1;
+    if(qtyPerCtn<=0)qtyPerCtn=1;
+    if(cartons<=0||qtyPerCtn<=0)noQty++;
+
+    // ── Price logic ────────────────────────────────────────
+    // Priority: unit price > total/qty
+    let price=getNum(row,colPrice);
+    if(price<=0&&colTotalAmt>=0){
+      const tot=getNum(row,colTotalAmt);
+      const qty2=cartons*qtyPerCtn;
+      if(tot>0&&qty2>0)price=tot/qty2;
+    }
+    if(price<=0)noPrices++;
+
     imported.push({
-      id:Date.now()+Math.random(),
+      id:Date.now()+Math.random()+rowIdx,
       ref:getStr(row,gc('ref')),
       name,
       brand:getStr(row,gc('brand')),
-      cartons:getNum(row,gc('cartons'))||1,
-      qtyPerCtn:getNum(row,gc('qtyPerCtn'))||1,
+      cartons,
+      qtyPerCtn,
       weight:getNum(row,gc('weight')),
       cbm:getNum(row,gc('cbm')),
-      price:getNum(row,gc('price')),
+      price,
     });
   });
 
@@ -1879,7 +2004,9 @@ function doImportFile(){
   else prods=[...prods,...imported];
   saveProds();renderProds();calcAll();renderDash();
   closeUploadModal();
-  toast(`✓ ${imported.length} productos importados`,'ok');
+  const warnings=[];
+  if(noPrices)warnings.push(`${noPrices} sin precio`);
+  toast(`✓ ${imported.length} productos importados${warnings.length?' · '+warnings.join(' · '):''}`,'ok');
   showTab('productos');
 }
 
@@ -2037,10 +2164,13 @@ function processPaste(){
 }
 
 // ── HELPERS ────────────────────────────────────────────────
-function fmt1(n){return isNaN(n)?'0':(+n).toFixed(1);}
-function fmt2(n){return isNaN(n)?'0.00':(+n).toFixed(2);}
-function fmt4(n){return isNaN(n)?'0.0000':(+n).toFixed(4);}
-function fmtN(n){return isNaN(n)?'0':Math.round(+n).toLocaleString('es');}
+const safeN=(v,d=0)=>{const n=+v;return Number.isFinite(n)?n:d;};
+function fmt1(n){const v=safeN(n);return v.toFixed(1);}
+function fmt2(n){const v=safeN(n);return v.toFixed(2);}
+function fmt4(n){const v=safeN(n);return v.toFixed(4);}
+function fmtN(n){const v=safeN(n);return Math.round(v).toLocaleString('es');}
+function fmtD(n,dec=2){const v=safeN(n);return v.toFixed(dec);}  // generic decimal
+function safeDiv(a,b,fb=0){return b>0&&Number.isFinite(b)?safeN(a)/b:fb;}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function setText(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
 function pf(id){return parseFloat(document.getElementById(id)?.value)||0;}
@@ -2109,7 +2239,7 @@ function exportCotizacion(){
   const hasMR=(cfg.marginRetail||0)>0;
   const co=cfg.company||'CalcNova Import';
   const fecha=new Date().toLocaleDateString('es',{year:'numeric',month:'long',day:'numeric'});
-  const totInvUSD=rs.reduce((s,r)=>s+r.totalUSD,0);
+  const totInvUSD=safeN(rs.reduce((s,r)=>s+safeN(r.totalUSD),0));
   const totUnits=rs.reduce((s,r)=>s+r.qty,0);
   const totCtns=rs.reduce((s,r)=>s+r.cartons,0);
 
