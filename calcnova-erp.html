@@ -869,7 +869,7 @@ function loadCostForm(){
   // Venezuela — nat in Bs, rest in USD
   sv('c-nat',cfg.nationalizationBs);sv('c-tariff',cfg.tariffVEN);
   sv('c-trVEN',cfg.transportVEN);sv('c-op',cfg.operatingVEN);sv('c-exVEN',cfg.extraVEN);
-  sv('c-iva',cfg.iva||16);sv('c-mw',cfg.marginWholesale);sv('c-mr',cfg.marginRetail);
+  sv('c-iva',cfg.iva??16);sv('c-mw',cfg.marginWholesale);sv('c-mr',cfg.marginRetail);
   const p=document.getElementById('c-port');if(p)p.value=cfg.port||'buenaventura';
   const d=document.getElementById('c-dist');if(d)d.value=cfg.distribution||'weight';
   const vr=document.getElementById('c-vrate');if(vr)vr.value=cfg.vesRate||'bcv';
@@ -902,7 +902,8 @@ function calcAll(){
   }
   const yr=R.y||0;  // yuan per USD
   const cr=R.c||0;  // COP per USD
-  const vr=R.v||0;  // Bs BCV per USD (for nationalization + selling price conversion)
+  const vr=R.v||0;   // BCV Bs/USD — nationalization only
+  const vesR=cfg.vesRate==='paralelo'?(R.p||R.v||0):(R.v||0);  // for selling prices
   if(yr<=0){
     const rs=document.getElementById('res-section');if(rs)rs.style.display='none';
     return null;
@@ -953,12 +954,12 @@ function calcAll(){
     const s5=s4+venCosts;
 
     // Stage 6: IVA on total USD
-    const ivaAmt=s5*(cfg.iva||16)/100;
+    const ivaAmt=s5*(cfg.iva??16)/100;
     const totalUSD=s5+ivaAmt;
     const unitUSD=qty>0?totalUSD/qty:0;
 
-    // Selling prices in Bs (unitUSD × BCV rate × margin)
-    const unitBs=vr>0?unitUSD*vr:0;
+    // Selling prices in Bs (unitUSD × selected rate × margin)
+    const unitBs=vesR>0?unitUSD*vesR:0;
     const pMayorBs=unitBs*(1+(cfg.marginWholesale||0)/100);
     const pDetalBs=unitBs*(1+(cfg.marginRetail||0)/100);
 
@@ -1079,8 +1080,8 @@ function showCalc(id){
   }
 
   // Stage 6
-  h+=HDR(6,`IVA ${cfg.iva||16}%`,'#94A3B8');
-  h+=LINE(`$${fmt2(r.s5)} × ${(cfg.iva||16)/100}`,`+ $${fmt2(r.ivaAmt)}`,'#94A3B8');
+  h+=HDR(6,`IVA ${cfg.iva??16}%`,'#94A3B8');
+  h+=LINE(`$${fmt2(r.s5)} × ${(cfg.iva??16)/100}`,`+ $${fmt2(r.ivaAmt)}`,'#94A3B8');
 
   // Result box
   const hasMW=(cfg.marginWholesale||0)>0;
@@ -1094,7 +1095,7 @@ function showCalc(id){
       <div style="background:rgba(15,23,42,.5);border-radius:8px;padding:10px">
         <div style="color:var(--dim);font-size:11px;margin-bottom:4px">Costo unitario</div>
         <div style="font-weight:700;color:var(--text)">$${fmt2(r.unitUSD)}</div>
-        <div style="font-size:11px;color:var(--muted)">${vr>0?'Bs '+fmtN(r.unitBs):'sin tasa BCV'}</div>
+        <div style="font-size:11px;color:var(--muted)">${r.unitBs>0?'Bs '+fmtN(r.unitBs):'sin tasa Bs'}</div>
       </div>
       ${hasMW?`<div style="background:rgba(15,23,42,.5);border-radius:8px;padding:10px">
         <div style="color:var(--dim);font-size:11px;margin-bottom:4px">Precio Mayor +${cfg.marginWholesale}%</div>
@@ -1278,9 +1279,9 @@ function exportPDF(){
         <td class="num gold">¥${fmtN(Math.round(r.prodCNY))}</td>
         <td class="num blue bold">$${fmt2(r.totalUSD)}</td>
         <td class="num">$${fmt2(r.unitUSD)}</td>
-        <td class="num">${vr>0?'Bs '+fmtN(Math.round(r.unitBs)):'—'}</td>
-        ${hasMW?`<td class="num green">${vr>0?'Bs '+fmtN(Math.round(r.pMayorBs)):'—'}</td>`:''}
-        ${hasMR?`<td class="num blue">${vr>0?'Bs '+fmtN(Math.round(r.pDetalBs)):'—'}</td>`:''}
+        <td class="num">${r.unitBs>0?'Bs '+fmtN(Math.round(r.unitBs)):'—'}</td>
+        ${hasMW?`<td class="num green">${r.pMayorBs>0?'Bs '+fmtN(Math.round(r.pMayorBs)):'—'}</td>`:''}
+        ${hasMR?`<td class="num blue">${r.pDetalBs>0?'Bs '+fmtN(Math.round(r.pDetalBs)):'—'}</td>`:''}
         ${hasMR?`<td class="num ${r.gananciaUSD>0?'green':'red'}">${r.gananciaUSD>0?'$'+fmt2(r.gananciaUSD):'—'}</td>`:''}
         <td class="num">${fmt1(r.margen)}%</td>
         <td><span class="badge ${rc}">${rs2}</span></td>
@@ -1320,7 +1321,7 @@ function exportPDF(){
       ['','Transporte a estados','USD',fmt2(cfg.transportVEN||0),'$'+fmt2(cfg.transportVEN||0)],
       ['','Costos Operativos','USD',fmt2(cfg.operatingVEN||0),'$'+fmt2(cfg.operatingVEN||0)],
       ['','Extras Venezuela','USD',fmt2(cfg.extraVEN||0),'$'+fmt2(cfg.extraVEN||0)],
-      ['Impuestos','IVA','%',(cfg.iva||16)+'%','sobre costo total antes de IVA'],
+      ['Impuestos','IVA','%',(cfg.iva??16)+'%','sobre costo total antes de IVA'],
     ].map((c,i)=>`<tr style="${i%2===0?'background:#f8fafc':''}">
       <td style="font-weight:${c[0]?700:400};color:${c[0]?'#0F172A':'#64748B'};font-size:${c[0]?11:11}px">${c[0]||''}</td>
       <td>${c[1]}</td>
@@ -1475,7 +1476,7 @@ table.cost td{padding:6px 10px;border-bottom:1px solid #f1f5f9}
     ${cr>0?`<span class="rate-tag">COP: <strong>${fmtN(Math.round(cr))} = $1</strong></span>`:''}
     ${vr>0?`<span class="rate-tag">BCV: <strong>Bs${fmt2(vr)} = $1</strong></span>`:''}
     ${R.p&&R.p!==vr?`<span class="rate-tag">Paralelo: <strong>Bs${fmt2(R.p)} = $1</strong></span>`:''}
-    <span class="rate-tag" style="margin-left:auto">IVA: <strong>${cfg.iva||16}%</strong></span>
+    <span class="rate-tag" style="margin-left:auto">IVA: <strong>${cfg.iva??16}%</strong></span>
     ${hasMW?`<span class="rate-tag">Margen Mayor: <strong>${cfg.marginWholesale}%</strong></span>`:''}
     ${hasMR?`<span class="rate-tag">Margen Detal: <strong>${cfg.marginRetail}%</strong></span>`:''}
   </div>
@@ -1615,7 +1616,7 @@ function exportCSV(){
       ['Venezuela','Transporte a estados','USD',N(cfg.transportVEN||0),'$'+N(cfg.transportVEN||0)],
       ['Venezuela','Costos Operativos','USD',N(cfg.operatingVEN||0),'$'+N(cfg.operatingVEN||0)],
       ['Venezuela','Extras Venezuela','USD',N(cfg.extraVEN||0),'$'+N(cfg.extraVEN||0)],
-      ['Impuestos','IVA','%',(cfg.iva||16)+'%','sobre costo total antes IVA'],
+      ['Impuestos','IVA','%',(cfg.iva??16)+'%','sobre costo total antes IVA'],
     ];
     cRows.forEach(c=>{ out+=c.join('\t')+'\r\n'; });
 
@@ -1879,8 +1880,8 @@ function exportCotizacion(){
       <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:center;font-weight:800;color:#0F172A">${fmtN(r.qty)}</td>
       <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:right;color:#1d4ed8;font-weight:700">$${fmt2(r.unitUSD)}</td>
       <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:right;font-weight:700;color:#0F172A">$${fmt2(r.totalUSD)}</td>
-      ${hasMW?`<td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:right;color:#15803d;font-weight:700">${vr>0?'Bs '+fmtN(Math.round(r.pMayorBs)):'—'}</td>`:''}
-      ${hasMR?`<td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:right;color:#1d4ed8;font-weight:700">${vr>0?'Bs '+fmtN(Math.round(r.pDetalBs)):'—'}</td>`:''}
+      ${hasMW?`<td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:right;color:#15803d;font-weight:700">${r.pMayorBs>0?'Bs '+fmtN(Math.round(r.pMayorBs)):'—'}</td>`:''}
+      ${hasMR?`<td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:right;color:#1d4ed8;font-weight:700">${r.pDetalBs>0?'Bs '+fmtN(Math.round(r.pDetalBs)):'—'}</td>`:''}
     </tr>`).join('');
 
   const thStyle='padding:10px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:white;white-space:nowrap';
@@ -1934,7 +1935,7 @@ function exportCotizacion(){
         <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#64748B">Yuan (¥) por USD</span><strong>¥ ${fmt2(yr)}</strong></div>
         ${vr>0?`<div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#64748B">BCV Bs por USD</span><strong>Bs ${fmt2(vr)}</strong></div>`:''}
         ${cr>0?`<div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#64748B">COP por USD</span><strong>${fmtN(Math.round(cr))}</strong></div>`:''}
-        <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#64748B">IVA aplicado</span><strong>${cfg.iva||16}%</strong></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#64748B">IVA aplicado</span><strong>${cfg.iva??16}%</strong></div>
       </div>
     </div>
     <div style="background:white;border:1px solid #e2e8f0;border-radius:12px;padding:16px 20px">
