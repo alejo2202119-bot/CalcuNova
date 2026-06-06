@@ -452,10 +452,101 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
 
 <!-- SIMULADOR -->
 <section id="sec-simulador" class="section">
-  <div class="sec-hdr"><div><div class="sec-title">Simulador de Contenedor</div><div class="sec-sub">Verifica espacio y capacidad</div></div></div>
+  <div class="sec-hdr"><div><div class="sec-title">Simulador de Contenedor</div><div class="sec-sub">Verifica espacio, capacidad y calcula dimensiones de cajas</div></div></div>
+
+  <!-- ── CALCULADORA DE CAJAS ── -->
+  <div class="card" style="margin-bottom:16px;border-color:rgba(245,158,11,.3)">
+    <div class="card-header">
+      <div class="card-title"><span class="icon icon-o">📐</span>Calculadora de Cajas / Cartones</div>
+      <span style="font-size:11px;color:var(--dim)">Ingresa las medidas y cantidad — te da el peso y CBM total</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:14px">
+      <div class="field">
+        <label>Largo del cartón (cm)</label>
+        <input class="inp" id="bc-l" type="number" min="0" step="0.1" placeholder="60" oninput="calcBox()">
+      </div>
+      <div class="field">
+        <label>Ancho del cartón (cm)</label>
+        <input class="inp" id="bc-a" type="number" min="0" step="0.1" placeholder="40" oninput="calcBox()">
+      </div>
+      <div class="field">
+        <label>Alto del cartón (cm)</label>
+        <input class="inp" id="bc-h" type="number" min="0" step="0.1" placeholder="30" oninput="calcBox()">
+      </div>
+      <div class="field">
+        <label>Peso por cartón (kg)</label>
+        <input class="inp" id="bc-w" type="number" min="0" step="0.1" placeholder="15" oninput="calcBox()">
+      </div>
+      <div class="field">
+        <label>Cantidad de cartones</label>
+        <input class="inp" id="bc-q" type="number" min="1" placeholder="100" oninput="calcBox()">
+      </div>
+      <div class="field">
+        <label>Unidades por cartón</label>
+        <input class="inp" id="bc-u" type="number" min="1" placeholder="12" oninput="calcBox()">
+      </div>
+    </div>
+
+    <!-- Resultados -->
+    <div id="box-result" style="display:none">
+      <div style="border-top:1px solid var(--border);padding-top:14px">
+        <div style="font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Resultado</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:14px">
+          <div class="stat" style="border-top:3px solid var(--gold)">
+            <div class="stat-label">CBM por cartón</div>
+            <div class="stat-val to" id="bc-r-unit" style="font-size:18px">0</div>
+            <div class="stat-sub">metros cúbicos</div>
+          </div>
+          <div class="stat" style="border-top:3px solid var(--blue)">
+            <div class="stat-label">CBM Total</div>
+            <div class="stat-val tb" id="bc-r-cbm" style="font-size:18px">0</div>
+            <div class="stat-sub" id="bc-r-cbmsub">metros cúbicos</div>
+          </div>
+          <div class="stat" style="border-top:3px solid var(--green)">
+            <div class="stat-label">Peso Total</div>
+            <div class="stat-val tg" id="bc-r-wt" style="font-size:18px">0</div>
+            <div class="stat-sub" id="bc-r-wtsub">kilogramos</div>
+          </div>
+          <div class="stat" style="border-top:3px solid var(--purple)">
+            <div class="stat-label">Total Unidades</div>
+            <div class="stat-val" id="bc-r-units" style="font-size:18px;color:var(--purple)">0</div>
+            <div class="stat-sub">unidades totales</div>
+          </div>
+        </div>
+
+        <!-- Barras contenedor -->
+        <div style="font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">¿Cuánto espacio ocupa en el contenedor?</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px" id="bc-bars">
+          <!-- 20ft -->
+          <div style="background:rgba(15,23,42,.5);border-radius:10px;padding:12px">
+            <div style="font-weight:700;font-size:13px;margin-bottom:8px">🚢 20 pies (33.1 m³ · 28,280 kg)</div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span>CBM</span><span id="bc-20-cpct">0%</span></div>
+            <div class="cbar-wrap"><div class="cbar-fill" id="bc-20-cbar" style="width:0%"></div></div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin:6px 0 3px"><span>Peso</span><span id="bc-20-wpct">0%</span></div>
+            <div class="cbar-wrap"><div class="cbar-fill" id="bc-20-wbar" style="width:0%"></div></div>
+            <div id="bc-20-msg" style="font-size:11px;margin-top:8px;color:var(--green)"></div>
+          </div>
+          <!-- 40ft -->
+          <div style="background:rgba(15,23,42,.5);border-radius:10px;padding:12px">
+            <div style="font-weight:700;font-size:13px;margin-bottom:8px">🚢 40 pies (67.5 m³ · 26,680 kg)</div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span>CBM</span><span id="bc-40-cpct">0%</span></div>
+            <div class="cbar-wrap"><div class="cbar-fill" id="bc-40-cbar" style="width:0%"></div></div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin:6px 0 3px"><span>Peso</span><span id="bc-40-wpct">0%</span></div>
+            <div class="cbar-wrap"><div class="cbar-fill" id="bc-40-wbar" style="width:0%"></div></div>
+            <div id="bc-40-msg" style="font-size:11px;margin-top:8px;color:var(--green)"></div>
+          </div>
+        </div>
+
+        <!-- Sugerencia -->
+        <div id="bc-suggest" style="display:none;margin-top:12px;padding:12px;border-radius:10px;font-size:12px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SIMULADOR CON PRODUCTOS CARGADOS ── -->
   <div class="g2">
     <div class="card">
-      <div class="card-header"><div class="card-title"><span class="icon icon-b">🚢</span>Contenedor</div></div>
+      <div class="card-header"><div class="card-title"><span class="icon icon-b">🚢</span>Contenedor — Productos cargados</div></div>
       <div class="tabs">
         <button class="tab active" onclick="simTab(this,'20ft')">20 pies</button>
         <button class="tab" onclick="simTab(this,'40ft')">40 pies</button>
@@ -1764,6 +1855,89 @@ function initApp(){
   loadCostForm();
   loadCfgForm();
   refreshRates();
+}
+
+// ── BOX CALCULATOR ─────────────────────────────────────────
+function calcBox(){
+  const L=parseFloat(document.getElementById('bc-l').value)||0;
+  const A=parseFloat(document.getElementById('bc-a').value)||0;
+  const H=parseFloat(document.getElementById('bc-h').value)||0;
+  const W=parseFloat(document.getElementById('bc-w').value)||0;
+  const Q=parseFloat(document.getElementById('bc-q').value)||0;
+  const U=parseFloat(document.getElementById('bc-u').value)||0;
+
+  const res=document.getElementById('box-result');
+  if(!L||!A||!H||!Q){res.style.display='none';return;}
+  res.style.display='block';
+
+  const cbmUnit=(L*A*H)/1000000; // cm³ → m³
+  const cbmTot=cbmUnit*Q;
+  const wtTot=W>0?W*Q:0;
+  const unitsTot=U>0?U*Q:0;
+
+  setText('bc-r-unit',fmt4(cbmUnit));
+  setText('bc-r-cbm',fmt4(cbmTot));
+  setText('bc-r-cbmsub',Q?fmtN(Q)+' cartones':'-');
+  setText('bc-r-wt',W>0?fmt2(wtTot):'—');
+  setText('bc-r-wtsub',W>0?fmtN(Q)+' cartones × '+W+' kg':'Ingresa peso para calcular');
+  setText('bc-r-units',U>0?fmtN(unitsTot):'—');
+
+  const C20=33.1,W20=28280,C40=67.5,W40=26680;
+
+  function updBar(prefix,maxC,maxW){
+    const cpct=maxC>0?Math.min(100,cbmTot/maxC*100):0;
+    const wpct=(W>0&&maxW>0)?Math.min(100,wtTot/maxW*100):0;
+    const cov=cpct>100||wpct>100;
+    const b=n=>document.getElementById(prefix+n);
+    if(b('-cbar')){b('-cbar').style.width=Math.min(cpct,100)+'%';b('-cbar').className='cbar-fill'+(cpct>85?' warn':'');}
+    if(b('-wbar')){b('-wbar').style.width=Math.min(wpct,100)+'%';b('-wbar').className='cbar-fill'+(wpct>85?' warn':'');}
+    setText(prefix+'-cpct',fmt1(cpct)+'%');
+    if(W>0) setText(prefix+'-wpct',fmt1(wpct)+'%');
+    else setText(prefix+'-wpct','—');
+    const msg=b('-msg');
+    if(msg){
+      if(cpct>100||wpct>100){
+        msg.style.color='var(--red)';
+        const over=cpct>100?`CBM supera por ${fmt4(cbmTot-maxC)} m³`:wpct>100?`Peso supera por ${fmt2(wtTot-maxW)} kg`:'';
+        msg.textContent='✗ No cabe — '+over;
+      } else {
+        msg.style.color='var(--green)';
+        const libreC=fmt4(maxC-cbmTot);
+        const libreW=W>0?` · Peso libre: ${fmt2(maxW-wtTot)} kg`:'';
+        msg.textContent=`✓ Cabe · CBM libre: ${libreC} m³${libreW}`;
+      }
+    }
+  }
+
+  updBar('bc-20',C20,W20);
+  updBar('bc-40',C40,W40);
+
+  // Sugerencia de contenedor
+  const sug=document.getElementById('bc-suggest');
+  const fitIn20=cbmTot<=C20&&(W<=0||wtTot<=W20);
+  const fitIn40=cbmTot<=C40&&(W<=0||wtTot<=W40);
+  let sugHtml='';
+  if(!fitIn20&&!fitIn40){
+    const n20=Math.ceil(cbmTot/C20);
+    const n40=Math.ceil(cbmTot/C40);
+    sugHtml=`<div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:10px 12px;color:var(--red)">
+      <strong>✗ No cabe en un solo contenedor.</strong> Necesitarías aprox. <strong>${n20} × 20ft</strong> o <strong>${n40} × 40ft</strong> por CBM.
+    </div>`;
+  } else if(fitIn20){
+    const pct20=fmt1(cbmTot/C20*100);
+    const pct40=fmt1(cbmTot/C40*100);
+    sugHtml=`<div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:10px 12px">
+      <strong style="color:var(--green)">✓ Cabe en un 20ft</strong> — usa el <strong>${pct20}%</strong> del CBM · También cabe en 40ft usando el <strong>${pct40}%</strong>
+      ${cbmTot/C20<0.5?'<br><span style="color:var(--dim);font-size:11px">💡 Solo usas la mitad del 20ft — considera agregar más mercancía para optimizar el flete.</span>':''}
+    </div>`;
+  } else {
+    const pct40=fmt1(cbmTot/C40*100);
+    sugHtml=`<div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:10px 12px">
+      <strong style="color:var(--gold)">⚠ No cabe en 20ft pero sí en 40ft</strong> — usa el <strong>${pct40}%</strong> del CBM del 40ft.
+    </div>`;
+  }
+  sug.innerHTML=sugHtml;
+  sug.style.display='block';
 }
 
 // ── INIT ───────────────────────────────────────────────────
