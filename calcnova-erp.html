@@ -1868,7 +1868,7 @@ const UP_FIELDS=[
   {id:'cbm',      label:'Volumen M³ (total)',      req:false,
     pat:/^cbm$|^m3$|^m\.?3$|volum|cubic|^volume$|体积|total.?cbm/i},
   {id:'price',    label:'Precio ¥ / Unitario',     req:false,
-    pat:/unit.?price|price.?unit|^price$|^unit.?cost|costo.?unit|^cny$|^yuan$|^u\.?p\.?$|单价|^amount\/|^unit$/i},
+    pat:/unit.?price|price.?unit|^price$|^unit.?cost|costo.?unit|precio.?unit|^cny$|^yuan$|^rmb$|^u\.?p\.?$|单价|p\.?v\.?p/i},
   {id:'totalAmt', label:'Monto Total',             req:false,
     pat:/^amount$|^total$|total.?amount|amount.?total|^importe$|^subtotal$|金额|total.?price/i},
 ];
@@ -2070,8 +2070,12 @@ function doImportFile(){
   function getStr(row,col){return col>=0?String(row[col]||'').trim():'';}
   function getNum(row,col){
     if(col<0)return 0;
-    const raw=String(row[col]||'').replace(/[,$\s€£¥]/g,'');
-    return safeN(parseFloat(raw.replace(',','.')));
+    const s=String(row[col]||'').trim();
+    if(!s)return 0;
+    // Extract the first numeric-looking substring; handles "USD 25.00", "¥1,234", "CNY25.5"
+    const m=s.match(/[+-]?[\d]{1,3}(?:[,.][\d]{3})*(?:[.,]\d+)?|[+-]?\d+(?:[.,]\d+)?/);
+    if(!m)return 0;
+    return safeN(parseXlNum(m[0]));
   }
 
   const colCartons=gc('cartons'), colQpctn=gc('qtyPerCtn'), colTotalQty=gc('totalQty');
@@ -2131,7 +2135,7 @@ function doImportFile(){
   const warnings=[];
   if(noPrices)warnings.push(`${noPrices} sin precio`);
   toast(`✓ ${imported.length} productos importados${warnings.length?' · '+warnings.join(' · '):''}`,'ok');
-  showTab('productos');
+  nav('productos');
 }
 
 function closeUploadModal(){
