@@ -148,7 +148,45 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
 </style>
 </head>
 <body>
-<div class="app">
+
+<!-- ── LOGIN OVERLAY ─────────────────────────────────────── -->
+<div id="login-overlay" style="
+  position:fixed;inset:0;z-index:9999;
+  background:linear-gradient(135deg,#0a1628 0%,#0F172A 60%,#0a1e1a 100%);
+  display:flex;align-items:center;justify-content:center;padding:20px">
+  <div style="width:100%;max-width:380px;text-align:center">
+    <!-- Logo -->
+    <div style="display:inline-flex;align-items:center;justify-content:center;width:72px;height:72px;background:linear-gradient(135deg,#10B981,#3B82F6);border-radius:20px;font-size:36px;margin-bottom:24px;box-shadow:0 0 40px rgba(16,185,129,.3)">⚡</div>
+    <div style="font-size:26px;font-weight:800;color:#E2E8F0;margin-bottom:4px">CalcNova <span style="color:#10B981">Import</span></div>
+    <div style="font-size:13px;color:#64748B;margin-bottom:36px">Calculadora de Importación China → Colombia → Venezuela</div>
+
+    <!-- Input -->
+    <div style="position:relative;margin-bottom:14px">
+      <input id="login-input" type="password"
+        placeholder="Ingresa la clave de acceso"
+        autocomplete="current-password"
+        style="width:100%;padding:14px 48px 14px 16px;background:rgba(30,41,59,.9);border:1.5px solid rgba(148,163,184,.2);border-radius:12px;color:#E2E8F0;font-size:15px;font-family:inherit;outline:none;transition:border-color .2s;letter-spacing:.12em"
+        onfocus="this.style.borderColor='#10B981'"
+        onblur="this.style.borderColor='rgba(148,163,184,.2)'"
+        onkeydown="if(event.key==='Enter')doLogin()">
+      <button onclick="togglePwd()" id="pwd-eye"
+        style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:#64748B;font-size:18px;cursor:pointer;padding:4px;line-height:1"
+        title="Mostrar/ocultar">👁</button>
+    </div>
+    <div id="login-err" style="display:none;font-size:12px;color:#EF4444;margin-bottom:10px;padding:8px;background:rgba(239,68,68,.08);border-radius:8px;border:1px solid rgba(239,68,68,.2)">
+      ✗ Clave incorrecta. Inténtalo de nuevo.
+    </div>
+    <button onclick="doLogin()"
+      style="width:100%;padding:14px;background:linear-gradient(135deg,#10B981,#059669);border:none;border-radius:12px;color:#0F172A;font-size:15px;font-weight:700;cursor:pointer;transition:filter .15s;font-family:inherit"
+      onmouseover="this.style.filter='brightness(1.1)'"
+      onmouseout="this.style.filter='none'">
+      Entrar
+    </button>
+    <div style="margin-top:28px;font-size:11px;color:#334155">Sistema privado · Solo uso autorizado</div>
+  </div>
+</div>
+
+<div class="app" id="main-app" style="display:none">
 
 <header class="header">
   <div class="header-logo">
@@ -478,7 +516,7 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
 </section>
 
 </main>
-</div>
+</div><!-- /.main-app -->
 
 <div id="toast"></div>
 
@@ -1336,13 +1374,63 @@ function toast(msg,type='ok'){
   c.appendChild(d);setTimeout(()=>{try{c.removeChild(d);}catch(e){}},3500);
 }
 
+// ── AUTH ───────────────────────────────────────────────────
+const _PH='dabaf170d418ea588a92c7e4b7cadfc1bb81a62e2f9600c749296af5e02aa667'; // SHA-256
+
+async function _hash(s){
+  const b=new TextEncoder().encode(s);
+  const h=await crypto.subtle.digest('SHA-256',b);
+  return Array.from(new Uint8Array(h)).map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+
+function togglePwd(){
+  const i=document.getElementById('login-input');
+  i.type=i.type==='password'?'text':'password';
+}
+
+async function doLogin(){
+  const val=(document.getElementById('login-input').value||'').trim();
+  if(!val) return;
+  const h=await _hash(val);
+  if(h===_PH){
+    try{sessionStorage.setItem('cn_auth','1');}catch(e){}
+    document.getElementById('login-overlay').style.display='none';
+    document.getElementById('main-app').style.display='';
+    initApp();
+  } else {
+    const err=document.getElementById('login-err');
+    err.style.display='block';
+    const inp=document.getElementById('login-input');
+    inp.value='';inp.focus();
+    inp.style.borderColor='#EF4444';
+    setTimeout(()=>{inp.style.borderColor='rgba(148,163,184,.2)';},1200);
+  }
+}
+
+function initApp(){
+  prods=loadProds();
+  cfg=loadCfg();
+  renderProds();
+  loadCostForm();
+  loadCfgForm();
+  refreshRates();
+}
+
 // ── INIT ───────────────────────────────────────────────────
-prods=loadProds();
-cfg=loadCfg();
-renderProds();
-loadCostForm();
-loadCfgForm();
-refreshRates();
+(function(){
+  // If already authenticated this session, skip login
+  try{
+    if(sessionStorage.getItem('cn_auth')==='1'){
+      document.getElementById('login-overlay').style.display='none';
+      document.getElementById('main-app').style.display='';
+      initApp();
+      return;
+    }
+  }catch(e){}
+  // Show login, focus input
+  const inp=document.getElementById('login-input');
+  if(inp) setTimeout(()=>inp.focus(),100);
+})();
 </script>
 </body>
 </html>
