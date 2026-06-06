@@ -222,7 +222,7 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
     </div>
   </div>
   <div class="g4" style="margin-bottom:18px">
-    <div class="stat border-b"><div class="stat-label">Inversión Total USD</div><div class="stat-val tb" id="st-inv">$0</div><div class="stat-sub" id="st-inv2">Bs 0 equiv. BCV</div></div>
+    <div class="stat border-b"><div class="stat-label">Inversión Total USD</div><div class="stat-val tb" id="st-inv">$0</div><div class="stat-sub" id="st-inv2">0 productos</div></div>
     <div class="stat border-g"><div class="stat-label">Utilidad Estimada USD</div><div class="stat-val tg" id="st-util">$0</div><div class="stat-sub" id="st-util2">0% margen</div></div>
     <div class="stat border-o"><div class="stat-label">Productos / Unidades</div><div class="stat-val to" id="st-prods">0</div><div class="stat-sub" id="st-units">0 unidades</div></div>
     <div class="stat"><div class="stat-label">Mejor ROI</div><div class="stat-val" id="st-best" style="font-size:14px;color:var(--purple)">—</div><div class="stat-sub" id="st-best2">—</div></div>
@@ -384,7 +384,7 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
     <div class="card">
       <div class="tbl-wrap">
         <table>
-          <thead><tr><th>Ref</th><th>Producto</th><th>Marca</th><th>Ctns</th><th>Total Uds</th><th>Costo Unit. $</th><th>P. Mayor Bs</th><th>P. Detal Bs</th><th>Costo Total $</th><th>Ganancia $</th><th>Margen %</th><th>Recomendación</th><th></th></tr></thead>
+          <thead><tr><th>Ref</th><th>Producto</th><th>Marca</th><th>Ctns</th><th>Total Uds</th><th>Costo Unit. $</th><th>P. Mayor $</th><th>P. Detal $</th><th>Costo Total $</th><th>Ganancia $</th><th>Margen %</th><th>Recomendación</th><th></th></tr></thead>
           <tbody id="tbody-r"></tbody>
         </table>
       </div>
@@ -441,7 +441,6 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
         <div class="field"><label>% Ganancia Mayor</label><input class="inp" id="c-mw" type="number" min="0" placeholder="20"></div>
         <div class="field"><label>% Ganancia Detal</label><input class="inp" id="c-mr" type="number" min="0" placeholder="40"></div>
         <div class="field"><label>Distribución de Costos</label><select class="inp" id="c-dist"><option value="weight">Por Peso KG</option><option value="cbm">Por CBM</option><option value="value">Por Valor $</option><option value="equal">Igualitario</option></select></div>
-        <div class="field"><label>Tasa VES a usar</label><select class="inp" id="c-vrate"><option value="bcv">BCV Oficial</option><option value="paralelo">Paralelo (Binance)</option></select></div>
       </div>
     </div>
   </div>
@@ -643,7 +642,7 @@ function loadCfg(){
     portCOL:0,customsCOL:0,transportCOL:0,cucuta:0,cucutaSC:0,extraCOL:0,
     nationalizationBs:0,tariffVEN:0,transportVEN:0,operatingVEN:0,extraVEN:0,
     iva:16,marginWholesale:0,marginRetail:0,
-    distribution:'weight',port:'buenaventura',vesRate:'bcv',
+    distribution:'weight',port:'buenaventura',
     company:'',refresh:30
   };
   try{ const s=localStorage.getItem('cn_cfg'); return s?Object.assign({},def,JSON.parse(s)):def; }
@@ -872,7 +871,6 @@ function loadCostForm(){
   sv('c-iva',cfg.iva??16);sv('c-mw',cfg.marginWholesale);sv('c-mr',cfg.marginRetail);
   const p=document.getElementById('c-port');if(p)p.value=cfg.port||'buenaventura';
   const d=document.getElementById('c-dist');if(d)d.value=cfg.distribution||'weight';
-  const vr=document.getElementById('c-vrate');if(vr)vr.value=cfg.vesRate||'bcv';
 }
 
 function saveCosts(){
@@ -888,7 +886,6 @@ function saveCosts(){
   cfg.iva=g('c-iva');cfg.marginWholesale=g('c-mw');cfg.marginRetail=g('c-mr');
   cfg.port=document.getElementById('c-port')?.value||'buenaventura';
   cfg.distribution=document.getElementById('c-dist')?.value||'weight';
-  cfg.vesRate=document.getElementById('c-vrate')?.value||'bcv';
   saveCfg(cfg);toast('Costos guardados');
 }
 
@@ -903,7 +900,6 @@ function calcAll(){
   const yr=R.y||0;  // yuan per USD
   const cr=R.c||0;  // COP per USD
   const vr=R.v||0;   // BCV Bs/USD — nationalization only
-  const vesR=cfg.vesRate==='paralelo'?(R.p||R.v||0):(R.v||0);  // for selling prices
   if(yr<=0){
     const rs=document.getElementById('res-section');if(rs)rs.style.display='none';
     return null;
@@ -958,12 +954,8 @@ function calcAll(){
     const totalUSD=s5+ivaAmt;
     const unitUSD=qty>0?totalUSD/qty:0;
 
-    // Selling prices in Bs (unitUSD × selected rate × margin)
-    const unitBs=vesR>0?unitUSD*vesR:0;
-    const pMayorBs=unitBs*(1+(cfg.marginWholesale||0)/100);
-    const pDetalBs=unitBs*(1+(cfg.marginRetail||0)/100);
-
-    // Profit in USD
+    // Selling prices in USD with margin
+    const pMayorUSD=unitUSD*(1+(cfg.marginWholesale||0)/100);
     const pDetalUSD=unitUSD*(1+(cfg.marginRetail||0)/100);
     const gananciaUSD=(cfg.marginRetail||0)>0?(pDetalUSD*qty-totalUSD):0;
     const margen=totalUSD>0?(gananciaUSD/totalUSD*100):0;
@@ -972,7 +964,7 @@ function calcAll(){
     else if(margen>30)rec='IDEAL DETAL';
     else if(margen>10)rec='IDEAL MAYOR';
 
-    return {p,qty,totalUSD,unitUSD,unitBs,pMayorBs,pDetalBs,gananciaUSD,margen,rec,
+    return {p,qty,totalUSD,unitUSD,pMayorUSD,pDetalUSD,gananciaUSD,margen,rec,
       // detailed stages for breakdown modal:
       prodCNY,prodUSD,bankFee,s1,freightShare,insShare,portOShare,s2,
       colCOP_total,colCOP,colUSD,s3,natBs,natUSD,tariffUSD,s4,venCosts,s5,ivaAmt,
@@ -998,9 +990,9 @@ function renderResults(rs){
       <td style="font-size:12px;color:var(--dim)">${esc(r.p.brand||'—')}</td>
       <td class="tn" style="text-align:center">${r.cartons}</td>
       <td class="tn tg" style="font-weight:700;text-align:center">${fmtN(r.qty)}</td>
-      <td class="tn"><span style="font-weight:700">$${fmt2(r.unitUSD)}</span><div style="font-size:11px;color:var(--dim)">Bs ${fmtN(r.unitBs)}</div></td>
-      <td class="tn tg">${hasMW?'Bs '+fmtN(r.pMayorBs):'—'}</td>
-      <td class="tn tb">${hasMR?'Bs '+fmtN(r.pDetalBs):'—'}</td>
+      <td class="tn"><span style="font-weight:700">$${fmt2(r.unitUSD)}</span></td>
+      <td class="tn tg">${hasMW?'$'+fmt2(r.pMayorUSD):'—'}</td>
+      <td class="tn tb">${hasMR?'$'+fmt2(r.pDetalUSD):'—'}</td>
       <td class="tn">$${fmt2(r.totalUSD)}</td>
       <td class="tn ${r.gananciaUSD>0?'tg':'tr'}">${r.gananciaUSD>0?'$'+fmt2(r.gananciaUSD):'—'}</td>
       <td class="tn ${r.margen>15?'tg':r.margen>0?'to':'tr'}">${fmt1(r.margen)}%</td>
@@ -1095,17 +1087,14 @@ function showCalc(id){
       <div style="background:rgba(15,23,42,.5);border-radius:8px;padding:10px">
         <div style="color:var(--dim);font-size:11px;margin-bottom:4px">Costo unitario</div>
         <div style="font-weight:700;color:var(--text)">$${fmt2(r.unitUSD)}</div>
-        <div style="font-size:11px;color:var(--muted)">${r.unitBs>0?'Bs '+fmtN(r.unitBs):'sin tasa Bs'}</div>
       </div>
       ${hasMW?`<div style="background:rgba(15,23,42,.5);border-radius:8px;padding:10px">
         <div style="color:var(--dim);font-size:11px;margin-bottom:4px">Precio Mayor +${cfg.marginWholesale}%</div>
-        <div style="font-weight:700;color:var(--green)">Bs ${fmtN(r.pMayorBs)}</div>
-        <div style="font-size:11px;color:var(--muted)">$${fmt2(r.unitUSD*(1+cfg.marginWholesale/100))}</div>
+        <div style="font-weight:700;color:var(--green)">$${fmt2(r.pMayorUSD)}</div>
       </div>`:''}
       ${hasMR?`<div style="background:rgba(15,23,42,.5);border-radius:8px;padding:10px">
         <div style="color:var(--dim);font-size:11px;margin-bottom:4px">Precio Detal +${cfg.marginRetail}%</div>
-        <div style="font-weight:700;color:var(--blue)">Bs ${fmtN(r.pDetalBs)}</div>
-        <div style="font-size:11px;color:var(--muted)">$${fmt2(r.unitUSD*(1+cfg.marginRetail/100))}</div>
+        <div style="font-weight:700;color:var(--blue)">$${fmt2(r.pDetalUSD)}</div>
       </div>`:''}
       ${r.gananciaUSD>0?`<div style="background:rgba(15,23,42,.5);border-radius:8px;padding:10px">
         <div style="color:var(--dim);font-size:11px;margin-bottom:4px">Ganancia total</div>
@@ -1130,7 +1119,7 @@ function showCalc(id){
 function renderDash(){
   const rs=calcAll();
   if(!rs||!rs.length){
-    setText('st-inv','$0');setText('st-inv2','Bs 0 equiv. BCV');
+    setText('st-inv','$0');setText('st-inv2','0 productos');
     setText('st-util','$0');setText('st-util2','0%');
     setText('st-prods','0');setText('st-units','0 unidades');
     setText('st-best','—');setText('st-best2','—');
@@ -1143,12 +1132,11 @@ function renderDash(){
   const totUtilUSD=rs.reduce((s,r)=>s+(r.gananciaUSD>0?r.gananciaUSD:0),0);
   const totUnits=rs.reduce((s,r)=>s+r.qty,0);
   const totCtns=rs.reduce((s,r)=>s+r.cartons,0);
-  const vr=R.v||0;
   const best=rs.slice().sort((a,b)=>b.margen-a.margen)[0];
   const margPct=totInvUSD>0?(totUtilUSD/totInvUSD*100):0;
 
   setText('st-inv','$'+fmt2(totInvUSD));
-  setText('st-inv2',vr>0?'Bs '+fmtN(totInvUSD*vr)+' equiv. BCV':'Bs — (sin tasa BCV)');
+  setText('st-inv2',rs.length+' producto'+(rs.length!==1?'s':''));
   setText('st-util','$'+fmt2(totUtilUSD));
   setText('st-util2',fmt1(margPct)+'% margen');
   setText('st-prods',String(rs.length));setText('st-units',fmtN(totCtns)+' ctns · '+fmtN(totUnits)+' uds');
@@ -1159,7 +1147,7 @@ function renderDash(){
   if(dl) dl.innerHTML=rs.map(r=>`
     <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)">
       <div><div style="font-weight:600;font-size:13px">${esc(r.p.name||'—')}${r.p.brand?` <span style="font-size:11px;color:var(--muted);font-weight:400">${esc(r.p.brand)}</span>`:''}</div>
-      <div style="font-size:11px;color:var(--dim)">${r.cartons} ctns · ${fmtN(r.qty)} uds · $${fmt2(r.unitUSD)}/ud${r.unitBs>0?' · Bs '+fmtN(r.unitBs):''}</div></div>
+      <div style="font-size:11px;color:var(--dim)">${r.cartons} ctns · ${fmtN(r.qty)} uds · $${fmt2(r.unitUSD)}/ud</div></div>
       <div style="text-align:right"><div style="font-weight:700;color:var(--green);font-size:13px">$${fmt2(r.totalUSD)}</div><div style="font-size:11px;color:var(--dim)">${fmt1(r.margen)}% margen</div></div>
     </div>`).join('');
 
@@ -1279,16 +1267,15 @@ function exportPDF(){
         <td class="num gold">¥${fmtN(Math.round(r.prodCNY))}</td>
         <td class="num blue bold">$${fmt2(r.totalUSD)}</td>
         <td class="num">$${fmt2(r.unitUSD)}</td>
-        <td class="num">${r.unitBs>0?'Bs '+fmtN(Math.round(r.unitBs)):'—'}</td>
-        ${hasMW?`<td class="num green">${r.pMayorBs>0?'Bs '+fmtN(Math.round(r.pMayorBs)):'—'}</td>`:''}
-        ${hasMR?`<td class="num blue">${r.pDetalBs>0?'Bs '+fmtN(Math.round(r.pDetalBs)):'—'}</td>`:''}
+        ${hasMW?`<td class="num green">$${fmt2(r.pMayorUSD)}</td>`:''}
+        ${hasMR?`<td class="num blue">$${fmt2(r.pDetalUSD)}</td>`:''}
         ${hasMR?`<td class="num ${r.gananciaUSD>0?'green':'red'}">${r.gananciaUSD>0?'$'+fmt2(r.gananciaUSD):'—'}</td>`:''}
         <td class="num">${fmt1(r.margen)}%</td>
         <td><span class="badge ${rc}">${rs2}</span></td>
       </tr>`;
     }).join('');
 
-    const totColspan=10+(hasMW?1:0)+(hasMR?2:0);
+    const totColspan=9+(hasMW?1:0)+(hasMR?2:0);
     const totRow=`<tr class="total-row">
       <td colspan="3">TOTALES</td>
       <td class="num">${totCtns}</td>
@@ -1296,7 +1283,6 @@ function exportPDF(){
       <td class="num">—</td>
       <td class="num">¥${fmtN(Math.round(totCNY))}</td>
       <td class="num">$${fmt2(totInvUSD)}</td>
-      <td class="num">—</td>
       <td class="num">—</td>
       ${hasMW?'<td class="num">—</td>':''}
       ${hasMR?'<td class="num">—</td>':''}
@@ -1450,7 +1436,7 @@ table.cost td{padding:6px 10px;border-bottom:1px solid #f1f5f9}
     <div class="kpi-card blue">
       <div class="kpi-lbl">Inversión Total</div>
       <div class="kpi-val" style="color:#1d4ed8">$${fmt2(totInvUSD)}</div>
-      <div class="kpi-sub">${vr>0?'Bs '+fmtN(Math.round(totInvUSD*vr))+' equiv. BCV':rs.length+' productos'}</div>
+      <div class="kpi-sub">${rs.length} producto${rs.length!==1?'s':''}</div>
     </div>
     <div class="kpi-card green">
       <div class="kpi-lbl">Utilidad Estimada</div>
@@ -1474,8 +1460,7 @@ table.cost td{padding:6px 10px;border-bottom:1px solid #f1f5f9}
     <span class="rate-lbl">Tasas usadas:</span>
     <span class="rate-tag">Yuan: <strong>¥${fmt2(yr)} = $1</strong></span>
     ${cr>0?`<span class="rate-tag">COP: <strong>${fmtN(Math.round(cr))} = $1</strong></span>`:''}
-    ${vr>0?`<span class="rate-tag">BCV: <strong>Bs${fmt2(vr)} = $1</strong></span>`:''}
-    ${R.p&&R.p!==vr?`<span class="rate-tag">Paralelo: <strong>Bs${fmt2(R.p)} = $1</strong></span>`:''}
+    ${vr>0?`<span class="rate-tag">BCV (nac.): <strong>Bs${fmt2(vr)} = $1</strong></span>`:''}
     <span class="rate-tag" style="margin-left:auto">IVA: <strong>${cfg.iva??16}%</strong></span>
     ${hasMW?`<span class="rate-tag">Margen Mayor: <strong>${cfg.marginWholesale}%</strong></span>`:''}
     ${hasMR?`<span class="rate-tag">Margen Detal: <strong>${cfg.marginRetail}%</strong></span>`:''}
@@ -1488,9 +1473,9 @@ table.cost td{padding:6px 10px;border-bottom:1px solid #f1f5f9}
       <th>#</th><th>Referencia · Producto</th><th>Marca</th>
       <th class="num">Ctns</th><th class="num">Total Uds</th>
       <th class="num">Precio ¥/ud</th><th class="num">Total ¥</th>
-      <th class="num">Costo Total $</th><th class="num">Costo Unit $</th><th class="num">Costo Unit Bs</th>
-      ${hasMW?'<th class="num">P. Mayor Bs</th>':''}
-      ${hasMR?'<th class="num">P. Detal Bs</th>':''}
+      <th class="num">Costo Total $</th><th class="num">Costo Unit $</th>
+      ${hasMW?'<th class="num">P. Mayor $</th>':''}
+      ${hasMR?'<th class="num">P. Detal $</th>':''}
       ${hasMR?'<th class="num">Ganancia $</th>':''}
       <th class="num">Margen%</th><th>Estado</th>
     </tr></thead>
@@ -1573,8 +1558,8 @@ function exportCSV(){
     out+=`DETALLE DE PRODUCTOS\r\n`;
     const cols=['#','Referencia','Descripción / Producto','Marca','Cartones','Uds/Cartón','Total Uds',
       'Precio ¥/ud','Total ¥','Costo Total USD','Costo Unit USD','Costo Unit Bs'];
-    if(hasMW) cols.push('Precio Mayor Bs');
-    if(hasMR) cols.push('Precio Detal Bs','Ganancia USD');
+    if(hasMW) cols.push('Precio Mayor USD');
+    if(hasMR) cols.push('Precio Detal USD','Ganancia USD');
     cols.push('Margen %','Recomendación','Peso KG','Volumen M3');
     out+=cols.join('\t')+'\r\n';
 
@@ -1582,15 +1567,15 @@ function exportCSV(){
       const row=[i+1,T(r.p.ref||''),T(r.p.name||''),T(r.p.brand||''),
         r.cartons,r.p.qtyPerCtn||1,NI(r.qty),
         N(r.p.price||0),NI(r.prodCNY),
-        N(r.totalUSD),N(r.unitUSD),NI(r.unitBs)];
-      if(hasMW) row.push(NI(r.pMayorBs));
-      if(hasMR) row.push(NI(r.pDetalBs),N(r.gananciaUSD>0?r.gananciaUSD:0));
+        N(r.totalUSD),N(r.unitUSD)];
+      if(hasMW) row.push(N(r.pMayorUSD));
+      if(hasMR) row.push(N(r.pDetalUSD),N(r.gananciaUSD>0?r.gananciaUSD:0));
       row.push(fmt1(r.margen)+'%',T(r.rec),N(r.p.weight||0),N(r.p.cbm||0));
       out+=row.join('\t')+'\r\n';
     });
 
     // FILA TOTALES
-    const totRow=['','','TOTALES','',totCtns,'',NI(totUnits),'',NI(totCNY),N(totInvUSD),'',''];
+    const totRow=['','','TOTALES','',totCtns,'',NI(totUnits),'',NI(totCNY),N(totInvUSD),''];
     if(hasMW) totRow.push('');
     if(hasMR) totRow.push('',N(totUtilUSD));
     totRow.push(fmt1(margPct)+'%','','','');
@@ -1880,8 +1865,8 @@ function exportCotizacion(){
       <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:center;font-weight:800;color:#0F172A">${fmtN(r.qty)}</td>
       <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:right;color:#1d4ed8;font-weight:700">$${fmt2(r.unitUSD)}</td>
       <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:right;font-weight:700;color:#0F172A">$${fmt2(r.totalUSD)}</td>
-      ${hasMW?`<td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:right;color:#15803d;font-weight:700">${r.pMayorBs>0?'Bs '+fmtN(Math.round(r.pMayorBs)):'—'}</td>`:''}
-      ${hasMR?`<td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:right;color:#1d4ed8;font-weight:700">${r.pDetalBs>0?'Bs '+fmtN(Math.round(r.pDetalBs)):'—'}</td>`:''}
+      ${hasMW?`<td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:right;color:#15803d;font-weight:700">$${fmt2(r.pMayorUSD)}</td>`:''}
+      ${hasMR?`<td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:right;color:#1d4ed8;font-weight:700">$${fmt2(r.pDetalUSD)}</td>`:''}
     </tr>`).join('');
 
   const thStyle='padding:10px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:white;white-space:nowrap';
@@ -1961,8 +1946,8 @@ function exportCotizacion(){
           <th style="${thStyle};text-align:center">Uds</th>
           <th style="${thR}">Costo Unit $</th>
           <th style="${thR}">Total $</th>
-          ${hasMW?`<th style="${thR}">P. Mayor Bs</th>`:''}
-          ${hasMR?`<th style="${thR}">P. Detal Bs</th>`:''}
+          ${hasMW?`<th style="${thR}">P. Mayor $</th>`:''}
+          ${hasMR?`<th style="${thR}">P. Detal $</th>`:''}
         </tr>
       </thead>
       <tbody>${filas}</tbody>
