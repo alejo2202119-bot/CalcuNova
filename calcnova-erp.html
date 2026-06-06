@@ -1868,9 +1868,9 @@ const UP_FIELDS=[
   {id:'cbm',      label:'Volumen M³ (total)',      req:false,
     pat:/^cbm$|^m3$|^m\.?3$|volum|cubic|^volume$|体积|total.?cbm/i},
   {id:'price',    label:'Precio ¥ / Unitario',     req:false,
-    pat:/unit.?price|price.?unit|^price$|^unit.?cost|^precio$|precio.?unit|valor.?unit|^v\.?u\.?$|^costo.?unit|costo.?unit|^costo$|p[\.\s]?unit|^p\.?u\.?$|precio[\s¥]|^cny$|^yuan$|^rmb$|^u\.?p\.?$|单价|p\.?v\.?p|^¥$/i},
+    pat:/unit.?price|price.?unit|^price$|^unit.?cost|precio.*rmb|precio.*cny|precio.*yuan|precio.*¥|^precio$|precio.?unit|valor.?unit|^v\.?u\.?$|costo.?unit|^costo$|p[\.\s]?unit|^p\.?u\.?$|^cny$|^yuan$|^rmb$|^u\.?p\.?$|单价|p\.?v\.?p|^¥$/i},
   {id:'totalAmt', label:'Monto Total',             req:false,
-    pat:/^amount$|total.?amount|amount.?total|^importe$|^subtotal$|金额|total.?price|^total.?usd$|^total.?cny$|^total.?rmb$/i},
+    pat:/^amount$|^monto$|monto.?total|total.?amount|amount.?total|^importe$|^subtotal$|金额|total.?price|^total.?usd$|^total.?cny$|^total.?rmb$/i},
 ];
 
 // ── SMART HEADER DETECTION ─────────────────────────────────
@@ -1975,23 +1975,30 @@ function renderUploadPreview(){
   });
 
   // ── Fallback: detect price column from data values if not found by header ──
+  // Used when header name doesn't match any price pattern.
+  // Scores each unassigned column: currency-prefix (+4), has decimal (+2), reasonable numeric (+1).
+  // Columns with large round integers (qty) score low; columns with small decimals (prices) score high.
   const priceEl=document.getElementById('up-col-price');
   if(priceEl&&(priceEl.value===''||priceEl.value==='-1'||parseInt(priceEl.value)<0)){
     const _dr=rows.slice(hrow+1);
-    const sampleRows=_dr.slice(0,Math.min(10,_dr.length));
+    const sampleRows=_dr.slice(0,Math.min(12,_dr.length));
     let bestCol=-1, bestScore=0;
     const numCols=headers.length;
     for(let ci=0;ci<numCols;ci++){
       if(usedCols.has(ci))continue;
-      let yenCount=0, numCount=0;
+      let score=0;
       sampleRows.forEach(row=>{
         const v=String(row[ci]||'').trim();
-        if(/^[¥$€£]/.test(v))yenCount++;
-        if(/^[¥$€£]?[\d,\.]+$/.test(v)&&parseFloat(v.replace(/[^0-9.,]/g,''))>0)numCount++;
+        if(!v)return;
+        const hasCurrPrefix=/^[¥$€£]/.test(v);
+        const stripped=v.replace(/[^0-9.,]/g,'');
+        const n=parseFloat(stripped)||0;
+        if(n<=0)return;
+        if(hasCurrPrefix)score+=4;          // ¥5.29 → strong price signal
+        if(stripped.includes('.')&&n<5000)score+=2; // decimal AND reasonable range
+        else if(n>0&&n<5000)score+=1;       // plain number in range
       });
-      // Prefer columns where values start with ¥ or contain reasonable small positive numbers
-      const score=yenCount*3+numCount;
-      if(score>bestScore&&score>=3){bestScore=score;bestCol=ci;}
+      if(score>bestScore&&score>=4){bestScore=score;bestCol=ci;}
     }
     if(bestCol>=0){
       priceEl.value=String(bestCol);
