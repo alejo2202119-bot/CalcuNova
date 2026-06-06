@@ -1862,15 +1862,15 @@ const UP_FIELDS=[
   {id:'qtyPerCtn',label:'Uds por Cartón',         req:false,
     pat:/ud.*(ctn|cart|caja)|pcs.*(ctn|box)|unid.*ctn|pcs\/ctn|qty.*ctn|pcs\s*per|每箱|units.*box|q[/.]?ctn/i},
   {id:'totalQty', label:'Cantidad Total de Uds',  req:false,
-    pat:/^qty$|^quantity$|^cantidad$|^total.?(qty|uds?|units?|pcs)|^uds?$|^pcs?$|^units?$|^total.?quantity|数量/i},
+    pat:/^qty$|^quantity$|^cantidad$|^cant\.?$|^total.?(qty|uds?|units?|pcs)|^uds?$|^pcs?$|^units?$|^total.?quantity|^total.?cant|数量|^q\.?t\.?y\.?$/i},
   {id:'weight',   label:'Peso KG (total)',         req:false,
     pat:/^weight$|g\.?\s*w\.?$|n\.?\s*w\.?$|gross.?weight|net.?weight|^peso$|total.?weight|^kg$|kilo|毛重|净重/i},
   {id:'cbm',      label:'Volumen M³ (total)',      req:false,
     pat:/^cbm$|^m3$|^m\.?3$|volum|cubic|^volume$|体积|total.?cbm/i},
   {id:'price',    label:'Precio ¥ / Unitario',     req:false,
-    pat:/unit.?price|price.?unit|^price$|^unit.?cost|costo.?unit|precio.?unit|^cny$|^yuan$|^rmb$|^u\.?p\.?$|单价|p\.?v\.?p/i},
+    pat:/unit.?price|price.?unit|^price$|^unit.?cost|^precio$|precio.?unit|valor.?unit|^v\.?u\.?$|^costo.?unit|costo.?unit|^costo$|p[\.\s]?unit|^p\.?u\.?$|precio[\s¥]|^cny$|^yuan$|^rmb$|^u\.?p\.?$|单价|p\.?v\.?p|^¥$/i},
   {id:'totalAmt', label:'Monto Total',             req:false,
-    pat:/^amount$|^total$|total.?amount|amount.?total|^importe$|^subtotal$|金额|total.?price/i},
+    pat:/^amount$|total.?amount|amount.?total|^importe$|^subtotal$|金额|total.?price|^total.?usd$|^total.?cny$|^total.?rmb$/i},
 ];
 
 // ── SMART HEADER DETECTION ─────────────────────────────────
@@ -1973,6 +1973,30 @@ function renderUploadPreview(){
       if(el)el.value=String(best);
     }
   });
+
+  // ── Fallback: detect price column from data values if not found by header ──
+  const priceEl=document.getElementById('up-col-price');
+  if(priceEl&&(priceEl.value===''||priceEl.value==='-1'||parseInt(priceEl.value)<0)){
+    const sampleRows=dataRows.slice(0,Math.min(10,dataRows.length));
+    let bestCol=-1, bestScore=0;
+    const numCols=headers.length;
+    for(let ci=0;ci<numCols;ci++){
+      if(usedCols.has(ci))continue;
+      let yenCount=0, numCount=0;
+      sampleRows.forEach(row=>{
+        const v=String(row[ci]||'').trim();
+        if(/^[¥$€£]/.test(v))yenCount++;
+        if(/^[¥$€£]?[\d,\.]+$/.test(v)&&parseFloat(v.replace(/[^0-9.,]/g,''))>0)numCount++;
+      });
+      // Prefer columns where values start with ¥ or contain reasonable small positive numbers
+      const score=yenCount*3+numCount;
+      if(score>bestScore&&score>=3){bestScore=score;bestCol=ci;}
+    }
+    if(bestCol>=0){
+      priceEl.value=String(bestCol);
+      usedCols.add(bestCol);
+    }
+  }
 
   buildSmartSummary();
 }
