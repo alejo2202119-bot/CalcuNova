@@ -281,6 +281,15 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
     </div>
   </div>
 
+  <!-- Rate indicator bar -->
+  <div id="rate-indicator" style="display:flex;align-items:center;gap:12px;padding:8px 14px;background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2);border-radius:10px;margin-bottom:10px;font-size:12px;flex-wrap:wrap">
+    <span style="color:var(--green);font-weight:700">💱 Tasa activa:</span>
+    <span id="ri-yuan" style="color:var(--text)">¥/$ — (cargando...)</span>
+    <span style="color:var(--muted)">|</span>
+    <span style="color:var(--dim)">Los precios en ¥ se convierten automáticamente a $ al escribir</span>
+    <button class="btn btn-s btn-sm" style="margin-left:auto" onclick="refreshRates()">↻ Actualizar tasa</button>
+  </div>
+
   <div class="card" style="margin-bottom:16px">
     <div class="tbl-wrap">
       <table id="tbl-products">
@@ -293,8 +302,8 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
             <th>Cartones</th>
             <th>Uds/Ctn</th>
             <th style="color:var(--green)">Total Uds</th>
-            <th>Precio ¥</th>
-            <th>Precio $/ud</th>
+            <th>Precio ¥/ud</th>
+            <th style="color:var(--green)">➜ Precio $/ud</th>
             <th>Peso KG</th>
             <th>Volumen M3</th>
             <th>Total ¥</th>
@@ -564,7 +573,7 @@ async function refreshRates(){
   document.getElementById('manual-rates').style.display=allMissing?'block':'none';
   if(anyFail) toast('Algunas tasas desde caché','w');
   else toast('Tasas actualizadas');
-  calcAll();renderDash();
+  renderProds();calcAll();renderDash();
   if(refreshTimer) clearTimeout(refreshTimer);
   refreshTimer=setTimeout(refreshRates,Math.max(5,cfg.refresh||30)*60000);
 }
@@ -578,6 +587,16 @@ function updateHeaderR(){
   setText('hr-c',R.c?'COP '+fmtN(R.c):'COP —');
   setText('hr-b',R.v?'BCV '+fmt2(R.v):'BCV —');
   setText('hr-p',R.p?'PAR '+fmt2(R.p):'PAR —');
+  // Rate indicator in products table
+  const ri=document.getElementById('ri-yuan');
+  if(ri){
+    if(R.y>0){
+      const ts=new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
+      ri.innerHTML=`<strong style="color:var(--green)">¥${fmt2(R.y)} = $1 USD</strong> &nbsp;·&nbsp; <span style="color:var(--dim)">$1 = ¥${fmt2(1/R.y*1)}</span> &nbsp;·&nbsp; <span style="color:var(--muted)">actualizado ${ts}</span>`;
+    } else {
+      ri.textContent='¥/$ — (sin conexión — ingresa tasa manual)';
+    }
+  }
 }
 function updateDashR(){
   const ts=new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
@@ -589,7 +608,7 @@ function updateDashR(){
 function applyManual(){
   const y=pf('mr-y'),c=pf('mr-c'),b=pf('mr-b');
   if(y>0)R.y=y;if(c>0)R.c=c;if(b>0)R.v=b;
-  calcAll();renderDash();
+  renderProds();calcAll();renderDash();
 }
 
 // ── PRODUCTS ───────────────────────────────────────────────
@@ -623,7 +642,7 @@ function updRow(id){
   const td=c=>document.querySelector(`td[data-id="${id}"][data-c="${c}"]`);
   const eQ=td('qty'),ePU=td('pu'),eTC=td('tc');
   if(eQ)eQ.textContent=fmtN(qty);
-  if(ePU)ePU.textContent='$'+fmt2(pu);
+  if(ePU)ePU.innerHTML=R.y>0?'$'+fmt2(pu):'<span style="color:var(--muted)">sin tasa</span>';
   if(eTC)eTC.textContent='¥'+fmtN(tC);
   updTotals();
 }
@@ -650,7 +669,7 @@ function renderProds(){
       <td><input class="tdi tn" data-id="${p.id}" data-f="qtyPerCtn" type="number" min="1" value="${p.qtyPerCtn||1}" style="width:65px;text-align:right" title="Unidades por cartón" oninput="upd(${p.id},'qtyPerCtn',this.value)"></td>
       <td class="tn" data-id="${p.id}" data-c="qty" style="color:var(--green);font-weight:700;text-align:center">${fmtN(qty)}</td>
       <td><input class="tdi tn" data-id="${p.id}" data-f="price" type="number" min="0" step="0.01" value="${p.price||0}" style="width:85px;text-align:right" placeholder="¥0" oninput="upd(${p.id},'price',this.value)"></td>
-      <td class="tn" data-id="${p.id}" data-c="pu" style="color:var(--green)">$${fmt2(pu)}</td>
+      <td class="tn" data-id="${p.id}" data-c="pu" style="background:rgba(16,185,129,.07);border-left:2px solid rgba(16,185,129,.3);padding-left:10px;font-weight:700;color:var(--green);white-space:nowrap">${R.y>0?'$'+fmt2(pu):'<span style="color:var(--muted)">sin tasa</span>'}</td>
       <td><input class="tdi tn" data-id="${p.id}" data-f="weight" type="number" min="0" step="0.01" value="${p.weight||0}" style="width:75px;text-align:right" oninput="upd(${p.id},'weight',this.value)"></td>
       <td><input class="tdi tn" data-id="${p.id}" data-f="cbm" type="number" min="0" step="0.0001" value="${p.cbm||0}" style="width:75px;text-align:right" oninput="upd(${p.id},'cbm',this.value)"></td>
       <td class="tn to" data-id="${p.id}" data-c="tc">¥${fmtN(tC)}</td>
