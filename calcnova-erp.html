@@ -230,53 +230,72 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
 
   <!-- PASTE ZONE -->
   <div class="card" style="margin-bottom:14px;border-color:rgba(59,130,246,.25)">
-    <div class="card-header" style="margin-bottom:0;cursor:pointer" onclick="togglePasteZone(this)">
-      <div class="card-title"><span class="icon icon-b">📋</span>Pegar desde Excel <span style="font-size:11px;color:var(--dim);font-weight:400;margin-left:6px">— copia las celdas y pégalas aquí</span></div>
+    <div class="card-header" style="margin-bottom:0;cursor:pointer" onclick="togglePasteZone()">
+      <div class="card-title"><span class="icon icon-b">📋</span>Pegar desde Excel <span style="font-size:11px;color:var(--dim);font-weight:400;margin-left:6px">— 2 pasos: datos + precios por separado</span></div>
       <span id="paste-toggle-icon" style="color:var(--dim);font-size:18px">▼</span>
     </div>
-    <div id="paste-body" style="display:none;margin-top:14px">
-      <div style="padding:10px 12px;background:rgba(15,23,42,.6);border-radius:8px;margin-bottom:12px;font-size:12px">
-        <div style="font-weight:600;color:var(--blue);margin-bottom:8px">Orden exacto de columnas en tu Excel:</div>
-        <div style="overflow-x:auto">
-          <table style="width:100%;border-collapse:collapse;font-size:11px;font-family:monospace">
-            <tr style="background:rgba(59,130,246,.12)">
-              <td style="padding:5px 8px;border:1px solid rgba(59,130,246,.2);color:var(--blue);font-weight:700">Col 1</td>
-              <td style="padding:5px 8px;border:1px solid rgba(59,130,246,.2);color:var(--blue);font-weight:700">Col 2</td>
-              <td style="padding:5px 8px;border:1px solid rgba(59,130,246,.2);color:var(--blue);font-weight:700">Col 3</td>
-              <td style="padding:5px 8px;border:1px solid rgba(59,130,246,.2);color:var(--blue);font-weight:700">Col 4</td>
-              <td style="padding:5px 8px;border:1px solid rgba(59,130,246,.2);color:var(--blue);font-weight:700">Col 5</td>
-              <td style="padding:5px 8px;border:1px solid rgba(59,130,246,.2);color:var(--blue);font-weight:700">Col 6</td>
-              <td style="padding:5px 8px;border:1px solid rgba(59,130,246,.2);color:var(--blue);font-weight:700">Col 7</td>
-              <td style="padding:5px 8px;border:1px solid rgba(59,130,246,.2);color:var(--blue);font-weight:700">Col 8</td>
-              <td style="padding:5px 8px;border:1px solid rgba(59,130,246,.2);color:var(--blue);font-weight:700">Col 9</td>
-            </tr>
-            <tr style="color:var(--text)">
-              <td style="padding:5px 8px;border:1px solid rgba(148,163,184,.1)">Referencia</td>
-              <td style="padding:5px 8px;border:1px solid rgba(148,163,184,.1)">Descripción</td>
-              <td style="padding:5px 8px;border:1px solid rgba(148,163,184,.1)">Marca</td>
-              <td style="padding:5px 8px;border:1px solid rgba(148,163,184,.1)">Cartones</td>
-              <td style="padding:5px 8px;border:1px solid rgba(148,163,184,.1)">Uds/Cartón</td>
-              <td style="padding:5px 8px;border:1px solid rgba(148,163,184,.1);color:var(--muted)">Total Uds*</td>
-              <td style="padding:5px 8px;border:1px solid rgba(148,163,184,.1)">Peso KG</td>
-              <td style="padding:5px 8px;border:1px solid rgba(148,163,184,.1)">Volumen M3</td>
-              <td style="padding:5px 8px;border:1px solid rgba(148,163,184,.1);color:var(--gold)">Precio ¥</td>
-            </tr>
-          </table>
-        </div>
-        <div style="margin-top:7px;color:var(--muted)">* Col 6 (Total Uds) se ignora — se calcula automáticamente: Cartones × Uds/Cartón</div>
+    <div id="paste-body" style="display:none;margin-top:16px">
+
+      <!-- PASO 1: datos -->
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <div style="width:22px;height:22px;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0">1</div>
+        <div style="font-weight:600;font-size:13px">Datos del producto <span style="font-weight:400;color:var(--dim);font-size:12px">— sin precio, solo copia estas columnas</span></div>
       </div>
-      <textarea class="inp" id="paste-input" rows="8"
-        placeholder="Selecciona las celdas en Excel → Ctrl+C → clic aquí → Ctrl+V"
+      <div style="overflow-x:auto;margin-bottom:8px">
+        <table style="border-collapse:collapse;font-size:11px;font-family:monospace;white-space:nowrap">
+          <tr style="background:rgba(59,130,246,.12)">
+            <td style="padding:4px 10px;border:1px solid rgba(59,130,246,.2);color:var(--blue);font-weight:700">Col 1</td>
+            <td style="padding:4px 10px;border:1px solid rgba(59,130,246,.2);color:var(--blue);font-weight:700">Col 2</td>
+            <td style="padding:4px 10px;border:1px solid rgba(59,130,246,.2);color:var(--blue);font-weight:700">Col 3</td>
+            <td style="padding:4px 10px;border:1px solid rgba(59,130,246,.2);color:var(--blue);font-weight:700">Col 4</td>
+            <td style="padding:4px 10px;border:1px solid rgba(59,130,246,.2);color:var(--blue);font-weight:700">Col 5</td>
+            <td style="padding:4px 10px;border:1px solid rgba(59,130,246,.2);color:var(--muted);font-weight:700">Col 6 *</td>
+            <td style="padding:4px 10px;border:1px solid rgba(59,130,246,.2);color:var(--blue);font-weight:700">Col 7</td>
+            <td style="padding:4px 10px;border:1px solid rgba(59,130,246,.2);color:var(--blue);font-weight:700">Col 8</td>
+          </tr>
+          <tr style="color:var(--text)">
+            <td style="padding:4px 10px;border:1px solid rgba(148,163,184,.1)">Referencia</td>
+            <td style="padding:4px 10px;border:1px solid rgba(148,163,184,.1)">Descripción</td>
+            <td style="padding:4px 10px;border:1px solid rgba(148,163,184,.1)">Marca</td>
+            <td style="padding:4px 10px;border:1px solid rgba(148,163,184,.1)">Cartones</td>
+            <td style="padding:4px 10px;border:1px solid rgba(148,163,184,.1)">Uds/Cartón</td>
+            <td style="padding:4px 10px;border:1px solid rgba(148,163,184,.1);color:var(--muted)">Total Uds (ignorado)</td>
+            <td style="padding:4px 10px;border:1px solid rgba(148,163,184,.1)">Peso KG</td>
+            <td style="padding:4px 10px;border:1px solid rgba(148,163,184,.1)">Volumen M3</td>
+          </tr>
+        </table>
+      </div>
+      <textarea class="inp" id="paste-input" rows="7"
+        placeholder="Selecciona las 8 columnas en Excel → Ctrl+C → clic aquí → Ctrl+V"
         style="resize:vertical;font-family:monospace;font-size:12px;width:100%;line-height:1.7"
         onpaste="setTimeout(()=>previewPaste(),60)"></textarea>
-      <div id="paste-preview" style="display:none;margin:8px 0"></div>
-      <div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap">
+
+      <!-- PASO 2: precios -->
+      <div style="display:flex;align-items:center;gap:8px;margin:14px 0 8px">
+        <div style="width:22px;height:22px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#0F172A;flex-shrink:0">2</div>
+        <div style="font-weight:600;font-size:13px">Precios en Yuan ¥ <span style="font-weight:400;color:var(--dim);font-size:12px">— uno por línea, mismo orden que los productos</span></div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start">
+        <textarea class="inp" id="paste-prices" rows="7"
+          placeholder="25.50&#10;18.00&#10;42.00&#10;..."
+          style="resize:vertical;font-family:monospace;font-size:13px;width:130px;flex-shrink:0;line-height:1.7;text-align:right"
+          oninput="previewPaste()"></textarea>
+        <div style="flex:1;font-size:12px;color:var(--dim);padding-top:4px;line-height:1.8">
+          Pega aquí solo la columna de precios de tu lista de proveedores.<br>
+          Un precio por línea, en el mismo orden que los productos del Paso 1.<br>
+          <span style="color:var(--green)">✓ Se convierte a USD automáticamente con la tasa del día.</span>
+        </div>
+      </div>
+
+      <div id="paste-preview" style="display:none;margin:10px 0"></div>
+
+      <div style="display:flex;gap:8px;margin-top:12px;align-items:center;flex-wrap:wrap">
         <select class="inp" id="paste-mode" style="width:auto;flex-shrink:0">
           <option value="append">Agregar a los productos actuales</option>
           <option value="replace">Reemplazar todos los productos</option>
         </select>
-        <button class="btn btn-p" onclick="processPaste()">📋 Importar</button>
-        <button class="btn btn-s btn-sm" onclick="document.getElementById('paste-input').value='';document.getElementById('paste-preview').style.display='none'">✕ Limpiar</button>
+        <button class="btn btn-p" onclick="processPaste()">📋 Importar productos</button>
+        <button class="btn btn-s btn-sm" onclick="clearPaste()">✕ Limpiar</button>
       </div>
     </div>
   </div>
@@ -993,8 +1012,8 @@ function exportCSV(){
 }
 
 // ── PASTE FROM EXCEL ───────────────────────────────────────
-// Expected columns: Ref | Nombre | Marca | Cartones | Uds/Ctn | TotalUds* | Peso KG | Volumen M3 | Precio ¥
-// * Col 6 (TotalUds) is ignored — computed as Cartones × Uds/Ctn
+// Step 1: Ref | Nombre | Marca | Cartones | Uds/Ctn | TotalUds*(ignored) | Peso KG | Volumen M3
+// Step 2: Prices in ¥, one per line (separate textarea)
 
 function togglePasteZone(){
   const body=document.getElementById('paste-body');
@@ -1002,6 +1021,16 @@ function togglePasteZone(){
   const open=body.style.display==='none';
   body.style.display=open?'block':'none';
   if(icon)icon.textContent=open?'▲':'▼';
+}
+
+function clearPaste(){
+  const a=document.getElementById('paste-input'),b=document.getElementById('paste-prices'),p=document.getElementById('paste-preview');
+  if(a)a.value='';if(b)b.value='';if(p)p.style.display='none';
+}
+
+// Parse prices textarea: one number per line
+function parsePricesText(text){
+  return text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l).map(l=>parseXlNum(l)).filter(v=>v>0);
 }
 
 // Parse numbers: accepts European 1.234,56 and US 1,234.56 and plain 1234.56
@@ -1039,88 +1068,113 @@ function parsePasteText(text){
   for(const line of lines){
     if(!line.trim()){continue;}
     const cols=splitLine(line);
-    // Skip empty or header rows
     if(cols.every(c=>!c.trim())){skipped++;continue;}
     if(isHeaderRow(cols)){skipped++;continue;}
 
-    // Map columns positionally:
-    // [0]=Ref [1]=Nombre [2]=Marca [3]=Cartones [4]=Uds/Ctn [5]=TotalUds(skip) [6]=Peso [7]=Volumen [8]=Precio
-    const ref  =(cols[0]||'').trim();
-    const name =(cols[1]||cols[0]||'').trim();  // fallback: if only 1 text col, use it as name
-    const brand=(cols[2]||'').trim();
-    const cartons   =Math.max(1,parseXlNum(cols[3])||1);
-    const qtyPerCtn =Math.max(1,parseXlNum(cols[4])||1);
-    // col[5] = total units — skip (auto-calculated)
-    const weight=parseXlNum(cols[6]);
-    const cbm   =parseXlNum(cols[7]);
-    const price =parseXlNum(cols[8]);
+    let ref='',name='',brand='',cartons=1,qtyPerCtn=1,weight=0,cbm=0,price=0;
 
-    // If fewer columns (e.g. 5 cols without ref/brand) try to detect
-    if(cols.length<=6 && !cols[8]){
-      // Compact format without ref/brand: Nombre | Cartones | Uds/Ctn | Peso | CBM | Precio
-      const n2=(cols[0]||'').trim();
-      if(!n2){skipped++;continue;}
-      const c2=Math.max(1,parseXlNum(cols[1])||1);
-      const q2=Math.max(1,parseXlNum(cols[2])||1);
-      const w2=parseXlNum(cols[3]);
-      const v2=parseXlNum(cols[4]);
-      const p2=parseXlNum(cols[5]);
-      if(!n2){skipped++;continue;}
-      rows.push({id:Date.now()+Math.random()*9999,ref:'',name:n2,brand:'',cartons:c2,qtyPerCtn:q2,weight:w2,cbm:v2,price:p2});
-      continue;
+    if(cols.length>=8){
+      // Full 8-col format (without price) OR 9-col (with price):
+      // [0]=Ref [1]=Nombre [2]=Marca [3]=Cartones [4]=Uds/Ctn [5]=TotalUds* [6]=Peso [7]=Volumen [8]=Precio(optional)
+      ref   =(cols[0]||'').trim();
+      name  =(cols[1]||'').trim();
+      brand =(cols[2]||'').trim();
+      cartons   =Math.max(1,parseXlNum(cols[3])||1);
+      qtyPerCtn =Math.max(1,parseXlNum(cols[4])||1);
+      // cols[5] = total units → ignored
+      weight=parseXlNum(cols[6]);
+      cbm   =parseXlNum(cols[7]);
+      price =cols[8]?parseXlNum(cols[8]):0; // optional — can be set later from prices textarea
+    } else if(cols.length>=5){
+      // Compact: Nombre | Cartones | Uds/Ctn | Peso | Volumen [| Precio]
+      name      =(cols[0]||'').trim();
+      cartons   =Math.max(1,parseXlNum(cols[1])||1);
+      qtyPerCtn =Math.max(1,parseXlNum(cols[2])||1);
+      weight    =parseXlNum(cols[3]);
+      cbm       =parseXlNum(cols[4]);
+      price     =cols[5]?parseXlNum(cols[5]):0;
+    } else {
+      skipped++;continue;
     }
 
-    if(!name){skipped++;continue;}
+    if(!name&&!ref){skipped++;continue;}
+    if(!name) name=ref; // use ref as name if name is empty
     rows.push({id:Date.now()+Math.random()*9999,ref,name,brand,cartons,qtyPerCtn,weight,cbm,price});
   }
   return{rows,skipped};
 }
 
 function previewPaste(){
-  const text=document.getElementById('paste-input').value.trim();
+  const text=(document.getElementById('paste-input').value||'').trim();
+  const priceText=(document.getElementById('paste-prices').value||'').trim();
   const prev=document.getElementById('paste-preview');
+  if(!text&&!priceText){prev.style.display='none';return;}
   if(!text){prev.style.display='none';return;}
+
   const{rows,skipped}=parsePasteText(text);
   if(!rows.length){
     prev.style.display='block';
-    prev.innerHTML=`<div style="padding:8px 12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;font-size:12px;color:var(--red)">✗ No se detectaron datos válidos. Verifica el orden de columnas.</div>`;
+    prev.innerHTML=`<div style="padding:8px 12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;font-size:12px;color:var(--red)">✗ No se detectaron datos. Verifica que sean al menos 5 columnas.</div>`;
     return;
   }
-  const cols=['Ref','Nombre','Marca','Ctns','Uds/Ctn','Total Uds','Peso KG','Vol M3','Precio ¥'];
-  const rowsHtml=rows.slice(0,6).map(r=>`<tr>
-    <td style="padding:4px 8px;border-bottom:1px solid var(--border);color:var(--dim);font-size:11px">${esc(r.ref||'—')}</td>
-    <td style="padding:4px 8px;border-bottom:1px solid var(--border);font-weight:600">${esc(r.name)}</td>
-    <td style="padding:4px 8px;border-bottom:1px solid var(--border);color:var(--dim)">${esc(r.brand||'—')}</td>
-    <td style="padding:4px 8px;border-bottom:1px solid var(--border);text-align:right">${r.cartons}</td>
-    <td style="padding:4px 8px;border-bottom:1px solid var(--border);text-align:right">${r.qtyPerCtn}</td>
-    <td style="padding:4px 8px;border-bottom:1px solid var(--border);text-align:right;color:var(--green);font-weight:700">${r.cartons*r.qtyPerCtn}</td>
-    <td style="padding:4px 8px;border-bottom:1px solid var(--border);text-align:right">${r.weight}</td>
-    <td style="padding:4px 8px;border-bottom:1px solid var(--border);text-align:right">${r.cbm}</td>
-    <td style="padding:4px 8px;border-bottom:1px solid var(--border);text-align:right;color:var(--gold)">¥${r.price}</td>
-  </tr>`).join('');
-  const more=rows.length>6?`<div style="font-size:11px;color:var(--dim);margin-top:4px;padding:0 8px">... y ${rows.length-6} productos más</div>`:'';
+
+  // Merge prices from Paso 2 textarea
+  const prices=priceText?parsePricesText(priceText):[];
+  rows.forEach((r,i)=>{ if(prices[i]>0) r.price=prices[i]; });
+
+  const priceMissing=rows.some(r=>!r.price);
+
+  const rowsHtml=rows.slice(0,7).map((r,i)=>{
+    const priceCell=r.price>0
+      ?`<td style="padding:4px 8px;border-bottom:1px solid var(--border);text-align:right;color:var(--gold);font-weight:700">¥${r.price}</td>`
+      :`<td style="padding:4px 8px;border-bottom:1px solid var(--border);text-align:right;color:var(--red)">sin precio</td>`;
+    return `<tr>
+      <td style="padding:4px 8px;border-bottom:1px solid var(--border);color:var(--dim);font-size:11px">${esc(r.ref||'—')}</td>
+      <td style="padding:4px 8px;border-bottom:1px solid var(--border);font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.name)}</td>
+      <td style="padding:4px 8px;border-bottom:1px solid var(--border);color:var(--dim)">${esc(r.brand||'—')}</td>
+      <td style="padding:4px 8px;border-bottom:1px solid var(--border);text-align:right">${r.cartons}</td>
+      <td style="padding:4px 8px;border-bottom:1px solid var(--border);text-align:right">${r.qtyPerCtn}</td>
+      <td style="padding:4px 8px;border-bottom:1px solid var(--border);text-align:right;color:var(--green);font-weight:700">${r.cartons*r.qtyPerCtn}</td>
+      <td style="padding:4px 8px;border-bottom:1px solid var(--border);text-align:right">${r.weight}</td>
+      <td style="padding:4px 8px;border-bottom:1px solid var(--border);text-align:right">${r.cbm}</td>
+      ${priceCell}
+    </tr>`;
+  }).join('');
+  const more=rows.length>7?`<div style="font-size:11px;color:var(--dim);margin-top:4px">... y ${rows.length-7} más</div>`:'';
+
   prev.style.display='block';
   prev.innerHTML=`<div style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:12px;font-size:12px">
-    <div style="color:var(--green);font-weight:700;margin-bottom:10px;font-size:13px">✓ ${rows.length} productos detectados${skipped?` <span style="color:var(--muted);font-weight:400">· ${skipped} filas ignoradas</span>`:''}
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
+      <span style="color:var(--green);font-weight:700;font-size:13px">✓ ${rows.length} productos${skipped?` <span style="color:var(--muted);font-weight:400">· ${skipped} ignorados</span>`:''}</span>
+      ${priceMissing?`<span style="background:rgba(245,158,11,.15);color:var(--gold);padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">⚠ Faltan precios en Paso 2</span>`:'<span style="background:rgba(16,185,129,.15);color:var(--green);padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">✓ Precios listos</span>'}
     </div>
     <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px">
-      <thead><tr style="color:var(--dim)">${cols.map(h=>`<th style="padding:4px 8px;text-align:left;border-bottom:1px solid var(--border)">${h}</th>`).join('')}</tr></thead>
+      <thead><tr style="color:var(--dim)">${['Ref','Nombre','Marca','Ctns','Uds/Ctn','Total Uds','Peso KG','Vol M3','Precio ¥'].map(h=>`<th style="padding:4px 8px;text-align:left;border-bottom:1px solid var(--border)">${h}</th>`).join('')}</tr></thead>
       <tbody>${rowsHtml}</tbody>
     </table>${more}</div>
   </div>`;
 }
 
 function processPaste(){
-  const text=document.getElementById('paste-input').value.trim();
-  if(!text){toast('Pega los datos primero','err');return;}
+  const text=(document.getElementById('paste-input').value||'').trim();
+  const priceText=(document.getElementById('paste-prices').value||'').trim();
+  if(!text){toast('Pega los datos del Paso 1 primero','err');return;}
   const{rows,skipped}=parsePasteText(text);
   if(!rows.length){toast('No se encontraron datos válidos','err');return;}
+
+  // Apply prices from Paso 2
+  if(priceText){
+    const prices=parsePricesText(priceText);
+    rows.forEach((r,i)=>{ if(prices[i]>0) r.price=prices[i]; });
+  }
+
+  const noPrices=rows.filter(r=>!r.price).length;
   const mode=document.getElementById('paste-mode').value;
   prods=mode==='replace'?rows:[...prods,...rows];
   saveProds();renderProds();calcAll();renderDash();
-  document.getElementById('paste-input').value='';
-  document.getElementById('paste-preview').style.display='none';
-  toast(`${rows.length} productos importados${skipped?` · ${skipped} ignorados`:''}`);
+  clearPaste();
+  const warn=noPrices?` · ${noPrices} sin precio (edita en tabla)`:'';
+  toast(`${rows.length} productos importados${skipped?` · ${skipped} ignorados`:''}${warn}`,noPrices?'w':'ok');
 }
 
 // ── HELPERS ────────────────────────────────────────────────
