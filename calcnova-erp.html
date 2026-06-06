@@ -2120,24 +2120,31 @@ function doImportFile(){
     if(!name)return;
 
     // ── Quantity logic ─────────────────────────────────────
-    // Priority: (cartons × qtyPerCtn) > totalQty > 1
+    // When totalQty is present use it as the authoritative count.
+    // Never use Math.round: exact division prevents quantity errors.
     let cartons=getNum(row,colCartons);
     let qtyPerCtn=getNum(row,colQpctn);
     const totalQty=getNum(row,colTotalQty);
-    if(cartons<=0&&qtyPerCtn<=0&&totalQty>0){
-      cartons=1; qtyPerCtn=totalQty;          // total qty as single "lot"
-    } else if(cartons>0&&qtyPerCtn<=0&&totalQty>0){
-      qtyPerCtn=Math.round(totalQty/cartons)||1; // derive qtyPerCtn
-    } else if(cartons<=0&&qtyPerCtn>0&&totalQty>0){
-      cartons=Math.round(totalQty/qtyPerCtn)||1;
+    if(totalQty>0){
+      // totalQty is available → use it as-is; back-derive qtyPerCtn exactly
+      if(cartons>0&&qtyPerCtn<=0){
+        qtyPerCtn=totalQty/cartons;           // exact float, no rounding
+      } else if(cartons<=0&&qtyPerCtn>0){
+        cartons=totalQty/qtyPerCtn;
+      } else if(cartons<=0&&qtyPerCtn<=0){
+        cartons=1; qtyPerCtn=totalQty;
+      }
     }
     if(cartons<=0)cartons=1;
     if(qtyPerCtn<=0)qtyPerCtn=1;
-    if(cartons<=0||qtyPerCtn<=0)noQty++;
 
     // ── Price logic ────────────────────────────────────────
-    // Priority: unit price > total/qty
+    // Priority 1: unit price column  Priority 2: totalAmt ÷ totalQty
     let price=getNum(row,colPrice);
+    if(price<=0&&colTotalAmt>=0&&totalQty>0){
+      const tot=getNum(row,colTotalAmt);
+      if(tot>0)price=tot/totalQty;           // most accurate: monto÷cantidad
+    }
     if(price<=0&&colTotalAmt>=0){
       const tot=getNum(row,colTotalAmt);
       const qty2=cartons*qtyPerCtn;
