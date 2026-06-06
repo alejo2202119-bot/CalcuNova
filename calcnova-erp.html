@@ -228,6 +228,36 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
     </div>
   </div>
 
+  <!-- PASTE ZONE -->
+  <div class="card" style="margin-bottom:14px;border-color:rgba(59,130,246,.25)">
+    <div class="card-header" style="margin-bottom:0;cursor:pointer" onclick="togglePasteZone(this)">
+      <div class="card-title"><span class="icon icon-b">📋</span>Pegar desde Excel <span style="font-size:11px;color:var(--dim);font-weight:400;margin-left:6px">— copia celdas en Excel y pégalas aquí</span></div>
+      <span id="paste-toggle-icon" style="color:var(--dim);font-size:18px">▼</span>
+    </div>
+    <div id="paste-body" style="display:none;margin-top:14px">
+      <div style="padding:10px 12px;background:rgba(15,23,42,.6);border-radius:8px;margin-bottom:12px;font-size:12px;color:var(--dim)">
+        <div style="font-weight:600;color:var(--blue);margin-bottom:6px">Orden de columnas esperado:</div>
+        <div style="font-family:monospace;background:rgba(59,130,246,.08);padding:6px 10px;border-radius:6px;border:1px solid rgba(59,130,246,.15)">
+          Nombre &nbsp;│&nbsp; Cantidad &nbsp;│&nbsp; Precio ¥ &nbsp;│&nbsp; Peso KG &nbsp;│&nbsp; CBM &nbsp;│&nbsp; Categoría (opcional)
+        </div>
+        <div style="margin-top:6px">También acepta: solo Nombre, Cantidad y Precio ¥ — el resto queda en 0.</div>
+      </div>
+      <textarea class="inp" id="paste-input" rows="7"
+        placeholder="Selecciona las celdas en Excel → Ctrl+C → haz clic aquí → Ctrl+V"
+        style="resize:vertical;font-family:monospace;font-size:12px;width:100%;line-height:1.6"
+        onpaste="setTimeout(()=>previewPaste(),50)"></textarea>
+      <div id="paste-preview" style="display:none;margin:8px 0"></div>
+      <div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap">
+        <select class="inp" id="paste-mode" style="width:auto;flex-shrink:0">
+          <option value="append">Agregar a productos existentes</option>
+          <option value="replace">Reemplazar todos los productos</option>
+        </select>
+        <button class="btn btn-p" onclick="processPaste()">📋 Importar productos</button>
+        <button class="btn btn-s btn-sm" onclick="document.getElementById('paste-input').value='';document.getElementById('paste-preview').style.display='none'">✕ Limpiar</button>
+      </div>
+    </div>
+  </div>
+
   <div class="card" style="margin-bottom:16px">
     <div class="tbl-wrap">
       <table id="tbl-products">
@@ -881,6 +911,106 @@ function exportCSV(){
     dl(csv,'calcnova-export.csv','text/csv;charset=utf-8;');
     toast('Exportado como CSV');
   }catch(e){toast('Error exportar','err');}
+}
+
+// ── PASTE FROM EXCEL ───────────────────────────────────────
+function togglePasteZone(hdr){
+  const body=document.getElementById('paste-body');
+  const icon=document.getElementById('paste-toggle-icon');
+  const open=body.style.display==='none';
+  body.style.display=open?'block':'none';
+  if(icon)icon.textContent=open?'▲':'▼';
+}
+
+// Parses numbers accepting both European (1.234,56) and US (1,234.56) formats
+function parseXlNum(s){
+  if(s==null||s==='')return 0;
+  let n=String(s).trim().replace(/\s/g,'');
+  if(!n)return 0;
+  // Detect format by position of last comma vs last dot
+  const lc=n.lastIndexOf(','),ld=n.lastIndexOf('.');
+  if(lc>-1&&ld>-1){
+    if(lc>ld){n=n.replace(/\./g,'').replace(',','.');}  // European: 1.234,56
+    else{n=n.replace(/,/g,'');}                          // US: 1,234.56
+  }else if(lc>-1){
+    // Comma only — decimal if 1-2 digits after, else thousands
+    const after=n.substring(lc+1);
+    n=(after.length<=2)?n.replace(',','.'):n.replace(/,/g,'');
+  }
+  return parseFloat(n)||0;
+}
+
+// Detect if a row is a header row
+function isHeader(cols){
+  const headers=['nombre','name','producto','description','descripcion','qty','cant',
+                 'cantidad','price','precio','weight','peso','cbm','category','categoria'];
+  const first=(cols[0]||'').toLowerCase().trim();
+  return headers.some(h=>first.includes(h)||h.includes(first.slice(0,4)));
+}
+
+function parsePasteText(text){
+  const validCats=['general','electrónica','ropa','calzado','hogar','juguetes','alimentos','otros'];
+  const lines=text.split(/\r?\n/);
+  const rows=[]; let skipped=0;
+  for(const line of lines){
+    if(!line.trim()){continue;}
+    // Support both tab (Excel) and semicolon (CSV) separators
+    const sep=line.includes('\t')?'\t':line.includes(';')?';':null;
+    const cols=sep?line.split(sep):[line];
+    const name=(cols[0]||'').trim();
+    if(!name){skipped++;continue;}
+    if(isHeader(cols)){skipped++;continue;}
+    const qty=Math.max(1,parseXlNum(cols[1])||1);
+    const price=parseXlNum(cols[2]);
+    const weight=parseXlNum(cols[3]);
+    const cbm=parseXlNum(cols[4]);
+    let cat=(cols[5]||'').trim().toLowerCase();
+    if(!validCats.includes(cat))cat='general';
+    rows.push({id:Date.now()+Math.random()*1000,name,cat,qty,price,weight,cbm});
+  }
+  return{rows,skipped};
+}
+
+function previewPaste(){
+  const text=document.getElementById('paste-input').value.trim();
+  const prev=document.getElementById('paste-preview');
+  if(!text){prev.style.display='none';return;}
+  const{rows,skipped}=parsePasteText(text);
+  if(!rows.length){
+    prev.style.display='block';
+    prev.innerHTML=`<div style="padding:8px 12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;font-size:12px;color:var(--red)">✗ No se detectaron datos. Verifica que el formato sea: Nombre · Cantidad · Precio ¥ · Peso · CBM</div>`;
+    return;
+  }
+  // Show preview table
+  const rowsHtml=rows.slice(0,5).map(r=>`<tr>
+    <td style="padding:4px 8px;border-bottom:1px solid var(--border)">${esc(r.name)}</td>
+    <td style="padding:4px 8px;border-bottom:1px solid var(--border);text-align:right">${r.qty}</td>
+    <td style="padding:4px 8px;border-bottom:1px solid var(--border);text-align:right;color:var(--gold)">¥${r.price}</td>
+    <td style="padding:4px 8px;border-bottom:1px solid var(--border);text-align:right">${r.weight} KG</td>
+    <td style="padding:4px 8px;border-bottom:1px solid var(--border);text-align:right">${r.cbm}</td>
+  </tr>`).join('');
+  const more=rows.length>5?`<div style="font-size:11px;color:var(--dim);margin-top:4px">... y ${rows.length-5} más</div>`:'';
+  prev.style.display='block';
+  prev.innerHTML=`<div style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:10px;font-size:12px">
+    <div style="color:var(--green);font-weight:600;margin-bottom:8px">✓ ${rows.length} productos detectados${skipped?` · ${skipped} filas ignoradas`:''}</div>
+    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px">
+      <thead><tr style="color:var(--dim)">${['Nombre','Cant.','Precio ¥','Peso KG','CBM'].map(h=>`<th style="padding:3px 8px;text-align:left">${h}</th>`).join('')}</tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table></div>${more}
+  </div>`;
+}
+
+function processPaste(){
+  const text=document.getElementById('paste-input').value.trim();
+  if(!text){toast('Pega los datos primero','err');return;}
+  const{rows,skipped}=parsePasteText(text);
+  if(!rows.length){toast('No se encontraron datos válidos','err');return;}
+  const mode=document.getElementById('paste-mode').value;
+  prods=mode==='replace'?rows:[...prods,...rows];
+  saveProds();renderProds();calcAll();renderDash();
+  document.getElementById('paste-input').value='';
+  document.getElementById('paste-preview').style.display='none';
+  toast(`${rows.length} productos importados${skipped?` · ${skipped} ignorados`:''}`);
 }
 
 // ── HELPERS ────────────────────────────────────────────────
