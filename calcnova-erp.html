@@ -1986,13 +1986,13 @@ const UP_FIELDS=[
   {id:'brand',    label:'Marca / Fabricante',    req:false,
     pat:/marca|^brand$|fabricante|maker|manufacturer|品牌/i},
   {id:'cartons',  label:'Cartones / Cajas',       req:false,
-    pat:/^carton|^ctn$|^cajas?$|^box(es)?$|^pkgs?$|master.?(box|ctn|qty)|bulto|箱数|^cases$/i},
+    pat:/^cartons?$|^ctns?$|^cajas?$|^box(es)?$|^pkgs?$|^bultos?$|master.?(box|ctn|qty)|箱数|^cases$|num.?(of\s+)?ctns?|no\.?\s*ctns?|#\s*ctns?|\bctns?\s*(qty|total|num|#)/i},
   {id:'qtyPerCtn',label:'Uds por Cartón',         req:false,
-    pat:/ud.*(ctn|cart|caja)|pcs.*(ctn|box)|unid.*ctn|pcs\/ctn|qty.*ctn|pcs\s*per|每箱|units.*box|q[/.]?ctn/i},
+    pat:/ud.*(ctn|cart|caja)|pcs.*(ctn|box)|unid.*ctn|pcs\/ctns?|qty.*ctns?|pcs\s*per|每箱|units.*box|q[/.]?ctns?/i},
   {id:'totalQty', label:'Cantidad Total de Uds',  req:false,
     pat:/^qty$|^quantity$|^cantidad$|^cant\.?$|^total.?(qty|uds?|units?|pcs)|^uds?$|^pcs?$|^units?$|^total.?quantity|^total.?cant|数量|^q\.?t\.?y\.?$/i},
   {id:'weight',   label:'Peso KG (total)',         req:false,
-    pat:/^weight$|g\.?\s*w\.?$|n\.?\s*w\.?$|gross.?weight|net.?weight|^peso$|total.?weight|^kg$|kilo|毛重|净重/i},
+    pat:/^weight\b|g\.?\s*w\.?\b|n\.?\s*w\.?\b|gross.?weight|net.?weight|^peso\b|total.?weight|total\s+kg|^kg$|kilo|毛重|净重/i},
   {id:'cbm',      label:'Volumen M³ (total)',      req:false,
     pat:/^cbm$|^m3$|^m\.?3$|volum|cubic|^volume$|体积|total.?cbm/i},
   {id:'price',    label:'Precio ¥ / Unitario',     req:false,
@@ -2372,7 +2372,7 @@ function doImportFile(){
   const mode=document.getElementById('up-mode').value;
   if(mode==='replace')prods=imported;
   else prods=[...prods,...imported];
-  saveProds();renderProds();calcAll();renderDash();
+  saveProds();renderProds();calcAll();renderDash();renderSim();
   closeUploadModal();
   const warnings=[];
   if(noPrices)warnings.push(`${noPrices} sin precio`);
@@ -2527,7 +2527,7 @@ function processPaste(){
   const noPrices=rows.filter(r=>!r.price).length;
   const mode=document.getElementById('paste-mode').value;
   prods=mode==='replace'?rows:[...prods,...rows];
-  saveProds();renderProds();calcAll();renderDash();
+  saveProds();renderProds();calcAll();renderDash();renderSim();
   clearPaste();
   const warn=noPrices?` · ${noPrices} sin precio (edita en tabla)`:'';
   toast(`${rows.length} productos importados${skipped?` · ${skipped} ignorados`:''}${warn}`,noPrices?'w':'ok');
