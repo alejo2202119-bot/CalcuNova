@@ -576,12 +576,16 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
       <div style="font-size:11px;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.07em">Tasa CNY → USD</div>
       <div id="factura-rate-display" style="font-size:16px;font-weight:800;color:var(--gold)">Cargando...</div>
       <div id="factura-rate-time" style="font-size:10px;color:var(--muted)"></div>
+      <div id="factura-rate-source" style="font-size:10px;color:var(--muted)"></div>
     </div>
     <button class="btn btn-s btn-sm" onclick="fetchFacturaRate(true)" style="margin-left:4px">↻ Actualizar</button>
     <div style="display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap">
-      <span style="font-size:12px;color:var(--dim)">Tasa manual:</span>
+      <select id="factura-rate-hist" class="inp" style="width:auto;font-size:11px;max-width:200px" onchange="applyRateFromHistory(this.value)" title="Historial de tasas (últimas 10)">
+        <option value="">📜 Historial…</option>
+      </select>
+      <span style="font-size:12px;color:var(--dim)">Manual:</span>
       <input id="factura-rate-manual" class="inp" type="number" step="0.0001" min="0" placeholder="0.1377"
-        style="width:100px;font-size:12px" oninput="applyFacturaRateManual()" title="1 CNY = ? USD">
+        style="width:90px;font-size:12px" oninput="applyFacturaRateManual()" title="1 CNY = ? USD">
     </div>
   </div>
 
@@ -602,10 +606,27 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
       <input id="factura-file-inp" type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="facturaHandleFile(this.files[0])">
     </div>
 
-    <!-- Mapeo manual de columnas (se muestra si auto-detección falla) -->
-    <div id="factura-colmap-wrap" style="display:none;margin-top:14px;padding:14px;background:rgba(15,23,42,.4);border-radius:10px;border:1px solid rgba(245,158,11,.2)">
-      <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:10px">⚠ No se detectaron columnas automáticamente — asígnalas manualmente:</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px">
+    <!-- Selector de hoja + fila encabezados + preview -->
+    <div id="factura-sheet-bar" style="display:none;margin-top:14px;align-items:flex-end;gap:12px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:10px;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Hoja</div>
+        <select id="fc-sheet" class="inp" style="font-size:12px;min-width:150px" onchange="facturaSwitchSheet(this.value)"></select>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Fila de encabezados</div>
+        <input id="fc-hrow" type="number" class="inp" min="1" value="1" style="width:80px;font-size:12px" oninput="facturaRefreshHeader()">
+      </div>
+      <div id="fc-file-info" style="font-size:11px;color:var(--dim);padding-bottom:9px"></div>
+    </div>
+    <div id="factura-preview-wrap" style="display:none;margin-top:10px">
+      <div style="font-size:10px;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Vista previa (primeras filas)</div>
+      <div id="factura-preview" style="overflow-x:auto;max-height:190px;overflow-y:auto;background:rgba(15,23,42,.5);border:1px solid rgba(148,163,184,.1);border-radius:10px;padding:4px"></div>
+    </div>
+
+    <!-- Mapeo de columnas — siempre visible cuando hay archivo -->
+    <div id="factura-colmap-wrap" style="display:none;margin-top:14px;padding:14px;background:rgba(15,23,42,.4);border-radius:10px;border:1px solid rgba(148,163,184,.15)">
+      <div id="factura-colmap-msg" style="font-size:12px;font-weight:700;color:var(--dim);margin-bottom:10px">Mapeo de columnas <span style="color:var(--green);font-weight:400">← detectadas automáticamente, ajusta si es necesario</span></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px">
         <div class="field">
           <label>Descripción / Nombre</label>
           <select id="fc-col-desc" class="inp" style="font-size:12px" onchange="facturaApplyManualCols()"><option value="">—</option></select>
@@ -615,16 +636,23 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
           <select id="fc-col-qty" class="inp" style="font-size:12px" onchange="facturaApplyManualCols()"><option value="">—</option></select>
         </div>
         <div class="field">
-          <label>Precio unitario CNY</label>
+          <label>Precio unitario</label>
           <select id="fc-col-price" class="inp" style="font-size:12px" onchange="facturaApplyManualCols()"><option value="">—</option></select>
         </div>
         <div class="field">
-          <label>Subtotal CNY (opcional)</label>
+          <label>Subtotal (opcional)</label>
           <select id="fc-col-sub" class="inp" style="font-size:12px" onchange="facturaApplyManualCols()"><option value="">—</option></select>
+        </div>
+        <div class="field">
+          <label>Moneda (opcional)</label>
+          <select id="fc-col-cur" class="inp" style="font-size:12px" onchange="facturaApplyManualCols()"><option value="">— asumir CNY</option></select>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- Reporte de validación / auditoría -->
+  <div id="factura-validation" style="display:none;margin-bottom:16px"></div>
 
   <!-- Tabla de resultados -->
   <div class="card" id="factura-results-card" style="display:none">
@@ -820,9 +848,14 @@ let simRows = [];
 let _simRowId = 0;
 
 // Factura China state
-let _facturaRows = [];   // parsed rows [{desc,qty,priceCNY,subCNY}]
-let _facturaHeaders = [];// column headers from file
-let _facturaRawData = [];// raw array-of-arrays from SheetJS
+let _facturaRows = [];   // parsed rows [{desc,qty,curr,unitVal,subVal}]
+let _facturaHeaders = [];// column headers from active sheet
+let _facturaRawData = [];// data rows (array-of-arrays) below header
+let _facturaWB = null;   // full SheetJS workbook (multi-sheet)
+let _facturaRawAll = []; // full array-of-arrays of current sheet (incl. header zone)
+let _facturaCurSheet = '';
+let _facturaReport = null;// last validation report
+let _facturaRateSource = '';
 window.tasaCNY_USD = null;
 
 // ── STORAGE ────────────────────────────────────────────────
@@ -2968,46 +3001,87 @@ async function exportSimExcel(){
 // ── FACTURA CHINA ───────────────────────────────────────────
 
 function initFactura(){
+  _renderRateHistDropdown();
   fetchFacturaRate(false);
+}
+
+// ── Rate history (last 10, localStorage) ──
+function _loadRateHist(){
+  try{ const s=localStorage.getItem('cn_rate_hist'); return s?JSON.parse(s):[]; }catch(e){ return []; }
+}
+function _saveRateToHist(tasa, source){
+  if(!(tasa>0)) return;
+  let h = _loadRateHist();
+  const key = fmt4(tasa)+'|'+source;
+  h = h.filter(x=>(fmt4(x.tasa)+'|'+x.source)!==key);
+  h.unshift({tasa, source, ts:Date.now()});
+  h = h.slice(0,10);
+  try{ localStorage.setItem('cn_rate_hist', JSON.stringify(h)); }catch(e){}
+  _renderRateHistDropdown();
+}
+function _renderRateHistDropdown(){
+  const sel = document.getElementById('factura-rate-hist');
+  if(!sel) return;
+  const h = _loadRateHist();
+  const fmtTs = ts => new Date(ts).toLocaleString('es',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+  sel.innerHTML = '<option value="">📜 Historial ('+h.length+')…</option>' +
+    h.map((x,i)=>`<option value="${i}">${fmt4(x.tasa)} · ${esc(x.source)} · ${fmtTs(x.ts)}</option>`).join('');
+}
+function applyRateFromHistory(idx){
+  if(idx==='') return;
+  const h = _loadRateHist();
+  const item = h[parseInt(idx)];
+  if(!item) return;
+  window.tasaCNY_USD = item.tasa;
+  _facturaRateSource = item.source+' (historial)';
+  _updateRateDisplay(item.tasa, 'Tasa del historial', _facturaRateSource);
+  _facturaRerender();
+}
+
+function _updateRateDisplay(tasa, timeMsg, sourceMsg){
+  const disp = document.getElementById('factura-rate-display');
+  const timeEl = document.getElementById('factura-rate-time');
+  const srcEl = document.getElementById('factura-rate-source');
+  if(disp) disp.textContent = '1 CNY = ' + fmt4(tasa) + ' USD   (¥' + fmt2(1/tasa) + ' = $1)';
+  if(timeEl) timeEl.textContent = timeMsg||'';
+  if(srcEl) srcEl.textContent = sourceMsg?('Fuente: '+sourceMsg):'';
 }
 
 async function fetchFacturaRate(forceRefresh){
   const disp = document.getElementById('factura-rate-display');
-  const timeEl = document.getElementById('factura-rate-time');
   if(!disp) return;
 
-  // Use cached R.y if available and not forcing refresh
+  // Use cached system rate (R.y) if available and not forcing refresh
   if(!forceRefresh && R.y && R.y > 0){
     window.tasaCNY_USD = 1 / R.y;
-    disp.textContent = '1 CNY = ' + fmt4(window.tasaCNY_USD) + ' USD  (¥' + fmt2(R.y) + ' = $1)';
-    if(timeEl) timeEl.textContent = 'Usando tasa del sistema';
+    _facturaRateSource = 'tasa del sistema';
+    _updateRateDisplay(window.tasaCNY_USD, 'Usando tasa del sistema', _facturaRateSource);
     _facturaRerender();
     return;
   }
 
   disp.textContent = 'Obteniendo tasa...';
-  if(timeEl) timeEl.textContent = '';
 
   try{
     const data = await jf('https://api.exchangerate-api.com/v4/latest/CNY', 7000);
     if(!data.rates || !data.rates.USD) throw new Error('Sin dato USD');
     const tasa = data.rates.USD; // 1 CNY = X USD
     window.tasaCNY_USD = tasa;
+    _facturaRateSource = 'exchangerate-api.com';
     const ts = new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
-    disp.textContent = '1 CNY = ' + fmt4(tasa) + ' USD  (¥' + fmt2(1/tasa) + ' = $1)';
-    if(timeEl) timeEl.textContent = 'Actualizado ' + ts;
-    // sync to global R
+    _updateRateDisplay(tasa, 'Actualizado '+ts, _facturaRateSource);
+    _saveRateToHist(tasa, _facturaRateSource);
     if(!R.y) R.y = 1/tasa;
     _facturaRerender();
   }catch(e){
-    // fallback to global R
     if(R.y && R.y > 0){
       window.tasaCNY_USD = 1 / R.y;
-      disp.textContent = '1 CNY = ' + fmt4(window.tasaCNY_USD) + ' USD  (caché)';
-      if(timeEl) timeEl.textContent = 'Error al actualizar — usando tasa del sistema';
+      _facturaRateSource = 'tasa del sistema (caché)';
+      _updateRateDisplay(window.tasaCNY_USD, 'Error de red — usando tasa del sistema', _facturaRateSource);
     } else {
-      disp.textContent = 'Sin conexión — ingresa tasa manual';
-      if(timeEl) timeEl.textContent = '';
+      disp.textContent = 'Sin conexión — ingresa tasa manual abajo';
+      setText('factura-rate-time','');
+      setText('factura-rate-source','');
     }
     _facturaRerender();
   }
@@ -3017,12 +3091,14 @@ function applyFacturaRateManual(){
   const v = parseFloat(document.getElementById('factura-rate-manual')?.value) || 0;
   if(v > 0){
     window.tasaCNY_USD = v;
-    const disp = document.getElementById('factura-rate-display');
-    if(disp) disp.textContent = '1 CNY = ' + fmt4(v) + ' USD  (manual)';
+    _facturaRateSource = 'manual';
+    _updateRateDisplay(v, 'Tasa ingresada manualmente', _facturaRateSource);
+    _saveRateToHist(v, 'manual');
     _facturaRerender();
   }
 }
 
+// ── File handling ──
 function facturaHandleDrop(e){
   e.preventDefault();
   const dz = document.getElementById('factura-dropzone');
@@ -3033,6 +3109,11 @@ function facturaHandleDrop(e){
 
 function facturaHandleFile(file){
   if(!file) return;
+  // validate extension
+  if(!/\.(xlsx|xlsm|xls|csv)$/i.test(file.name)){
+    toast('Formato no válido. Usa .xlsx, .xls o .csv','err');
+    return;
+  }
   facturaParseFile(file);
 }
 
@@ -3041,171 +3122,319 @@ async function facturaParseFile(file){
     await ensureXlsx();
     const buf = await file.arrayBuffer();
     const wb = XLSX.read(buf, {type:'array', cellDates:true, raw:false});
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const raw = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+    if(!wb.SheetNames || !wb.SheetNames.length){ toast('El archivo no contiene hojas','err'); return; }
+    _facturaWB = wb;
 
-    if(!raw || raw.length < 2){
-      toast('Archivo vacío o sin datos suficientes','err');
-      return;
-    }
+    // populate sheet selector
+    const sel = document.getElementById('fc-sheet');
+    if(sel) sel.innerHTML = wb.SheetNames.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
+    document.getElementById('factura-sheet-bar').style.display='flex';
 
-    // find header row (first row with ≥3 non-empty cells)
-    let hrow = 0;
-    for(let i=0;i<Math.min(10,raw.length);i++){
-      const nonEmpty = raw[i].filter(c=>String(c||'').trim().length>0).length;
-      if(nonEmpty >= 3){ hrow = i; break; }
-    }
-
-    _facturaHeaders = raw[hrow].map(h=>String(h||'').trim());
-    _facturaRawData = raw.slice(hrow+1).filter(r=>r.some(c=>String(c||'').trim().length>0));
-
-    // populate manual column selectors
-    const opts = '<option value="">—</option>' + _facturaHeaders.map((h,i)=>`<option value="${i}">${esc(h||'Col '+(i+1))}</option>`).join('');
-    ['fc-col-desc','fc-col-qty','fc-col-price','fc-col-sub'].forEach(id=>{
-      const el = document.getElementById(id);
-      if(el){ el.innerHTML = opts; el.value = ''; }
-    });
-
-    // auto-detect columns
-    const cols = _facturaAutoDetect(_facturaHeaders);
-    const allDetected = cols.desc>=0 && cols.qty>=0 && cols.price>=0;
-
-    if(allDetected){
-      // set selectors
-      const fc=(id,v)=>{const el=document.getElementById(id);if(el&&v>=0)el.value=String(v);};
-      fc('fc-col-desc',cols.desc);fc('fc-col-qty',cols.qty);fc('fc-col-price',cols.price);
-      if(cols.sub>=0) fc('fc-col-sub',cols.sub);
-      document.getElementById('factura-colmap-wrap').style.display='none';
-      _facturaProcess(cols);
-    } else {
-      document.getElementById('factura-colmap-wrap').style.display='block';
-      toast('No se detectaron columnas — asígnalas manualmente','w');
-    }
+    setText('fc-file-info', file.name + ' · ' + wb.SheetNames.length + ' hoja' + (wb.SheetNames.length!==1?'s':''));
+    _facturaLoadSheet(wb.SheetNames[0], null);
   }catch(err){
     toast('Error leyendo archivo: '+err.message,'err');
   }
 }
 
-function _facturaAutoDetect(headers){
-  const cols = {desc:-1, qty:-1, price:-1, sub:-1};
-  const PAT_DESC  = /descripci[oó]n|description|nombre|product|item|detalle|articulo|名称|品名|商品/i;
-  const PAT_QTY   = /^cant(idad)?$|^qty$|^quantity$|^pcs$|^units?$|^uds?$|^pieces?$|数量/i;
-  const PAT_PRICE = /precio.?unit|unit.?price|p\.?u\.?|p\.?unit|price.?cny|单价|unit.?cny|¥.?unit|precio.?¥|prec.*yuan|prec.*rmb|costo.?unit/i;
-  const PAT_SUB   = /^subtotal$|sub.?total|total.?cny|^importe$|^monto$|金额|^total$|total.?amount/i;
+function facturaSwitchSheet(name){
+  _facturaLoadSheet(name, null);
+}
+function facturaRefreshHeader(){
+  const hr = parseInt(document.getElementById('fc-hrow')?.value)||1;
+  _facturaLoadSheet(_facturaCurSheet, hr-1);
+}
 
+function _facturaFindHeader(aoa){
+  for(let i=0;i<Math.min(12,aoa.length);i++){
+    const nonEmpty = aoa[i].filter(c=>String(c||'').trim().length>0).length;
+    if(nonEmpty >= 3) return i;
+  }
+  return 0;
+}
+
+function _facturaLoadSheet(name, hrowOverride){
+  if(!_facturaWB) return;
+  const ws = _facturaWB.Sheets[name];
+  if(!ws){ toast('Hoja no encontrada','err'); return; }
+  _facturaCurSheet = name;
+
+  const aoa = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+  _facturaRawAll = aoa;
+  if(!aoa.length){
+    toast('La hoja "'+name+'" está vacía','err');
+    _facturaRows=[]; facturaRender([], window.tasaCNY_USD);
+    document.getElementById('factura-preview-wrap').style.display='none';
+    return;
+  }
+
+  let hrow = (hrowOverride!=null) ? hrowOverride : _facturaFindHeader(aoa);
+  hrow = Math.max(0, Math.min(hrow, aoa.length-1));
+  const hrEl = document.getElementById('fc-hrow'); if(hrEl) hrEl.value = hrow+1;
+
+  _facturaHeaders = (aoa[hrow]||[]).map(h=>String(h||'').trim());
+  _facturaRawData = aoa.slice(hrow+1).filter(r=>r.some(c=>String(c||'').trim().length>0));
+
+  _facturaPopulateColSelectors();
+  facturaRenderPreview(hrow);
+
+  // auto-detect + show mapping
+  const cols = _facturaAutoDetect(_facturaHeaders);
+  _facturaSetColSelectors(cols);
+  document.getElementById('factura-colmap-wrap').style.display='block';
+
+  if(cols.desc>=0 && cols.price>=0){
+    _facturaProcess(cols);
+  } else {
+    setText('factura-colmap-msg','⚠ No se detectaron todas las columnas — asígnalas manualmente:');
+    document.getElementById('factura-colmap-msg').style.color='var(--gold)';
+    toast('Revisa el mapeo de columnas','w');
+  }
+}
+
+function _facturaPopulateColSelectors(){
+  const opts = '<option value="">—</option>' + _facturaHeaders.map((h,i)=>`<option value="${i}">${esc(h||'Col '+(i+1))}</option>`).join('');
+  const optsCur = '<option value="">— asumir CNY</option>' + _facturaHeaders.map((h,i)=>`<option value="${i}">${esc(h||'Col '+(i+1))}</option>`).join('');
+  ['fc-col-desc','fc-col-qty','fc-col-price','fc-col-sub'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.innerHTML=opts;
+  });
+  const cur=document.getElementById('fc-col-cur'); if(cur) cur.innerHTML=optsCur;
+}
+function _facturaSetColSelectors(cols){
+  const fc=(id,v)=>{const el=document.getElementById(id);if(el)el.value=(v>=0?String(v):'');};
+  fc('fc-col-desc',cols.desc);fc('fc-col-qty',cols.qty);fc('fc-col-price',cols.price);
+  fc('fc-col-sub',cols.sub);fc('fc-col-cur',cols.cur);
+}
+
+function facturaRenderPreview(hrow){
+  const wrap = document.getElementById('factura-preview-wrap');
+  const box = document.getElementById('factura-preview');
+  if(!wrap||!box) return;
+  const aoa = _facturaRawAll;
+  if(!aoa||!aoa.length){ wrap.style.display='none'; return; }
+  wrap.style.display='block';
+  const start = Math.max(0, hrow||0);
+  const slice = aoa.slice(start, start+6); // header + 5 rows
+  const ncol = Math.max(...slice.map(r=>r.length), 1);
+  let html='<table style="min-width:100%;border-collapse:collapse;font-size:11px">';
+  slice.forEach((r,ri)=>{
+    const isHdr = ri===0;
+    html+='<tr>';
+    for(let c=0;c<ncol;c++){
+      const v = esc(String(r[c]??''));
+      html += isHdr
+        ? `<td style="padding:5px 8px;background:rgba(16,185,129,.12);color:var(--green);font-weight:700;white-space:nowrap;border:1px solid rgba(148,163,184,.08)">${v}</td>`
+        : `<td style="padding:5px 8px;color:var(--dim);white-space:nowrap;border:1px solid rgba(148,163,184,.06)">${v}</td>`;
+    }
+    html+='</tr>';
+  });
+  html+='</table>';
+  box.innerHTML=html;
+}
+
+function _facturaAutoDetect(headers){
+  const cols = {desc:-1, qty:-1, price:-1, sub:-1, cur:-1};
+  // strong description terms first; generic "item" is handled by the fallback below
+  const PAT_DESC  = /descripci[oó]n|description|nombre|product|detalle|articulo|name|名称|品名|商品/i;
+  const PAT_QTY   = /^cant(idad)?$|^qty$|^quantity$|^pcs$|^units?$|^uds?$|^pieces?$|数量/i;
+  const PAT_PRICE = /unit.?price|price.?per|precio.?unit|valor.?unit|costo.?unit|^p\.?\s?u\.?$|单价|^price$|^precio$|price.?(usd|cny|rmb|each)|prec.*(yuan|rmb)|u.?price/i;
+  const PAT_SUB   = /^subtotal$|sub.?total|^importe$|^monto$|金额|^total$|^amount$|total.?(amount|price|value|cny|usd)|line.?total|total$|importe/i;
+  const PAT_CUR   = /moneda|currency|divisa|币种|货币/i;
+
+  // Test SUBTOTAL before UNIT PRICE so "Total Price"/"Amount" don't get captured as the unit price.
   for(let i=0;i<headers.length;i++){
     const h = headers[i];
-    if(cols.price<0 && PAT_PRICE.test(h)){ cols.price=i; continue; }
+    if(cols.cur<0 && PAT_CUR.test(h)){ cols.cur=i; continue; }
     if(cols.sub<0 && PAT_SUB.test(h)){ cols.sub=i; continue; }
+    if(cols.price<0 && PAT_PRICE.test(h)){ cols.price=i; continue; }
     if(cols.qty<0 && PAT_QTY.test(h)){ cols.qty=i; continue; }
     if(cols.desc<0 && PAT_DESC.test(h)){ cols.desc=i; continue; }
   }
-
-  // fallback: if no desc found, take first text-heavy column
   if(cols.desc<0){
     for(let i=0;i<headers.length;i++){
-      if(i===cols.qty||i===cols.price||i===cols.sub) continue;
+      if(i===cols.qty||i===cols.price||i===cols.sub||i===cols.cur) continue;
       if(headers[i]) { cols.desc=i; break; }
     }
   }
-
   return cols;
 }
 
+// detect currency from a cell value
+function _facturaDetectCurr(s){
+  const t = String(s||'').toUpperCase();
+  if(/USD|US\$|\$|DOLLAR|DÓLAR|DOLAR/.test(t)) return 'USD';
+  if(/CNY|RMB|YUAN|¥|元|人民币/.test(t)) return 'CNY';
+  return '';
+}
+
 function _facturaProcess(cols){
-  const tasa = window.tasaCNY_USD;
   const rows = [];
-  const errors = [];
+  const report = {totalScanned:0, validCount:0, invalidCount:0, errors:[], warnings:[], currencies:new Set()};
+  const seen = {};
+  const QTY_MAX=1000000, PRICE_MAX=10000000;
 
   for(let ri=0;ri<_facturaRawData.length;ri++){
     const row = _facturaRawData[ri];
+    const rowNum = ri + 2; // approximate spreadsheet line (1-based + header)
     const desc = String(row[cols.desc]||'').trim();
-    if(!desc) continue; // skip blank description rows
+    if(!desc) continue; // skip blank-description rows silently
+    report.totalScanned++;
 
-    const qtyRaw = cols.qty>=0 ? String(row[cols.qty]||'').trim() : '';
+    const qtyRaw   = cols.qty>=0   ? String(row[cols.qty]||'').trim()   : '';
     const priceRaw = cols.price>=0 ? String(row[cols.price]||'').trim() : '';
-    const subRaw = cols.sub>=0 ? String(row[cols.sub]||'').trim() : '';
+    const subRaw   = cols.sub>=0   ? String(row[cols.sub]||'').trim()   : '';
 
-    const qty = _facturaNum(qtyRaw);
+    // currency: explicit column → else infer from price text → else CNY
+    let curr = '';
+    if(cols.cur>=0) curr = _facturaDetectCurr(row[cols.cur]);
+    if(!curr) curr = _facturaDetectCurr(priceRaw);
+    if(!curr) curr = 'CNY';
+    report.currencies.add(curr);
+
+    const qty   = _facturaNum(qtyRaw);
     const price = _facturaNum(priceRaw);
-    const sub = _facturaNum(subRaw);
+    const sub   = _facturaNum(subRaw);
+    const issues = [];
 
-    // detect non-numeric in required fields
-    if(priceRaw && isNaN(qty) || priceRaw && isNaN(price)){
-      errors.push(`Fila ${ri+2}: valor no numérico`);
-    }
+    // critical: price must be a positive number
+    if(priceRaw!=='' && !_facturaIsNumeric(priceRaw)) issues.push('precio no numérico');
+    if(price<=0) issues.push('precio ≤ 0');
+    if(qtyRaw!=='' && !_facturaIsNumeric(qtyRaw)) issues.push('cantidad no numérica');
 
-    const qtyFinal = qty > 0 ? qty : 1;
-    const priceFinal = price;
-    const subFinal = sub > 0 ? sub : (priceFinal * qtyFinal);
+    // anomalies (warnings)
+    if(qty>QTY_MAX) report.warnings.push(`Fila ${rowNum}: cantidad fuera de rango (${fmtN(qty)})`);
+    if(price>PRICE_MAX) report.warnings.push(`Fila ${rowNum}: precio fuera de rango`);
+    const dkey = desc.toLowerCase();
+    if(seen[dkey]) report.warnings.push(`Fila ${rowNum}: descripción duplicada ("${desc}")`);
+    seen[dkey] = true;
 
-    rows.push({desc, qty:qtyFinal, priceCNY:priceFinal, subCNY:subFinal});
+    const valid = issues.length===0;
+    if(valid) report.validCount++; else { report.invalidCount++; report.errors.push(`Fila ${rowNum}: ${issues.join(', ')} — "${desc}"`); }
+
+    const qtyFinal = qty>0 ? qty : 1;
+    const subVal = sub>0 ? sub : price*qtyFinal;
+    rows.push({desc, qty:qtyFinal, curr, unitVal:price, subVal, valid});
+  }
+
+  // mixed currency alert
+  if(report.currencies.size>1){
+    report.warnings.unshift(`⚠ Monedas mixtas detectadas: ${[...report.currencies].join(' + ')} — cada fila se convierte según su moneda.`);
   }
 
   _facturaRows = rows;
+  _facturaReport = report;
+  _facturaRenderValidation(report);
+  facturaRender(rows, window.tasaCNY_USD);
 
-  if(errors.length){
-    toast(errors.length+' filas con valores no numéricos (marcadas en rojo)','w');
+  // reset colmap message to neutral on success
+  if(rows.length){
+    const m=document.getElementById('factura-colmap-msg');
+    if(m){ m.innerHTML='Mapeo de columnas <span style="color:var(--green);font-weight:400">← detectadas automáticamente, ajusta si es necesario</span>'; m.style.color='var(--dim)'; }
   }
+}
 
-  facturaRender(rows, tasa);
+function _facturaIsNumeric(s){
+  if(s==='') return false;
+  return /[\d]/.test(s) && !isNaN(_facturaNum(s)) && _facturaNum(s)!==0 || /^0([.,]0+)?$/.test(String(s).trim());
 }
 
 function _facturaNum(s){
-  if(!s) return 0;
-  // strip currency prefixes (¥, CNY, RMB, etc.)
-  const m = s.match(/[+-]?[\d]{1,3}(?:[,.][\d]{3})*(?:[.,]\d+)?|[+-]?\d+(?:[.,]\d+)?/);
+  if(s===null||s===undefined||s==='') return 0;
+  const str = String(s);
+  const m = str.match(/[+-]?[\d]{1,3}(?:[,.][\d]{3})*(?:[.,]\d+)?|[+-]?\d+(?:[.,]\d+)?/);
   if(!m) return 0;
   return safeN(parseXlNum(m[0]));
+}
+
+function _facturaRenderValidation(rep){
+  const el = document.getElementById('factura-validation');
+  if(!el) return;
+  if(!rep || rep.totalScanned===0){ el.style.display='none'; return; }
+  el.style.display='block';
+  const okAll = rep.invalidCount===0 && rep.warnings.length===0;
+  const headColor  = rep.invalidCount>0 ? 'var(--red)' : rep.warnings.length>0 ? 'var(--gold)' : 'var(--green)';
+  const borderCol  = rep.invalidCount>0 ? 'rgba(239,68,68,.3)' : rep.warnings.length>0 ? 'rgba(245,158,11,.3)' : 'rgba(16,185,129,.3)';
+  const headIco    = rep.invalidCount>0 ? '✗' : rep.warnings.length>0 ? '⚠' : '✓';
+
+  const errBlock = rep.errors.length ? `<div style="margin-top:8px">
+      <div style="font-size:11px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Errores (${rep.errors.length})</div>
+      ${rep.errors.slice(0,30).map(e=>`<div style="font-size:12px;color:var(--red);padding:1px 0">• ${esc(e)}</div>`).join('')}
+      ${rep.errors.length>30?`<div style="font-size:11px;color:var(--muted)">…y ${rep.errors.length-30} más</div>`:''}
+    </div>` : '';
+  const warnBlock = rep.warnings.length ? `<div style="margin-top:8px">
+      <div style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Alertas (${rep.warnings.length})</div>
+      ${rep.warnings.slice(0,30).map(w=>`<div style="font-size:12px;color:var(--gold);padding:1px 0">• ${esc(w)}</div>`).join('')}
+      ${rep.warnings.length>30?`<div style="font-size:11px;color:var(--muted)">…y ${rep.warnings.length-30} más</div>`:''}
+    </div>` : '';
+
+  el.innerHTML = `<div class="card" style="border-color:${borderCol}">
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <div style="font-size:14px;font-weight:800;color:${headColor}">${headIco} Validación</div>
+      <div style="font-size:13px"><strong style="color:var(--green)">${rep.validCount}</strong> <span style="color:var(--dim)">válidas</span></div>
+      <div style="font-size:13px"><strong style="color:${rep.invalidCount>0?'var(--red)':'var(--dim)'}">${rep.invalidCount}</strong> <span style="color:var(--dim)">con error</span></div>
+      <div style="font-size:13px"><strong style="color:var(--text)">${rep.totalScanned}</strong> <span style="color:var(--dim)">filas leídas</span></div>
+      <div style="font-size:12px;color:var(--dim)">Monedas: <strong style="color:var(--text)">${[...rep.currencies].join(', ')||'CNY'}</strong></div>
+      ${okAll?'<div style="font-size:12px;color:var(--green);margin-left:auto">Todo correcto ✓</div>':''}
+    </div>
+    ${errBlock}${warnBlock}
+  </div>`;
+}
+
+// per-row CNY/USD using row currency + global tasa (tasa = USD per 1 CNY)
+function _facturaRowMoney(r, tasa){
+  const hasTasa = tasa && tasa>0;
+  let unitCNY, unitUSD, subCNY, subUSD;
+  if(r.curr==='USD'){
+    unitUSD = r.unitVal;
+    subUSD  = r.subVal>0 ? r.subVal : r.unitVal*r.qty;
+    unitCNY = hasTasa ? unitUSD/tasa : null;
+    subCNY  = hasTasa ? subUSD/tasa  : null;
+  } else { // CNY
+    unitCNY = r.unitVal;
+    subCNY  = r.subVal>0 ? r.subVal : r.unitVal*r.qty;
+    unitUSD = hasTasa ? unitCNY*tasa : null;
+    subUSD  = hasTasa ? subCNY*tasa  : null;
+  }
+  return {unitCNY, unitUSD, subCNY, subUSD};
 }
 
 function facturaRender(rows, tasa){
   const card = document.getElementById('factura-results-card');
   const tbody = document.getElementById('factura-tbody');
   if(!card||!tbody) return;
-
-  if(!rows||!rows.length){
-    card.style.display='none';
-    return;
-  }
+  if(!rows||!rows.length){ card.style.display='none'; return; }
   card.style.display='block';
 
   const hasTasa = tasa && tasa > 0;
   let totCNY=0, totUSD=0, totPriceCNY=0;
 
   const html = rows.map((r,i)=>{
-    const subCNY = r.subCNY > 0 ? r.subCNY : r.priceCNY * r.qty;
-    const priceCNY = r.priceCNY;
-    const priceUSD = hasTasa ? priceCNY * tasa : null;
-    const subUSD = hasTasa ? subCNY * tasa : null;
+    const m = _facturaRowMoney(r, tasa);
+    if(m.subCNY!=null) totCNY += m.subCNY;
+    if(m.subUSD!=null) totUSD += m.subUSD;
+    if(m.unitCNY!=null) totPriceCNY += m.unitCNY;
 
-    totCNY += subCNY;
-    totUSD += subUSD||0;
-    totPriceCNY += priceCNY;
-
-    const isNonNum = isNaN(priceCNY) || isNaN(r.qty);
-    const rowStyle = isNonNum ? 'background:rgba(239,68,68,.08)' : '';
+    const rowStyle = !r.valid ? 'background:rgba(239,68,68,.08)' : '';
+    const curBadge = r.curr!=='CNY' ? ` <span class="badge b-b" style="font-size:9px">${esc(r.curr)}</span>` : '';
 
     return `<tr style="${rowStyle}">
       <td class="tn" style="text-align:center;color:var(--muted)">${i+1}</td>
-      <td>${esc(r.desc)}</td>
+      <td>${esc(r.desc)}${curBadge}</td>
       <td class="tn" style="text-align:right">${fmtN(r.qty)}</td>
-      <td class="tn to" style="text-align:right">¥${fmt2(priceCNY)}</td>
-      <td class="tn tg" style="text-align:right">${hasTasa?'$'+fmt2(priceUSD):'—'}</td>
-      <td class="tn to" style="text-align:right;font-weight:700">¥${fmtN(Math.round(subCNY*100)/100)}</td>
-      <td class="tn tg" style="text-align:right;font-weight:700">${hasTasa?'$'+fmt2(subUSD):'—'}</td>
+      <td class="tn to" style="text-align:right">${m.unitCNY!=null?'¥'+fmt2(m.unitCNY):'—'}</td>
+      <td class="tn tg" style="text-align:right">${m.unitUSD!=null?'$'+fmt2(m.unitUSD):'—'}</td>
+      <td class="tn to" style="text-align:right;font-weight:700">${m.subCNY!=null?'¥'+fmtN(Math.round(m.subCNY*100)/100):'—'}</td>
+      <td class="tn tg" style="text-align:right;font-weight:700">${m.subUSD!=null?'$'+fmt2(m.subUSD):'—'}</td>
     </tr>`;
   }).join('');
 
   tbody.innerHTML = html;
 
-  // footer totals
   setText('fc-tot-pucny', '¥'+fmt2(totPriceCNY));
   setText('fc-tot-puusd', hasTasa?'$'+fmt2(totPriceCNY*tasa):'—');
   setText('fc-tot-cny', '¥'+fmtN(Math.round(totCNY*100)/100));
   setText('fc-tot-usd', hasTasa?'$'+fmt2(totUSD):'—');
 
-  // KPIs
   setText('fc-kpi-cny', '¥'+fmtN(Math.round(totCNY)));
   setText('fc-kpi-usd', hasTasa?'$'+fmt2(totUSD):'—');
   setText('fc-kpi-count', String(rows.length));
@@ -3219,7 +3448,8 @@ function facturaApplyManualCols(){
     desc:  gi('fc-col-desc'),
     qty:   gi('fc-col-qty'),
     price: gi('fc-col-price'),
-    sub:   gi('fc-col-sub')
+    sub:   gi('fc-col-sub'),
+    cur:   gi('fc-col-cur')
   };
   if(cols.desc<0||cols.price<0){ toast('Asigna al menos Descripción y Precio unitario','w'); return; }
   _facturaProcess(cols);
@@ -3233,20 +3463,20 @@ function copyFacturaTable(){
   const rows = _facturaRows;
   if(!rows.length){toast('Sin datos para copiar','err');return;}
   const tasa = window.tasaCNY_USD;
-  const lines = ['#\tDescripción\tCant.\tP.Unit CNY\tP.Unit USD\tSubtotal CNY\tSubtotal USD'];
+  const lines = ['#\tDescripción\tMoneda\tCant.\tP.Unit CNY\tP.Unit USD\tSubtotal CNY\tSubtotal USD'];
   rows.forEach((r,i)=>{
-    const sub = r.subCNY>0?r.subCNY:r.priceCNY*r.qty;
+    const m = _facturaRowMoney(r, tasa);
     lines.push([
-      i+1, r.desc, r.qty,
-      fmt2(r.priceCNY),
-      tasa?fmt2(r.priceCNY*tasa):'',
-      fmt2(sub),
-      tasa?fmt2(sub*tasa):''
+      i+1, r.desc, r.curr, r.qty,
+      m.unitCNY!=null?fmt2(m.unitCNY):'',
+      m.unitUSD!=null?fmt2(m.unitUSD):'',
+      m.subCNY!=null?fmt2(m.subCNY):'',
+      m.subUSD!=null?fmt2(m.subUSD):''
     ].join('\t'));
   });
   navigator.clipboard.writeText(lines.join('\n'))
     .then(()=>toast('Tabla copiada al portapapeles'))
-    .catch(()=>toast('No se pudo copiar — usa CTRL+A en la tabla','w'));
+    .catch(()=>toast('No se pudo copiar','w'));
 }
 
 async function exportFacturaExcel(){
@@ -3254,22 +3484,57 @@ async function exportFacturaExcel(){
   try{
     await ensureXlsx();
     const tasa = window.tasaCNY_USD;
-    const headers = ['#','Descripción','Cant.','P.Unit CNY','P.Unit USD','Subtotal CNY','Subtotal USD'];
+    const ts = new Date();
+
+    // Sheet 1 — processed data
+    const headers = ['#','Descripción','Moneda','Cant.','P.Unit CNY','P.Unit USD','Subtotal CNY','Subtotal USD'];
     const data = [headers];
     let totCNY=0, totUSD=0;
     _facturaRows.forEach((r,i)=>{
-      const sub = r.subCNY>0?r.subCNY:r.priceCNY*r.qty;
-      const subUSD = tasa?Math.round(sub*tasa*100)/100:null;
-      totCNY+=sub; if(subUSD) totUSD+=subUSD;
-      data.push([i+1, r.desc, r.qty, r.priceCNY, tasa?Math.round(r.priceCNY*tasa*10000)/10000:null, Math.round(sub*100)/100, subUSD]);
+      const m = _facturaRowMoney(r, tasa);
+      if(m.subCNY!=null) totCNY+=m.subCNY;
+      if(m.subUSD!=null) totUSD+=m.subUSD;
+      data.push([i+1, r.desc, r.curr, r.qty,
+        m.unitCNY!=null?Math.round(m.unitCNY*100)/100:null,
+        m.unitUSD!=null?Math.round(m.unitUSD*100)/100:null,
+        m.subCNY!=null?Math.round(m.subCNY*100)/100:null,
+        m.subUSD!=null?Math.round(m.subUSD*100)/100:null]);
     });
-    data.push(['','TOTAL','','',' ',Math.round(totCNY*100)/100, tasa?Math.round(totUSD*100)/100:null]);
+    data.push(['','TOTAL','','','', '', Math.round(totCNY*100)/100, Math.round(totUSD*100)/100]);
+    data.push([]);
+    data.push(['Tasa aplicada (1 CNY = X USD)', tasa?Math.round(tasa*1000000)/1000000:'sin tasa']);
+    data.push(['Fuente de tasa', _facturaRateSource||'—']);
+    data.push(['Generado', ts.toLocaleString('es')]);
+    const ws1 = XLSX.utils.aoa_to_sheet(data);
 
-    const ws = XLSX.utils.aoa_to_sheet(data);
+    // Sheet 2 — audit report
+    const rep = _facturaReport || {totalScanned:_facturaRows.length, validCount:_facturaRows.length, invalidCount:0, errors:[], warnings:[], currencies:new Set(['CNY'])};
+    const audit = [
+      ['REPORTE DE AUDITORÍA — Factura China'],
+      ['Generado', ts.toLocaleString('es')],
+      [],
+      ['Filas leídas', rep.totalScanned],
+      ['Válidas', rep.validCount],
+      ['Con error', rep.invalidCount],
+      ['Monedas detectadas', [...rep.currencies].join(', ')||'CNY'],
+      ['Tasa CNY→USD', tasa?Math.round(tasa*1000000)/1000000:'—'],
+      ['Fuente de tasa', _facturaRateSource||'—'],
+      [],
+      ['ERRORES']
+    ];
+    if(rep.errors.length) rep.errors.forEach(e=>audit.push([e]));
+    else audit.push(['(ninguno)']);
+    audit.push([]); audit.push(['ALERTAS']);
+    if(rep.warnings.length) rep.warnings.forEach(w=>audit.push([w]));
+    else audit.push(['(ninguna)']);
+    const ws2 = XLSX.utils.aoa_to_sheet(audit);
+
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Factura China');
-    XLSX.writeFile(wb, 'factura-china-usd.xlsx');
-    toast('Excel exportado');
+    XLSX.utils.book_append_sheet(wb, ws1, 'Datos Procesados');
+    XLSX.utils.book_append_sheet(wb, ws2, 'Reporte Auditoría');
+    const fname = 'CALCNOVA_FACTURA_' + ts.toISOString().slice(0,10).replace(/-/g,'') + '_USD.xlsx';
+    XLSX.writeFile(wb, fname);
+    toast('Excel exportado (2 hojas)');
   }catch(e){toast('Error exportando: '+e.message,'err');}
 }
 
