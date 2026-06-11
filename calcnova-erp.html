@@ -663,6 +663,7 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-s btn-sm" onclick="copyFacturaTable()" title="Copiar en formato tabla para pegar en Excel">📋 Copiar tabla</button>
+        <button class="btn btn-s btn-sm" onclick="exportFacturaPDF()">🖨 PDF</button>
         <button class="btn btn-s btn-sm" onclick="exportFacturaExcel()">⬇ Exportar Excel</button>
       </div>
     </div>
@@ -691,14 +692,14 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
     <div class="tbl-wrap">
       <table>
         <thead>
-          <tr>
+          <tr id="factura-thead-row">
             <th style="text-align:center">#</th>
-            <th>Descripción</th>
-            <th style="text-align:right">Cant.</th>
-            <th style="text-align:right;color:var(--gold)">P.Unit CNY</th>
-            <th style="text-align:right;color:var(--green)">P.Unit USD</th>
-            <th style="text-align:right;color:var(--gold)">Subtotal CNY</th>
-            <th style="text-align:right;color:var(--green)">Subtotal USD</th>
+            <th onclick="sortFacturaTable('desc')" style="cursor:pointer" title="Ordenar por descripción">Descripción <span id="fc-sort-desc" style="font-size:10px;opacity:.5"></span></th>
+            <th onclick="sortFacturaTable('qty')" style="text-align:right;cursor:pointer" title="Ordenar por cantidad">Cant. <span id="fc-sort-qty" style="font-size:10px;opacity:.5"></span></th>
+            <th onclick="sortFacturaTable('unitCNY')" style="text-align:right;color:var(--gold);cursor:pointer" title="Ordenar por precio unitario CNY">P.Unit CNY <span id="fc-sort-unitCNY" style="font-size:10px;opacity:.5"></span></th>
+            <th onclick="sortFacturaTable('unitUSD')" style="text-align:right;color:var(--green);cursor:pointer" title="Ordenar por precio unitario USD">P.Unit USD <span id="fc-sort-unitUSD" style="font-size:10px;opacity:.5"></span></th>
+            <th onclick="sortFacturaTable('subCNY')" style="text-align:right;color:var(--gold);cursor:pointer" title="Ordenar por subtotal CNY">Subtotal CNY <span id="fc-sort-subCNY" style="font-size:10px;opacity:.5"></span></th>
+            <th onclick="sortFacturaTable('subUSD')" style="text-align:right;color:var(--green);cursor:pointer" title="Ordenar por subtotal USD">Subtotal USD <span id="fc-sort-subUSD" style="font-size:10px;opacity:.5"></span></th>
           </tr>
         </thead>
         <tbody id="factura-tbody"></tbody>
@@ -856,6 +857,8 @@ let _facturaRawAll = []; // full array-of-arrays of current sheet (incl. header 
 let _facturaCurSheet = '';
 let _facturaReport = null;// last validation report
 let _facturaRateSource = '';
+let _facturaSortCol = null;  // active sort column key
+let _facturaSortDir = 1;     // 1=asc, -1=desc
 window.tasaCNY_USD = null;
 
 // ── STORAGE ────────────────────────────────────────────────
@@ -2867,15 +2870,20 @@ function calcSimResults(){
     }
     const cbm = _simCbm(r);
     const peso = _simPeso(r);
-    // warn if single box CBM is suspiciously large
     const cbmCaja = r.largo>0&&r.ancho>0&&r.alto>0 ? (r.largo/100)*(r.ancho/100)*(r.alto/100) : 0;
     if(cbmCaja > 20) warnings.push(`⚠ "${r.desc||'Producto'}" — ¿Dimensiones correctas? La caja mide ${fmt4(cbmCaja)} m³ individual.`);
+    if(cbmCaja > 0 && cbmCaja < 0.0001) warnings.push(`⚠ "${r.desc||'Producto'}" — CBM muy pequeño (${fmt4(cbmCaja)} m³). ¿Las dimensiones están en mm en lugar de cm?`);
     cbmTotal += cbm;
     pesoTotal += peso;
   }
 
   cbmTotal = Math.round(cbmTotal * 1000) / 1000;
   pesoTotal = Math.round(pesoTotal * 100) / 100;
+
+  // duplicate description detection
+  const descMap = {};
+  simRows.forEach(r=>{ const k=(r.desc||'').trim().toLowerCase(); if(k) descMap[k]=(descMap[k]||0)+1; });
+  Object.entries(descMap).forEach(([k,c])=>{ if(c>1) warnings.push(`⚠ Descripción duplicada × ${c}: "${simRows.find(r=>(r.desc||'').trim().toLowerCase()===k)?.desc||k}"`); });
 
   setText('sim-tot-cbm', fmt4(cbmTotal)+' m³');
   setText('sim-tot-peso', fmt2(pesoTotal)+' kg');
@@ -3158,6 +3166,8 @@ function _facturaLoadSheet(name, hrowOverride){
   const ws = _facturaWB.Sheets[name];
   if(!ws){ toast('Hoja no encontrada','err'); return; }
   _facturaCurSheet = name;
+  _facturaSortCol = null; _facturaSortDir = 1; // reset sort on new sheet
+  ['desc','qty','unitCNY','unitUSD','subCNY','subUSD'].forEach(c=>{ const el=document.getElementById('fc-sort-'+c); if(el) el.textContent=''; });
 
   const aoa = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
   _facturaRawAll = aoa;
@@ -3459,6 +3469,35 @@ function _facturaRerender(){
   if(_facturaRows.length) facturaRender(_facturaRows, window.tasaCNY_USD);
 }
 
+function sortFacturaTable(col){
+  const tasa = window.tasaCNY_USD;
+  if(_facturaSortCol === col){
+    _facturaSortDir *= -1;
+  } else {
+    _facturaSortCol = col;
+    _facturaSortDir = 1;
+  }
+  // update indicator spans
+  ['desc','qty','unitCNY','unitUSD','subCNY','subUSD'].forEach(c=>{
+    const el = document.getElementById('fc-sort-'+c);
+    if(el) el.textContent = c===col ? (_facturaSortDir===1?'▲':'▼') : '';
+  });
+  // compute money for sort key
+  const withMoney = _facturaRows.map(r=>({r, m:_facturaRowMoney(r,tasa)}));
+  withMoney.sort((a,b)=>{
+    let va, vb;
+    if(col==='desc')   { va=a.r.desc||''; vb=b.r.desc||''; return _facturaSortDir*(va<vb?-1:va>vb?1:0); }
+    if(col==='qty')    { va=a.r.qty;  vb=b.r.qty; }
+    if(col==='unitCNY'){ va=a.m.unitCNY??-Infinity; vb=b.m.unitCNY??-Infinity; }
+    if(col==='unitUSD'){ va=a.m.unitUSD??-Infinity; vb=b.m.unitUSD??-Infinity; }
+    if(col==='subCNY') { va=a.m.subCNY??-Infinity;  vb=b.m.subCNY??-Infinity; }
+    if(col==='subUSD') { va=a.m.subUSD??-Infinity;  vb=b.m.subUSD??-Infinity; }
+    return _facturaSortDir * ((va??0) - (vb??0));
+  });
+  _facturaRows = withMoney.map(x=>x.r);
+  facturaRender(_facturaRows, tasa);
+}
+
 function copyFacturaTable(){
   const rows = _facturaRows;
   if(!rows.length){toast('Sin datos para copiar','err');return;}
@@ -3536,6 +3575,160 @@ async function exportFacturaExcel(){
     XLSX.writeFile(wb, fname);
     toast('Excel exportado (2 hojas)');
   }catch(e){toast('Error exportando: '+e.message,'err');}
+}
+
+function exportFacturaPDF(){
+  if(!_facturaRows.length){toast('Sin datos para exportar','err');return;}
+  try{
+    const tasa = window.tasaCNY_USD;
+    const hasTasa = tasa && tasa > 0;
+    const ts = new Date();
+    const fecha = ts.toLocaleDateString('es',{year:'numeric',month:'long',day:'numeric'});
+    const hora  = ts.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
+    const co = (typeof cfg!=='undefined'&&cfg.company)||'CalcNova Import';
+    const rep = _facturaReport || {totalScanned:_facturaRows.length, validCount:_facturaRows.length, invalidCount:0, errors:[], warnings:[], currencies:new Set(['CNY'])};
+
+    let totCNY=0, totUSD=0;
+    const rowsHtml = _facturaRows.map((r,i)=>{
+      const m = _facturaRowMoney(r, tasa);
+      if(m.subCNY!=null) totCNY += m.subCNY;
+      if(m.subUSD!=null) totUSD += m.subUSD;
+      const curBadge = r.curr!=='CNY'?` <span class="badge b-b">${esc(r.curr)}</span>`:'';
+      const bg = !r.valid?'background:#fef2f2':i%2===0?'':'background:#f8fafc';
+      return `<tr style="${bg}">
+        <td class="num c-muted">${i+1}</td>
+        <td>${esc(r.desc)}${curBadge}</td>
+        <td class="num">${esc(r.curr)}</td>
+        <td class="num">${fmtN(r.qty)}</td>
+        <td class="num c-gold">${m.unitCNY!=null?'¥'+fmt2(m.unitCNY):'—'}</td>
+        <td class="num c-green">${m.unitUSD!=null?'$'+fmt2(m.unitUSD):'—'}</td>
+        <td class="num bold c-gold">${m.subCNY!=null?'¥'+fmtN(Math.round(m.subCNY*100)/100):'—'}</td>
+        <td class="num bold c-green">${m.subUSD!=null?'$'+fmt2(m.subUSD):'—'}</td>
+      </tr>`;
+    }).join('');
+
+    const audErrors = rep.errors&&rep.errors.length ? rep.errors.map(e=>`<div class="a-err">${esc(e)}</div>`).join('') : '<span class="a-none">Sin errores</span>';
+    const audWarns  = rep.warnings&&rep.warnings.length ? rep.warnings.map(w=>`<div class="a-warn">${esc(w)}</div>`).join('') : '<span class="a-none">Sin alertas</span>';
+    const curList   = rep.currencies?[...rep.currencies].join(', '):'CNY';
+
+    const win = window.open('','_blank','width=1100,height=850');
+    if(!win){toast('Permite ventanas emergentes para abrir el PDF','w');return;}
+    win.document.write(`<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="UTF-8">
+<title>CalcNova — Factura China CNY→USD</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',sans-serif;color:#1e293b;background:#fff;font-size:11.5px;line-height:1.4}
+@page{size:A4 landscape;margin:12mm 10mm}
+@media print{.no-print{display:none!important}body{font-size:10.5px}}
+.page{max-width:1060px;margin:0 auto;padding:24px}
+.print-bar{background:#f1f5f9;border-bottom:2px solid #10B981;padding:10px 24px;display:flex;gap:10px;align-items:center}
+.print-bar button{padding:8px 20px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-p{background:linear-gradient(135deg,#10B981,#059669);color:white}
+.btn-c{background:#e2e8f0;color:#475569}
+.hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;padding-bottom:14px;border-bottom:3px solid #10B981}
+.logo-box{width:44px;height:44px;background:linear-gradient(135deg,#10B981,#3B82F6);border-radius:11px;display:flex;align-items:center;justify-content:center}
+.logo-wrap{display:flex;align-items:center;gap:10px}
+.logo-t{font-size:20px;font-weight:900;color:#0F172A}
+.logo-t span{color:#10B981}
+.logo-s{font-size:10px;color:#64748B;margin-top:2px}
+.hdr-r{text-align:right}
+.hdr-co{font-size:13px;font-weight:800;color:#0F172A}
+.hdr-m{font-size:10px;color:#64748B;margin-top:2px}
+.kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.kpi-card{border-radius:9px;padding:10px 12px;border:1px solid #e2e8f0}
+.kpi-card.gold{border-top:3px solid #F59E0B;background:#fffbeb}
+.kpi-card.green{border-top:3px solid #10B981;background:#f0fdf4}
+.kpi-card.blue{border-top:3px solid #3B82F6;background:#eff6ff}
+.kpi-card.gray{border-top:3px solid #94A3B8;background:#f8fafc}
+.kpi-l{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#64748B;margin-bottom:3px}
+.kpi-v{font-size:18px;font-weight:800;line-height:1}
+.kpi-s{font-size:9.5px;color:#94A3B8;margin-top:2px}
+.rate-bar{display:flex;gap:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;padding:6px 12px;margin-bottom:12px;align-items:center;flex-wrap:wrap}
+.rt{font-size:10.5px;color:#475569}
+.rt strong{color:#0F172A}
+.sec-h{font-size:11.5px;font-weight:800;color:#0F172A;margin:14px 0 7px;display:flex;align-items:center;gap:5px;padding-bottom:4px;border-bottom:1.5px solid #e2e8f0}
+.sec-h::before{content:'';width:3px;height:13px;background:#10B981;border-radius:2px}
+table.main{width:100%;border-collapse:collapse;font-size:10.5px}
+table.main thead tr{background:#0F172A}
+table.main thead th{color:white;padding:7px 8px;text-align:left;font-weight:700;font-size:9px;text-transform:uppercase;letter-spacing:.06em}
+table.main thead th.num{text-align:right}
+table.main td{padding:6px 8px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+td.bold{font-weight:700}
+td.c-muted{color:#94A3B8}
+td.c-gold{color:#b45309;font-weight:600}
+td.c-green{color:#15803d;font-weight:600}
+.tot-row td{background:#0F172A!important;color:white!important;font-weight:700!important;padding:8px 8px}
+.tot-row td.num{text-align:right}
+.badge{display:inline-block;padding:1px 6px;border-radius:20px;font-size:9px;font-weight:800}
+.b-b{background:#dbeafe;color:#1d4ed8}
+.b-r{background:#fee2e2;color:#b91c1c}
+.audit-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.audit-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;padding:10px 12px}
+.audit-box h4{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#64748B;margin-bottom:6px}
+.a-err{color:#b91c1c;font-size:10px;padding:2px 0}
+.a-warn{color:#b45309;font-size:10px;padding:2px 0}
+.a-none{color:#94A3B8;font-size:10px}
+.footer{border-top:1px solid #e2e8f0;padding-top:8px;display:flex;justify-content:space-between;color:#94A3B8;font-size:9px;margin-top:12px}
+</style>
+</head><body>
+<div class="print-bar no-print">
+  <button class="btn-p" onclick="window.print()">🖨 Imprimir / Guardar PDF</button>
+  <button class="btn-c" onclick="window.close()">✕ Cerrar</button>
+  <span style="font-size:12px;color:#64748B;margin-left:10px">Selecciona <strong>Guardar como PDF</strong> — orientación <strong>Horizontal</strong></span>
+</div>
+<div class="page">
+  <div class="hdr">
+    <div class="logo-wrap">
+      <div class="logo-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M13 2L4.5 13.5H11L10 22L19.5 10.5H13L13 2Z"/></svg></div>
+      <div><div class="logo-t">CalcNova <span>Import</span></div><div class="logo-s">Factura China — Conversión CNY → USD</div></div>
+    </div>
+    <div class="hdr-r">
+      <div class="hdr-co">${esc(co)}</div>
+      <div class="hdr-m">Generado: ${fecha} a las ${hora}</div>
+      <div class="hdr-m">Fuente: ${esc(_facturaRateSource||'—')}</div>
+    </div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-card gold"><div class="kpi-l">Total CNY</div><div class="kpi-v" style="color:#b45309">¥${fmtN(Math.round(totCNY))}</div><div class="kpi-s">${_facturaRows.length} productos</div></div>
+    <div class="kpi-card green"><div class="kpi-l">Total USD</div><div class="kpi-v" style="color:#15803d">${hasTasa?'$'+fmt2(totUSD):'Sin tasa'}</div><div class="kpi-s">${hasTasa?'Tasa: '+fmt4(tasa):'Ingresa tasa manual'}</div></div>
+    <div class="kpi-card blue"><div class="kpi-l">Líneas</div><div class="kpi-v" style="color:#1d4ed8">${_facturaRows.length}</div><div class="kpi-s">${rep.validCount} válidas · ${rep.invalidCount} con error</div></div>
+    <div class="kpi-card gray"><div class="kpi-l">Monedas</div><div class="kpi-v" style="font-size:14px;color:#334155">${esc(curList)}</div><div class="kpi-s">Detectadas en factura</div></div>
+  </div>
+  <div class="rate-bar">
+    <span style="font-size:9px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:.06em">Tasa usada:</span>
+    <span class="rt">1 CNY = <strong>${hasTasa?fmt4(tasa)+' USD':'—'}</strong></span>
+    <span class="rt">1 USD = <strong>${hasTasa?fmt4(1/tasa)+' CNY':'—'}</strong></span>
+    <span class="rt" style="margin-left:auto;color:#94A3B8;font-size:9.5px">Fuente: ${esc(_facturaRateSource||'—')}</span>
+  </div>
+  <div class="sec-h">Detalle de Productos</div>
+  <table class="main">
+    <thead><tr>
+      <th class="num">#</th><th>Descripción</th><th>Moneda</th>
+      <th class="num">Cant.</th><th class="num">P.Unit CNY</th><th class="num">P.Unit USD</th>
+      <th class="num">Subtotal CNY</th><th class="num">Subtotal USD</th>
+    </tr></thead>
+    <tbody>${rowsHtml}</tbody>
+    <tfoot><tr class="tot-row">
+      <td colspan="3">TOTALES</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
+      <td class="num">¥${fmtN(Math.round(totCNY*100)/100)}</td>
+      <td class="num">${hasTasa?'$'+fmt2(totUSD):'—'}</td>
+    </tr></tfoot>
+  </table>
+  <div class="audit-grid">
+    <div class="audit-box"><h4>Errores de validación</h4>${audErrors}</div>
+    <div class="audit-box"><h4>Alertas</h4>${audWarns}</div>
+  </div>
+  <div class="footer">
+    <span>⚡ CalcNova Import Calculator · Sistema privado · Solo uso autorizado</span>
+    <span>Generado: ${fecha} ${hora} · Tasas sujetas a variación del mercado</span>
+  </div>
+</div>
+</body></html>`);
+    win.document.close();
+  }catch(e){toast('Error PDF: '+e.message,'err');}
 }
 
 // ── BOX CALCULATOR ─────────────────────────────────────────
