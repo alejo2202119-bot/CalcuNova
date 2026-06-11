@@ -2885,8 +2885,8 @@ function calcSimResults(){
   simRows.forEach(r=>{ const k=(r.desc||'').trim().toLowerCase(); if(k) descMap[k]=(descMap[k]||0)+1; });
   Object.entries(descMap).forEach(([k,c])=>{ if(c>1) warnings.push(`⚠ Descripción duplicada × ${c}: "${simRows.find(r=>(r.desc||'').trim().toLowerCase()===k)?.desc||k}"`); });
 
-  setText('sim-tot-cbm', fmt4(cbmTotal)+' m³');
-  setText('sim-tot-peso', fmt2(pesoTotal)+' kg');
+  setText('sim-tot-cbm', cbmTotal > 0 ? fmt4(cbmTotal)+' m³' : '—');
+  setText('sim-tot-peso', pesoTotal > 0 ? fmt2(pesoTotal)+' kg' : '—');
 
   // warnings
   const warnEl = document.getElementById('sim-warnings');
@@ -2909,10 +2909,19 @@ function renderSimContainerCard(ct, cbmTotal, pesoTotal){
   const pctPeso = ct.maxPeso > 0 && pesoTotal > 0 ? pesoTotal / ct.maxPeso * 100 : 0;
   const numCtns = cbmTotal > 0 ? Math.ceil(cbmTotal / ct.volUtil) : 0;
 
-  // Status by volume (primary constraint)
+  // Status by volume (primary constraint); if only weight, derive from peso
   let statusIcon, statusLabel, statusColor, borderColor;
-  if(pctVol <= 0){
+  if(pctVol <= 0 && pctPeso <= 0){
     statusIcon='📦'; statusLabel='Sin datos'; statusColor='var(--muted)'; borderColor='var(--border)';
+  } else if(pctVol <= 0){
+    // only weight, no dimensions
+    if(pctPeso <= 84){
+      statusIcon='✅'; statusLabel='CABE (peso)'; statusColor='var(--green)'; borderColor='rgba(16,185,129,.4)';
+    } else if(pctPeso <= 100){
+      statusIcon='⚠️'; statusLabel='AJUSTADO'; statusColor='var(--gold)'; borderColor='rgba(245,158,11,.4)';
+    } else {
+      statusIcon='❌'; statusLabel='EXCEDE PESO'; statusColor='var(--red)'; borderColor='rgba(239,68,68,.4)';
+    }
   } else if(pctVol <= 84){
     statusIcon='✅'; statusLabel='CABE'; statusColor='var(--green)'; borderColor='rgba(16,185,129,.4)';
   } else if(pctVol <= 100){
@@ -2921,16 +2930,32 @@ function renderSimContainerCard(ct, cbmTotal, pesoTotal){
     statusIcon='❌'; statusLabel='NO CABE'; statusColor='var(--red)'; borderColor='rgba(239,68,68,.4)';
   }
 
-  // weight overflow check
   const pesoOverflow = pctPeso > 100;
+  if(pesoOverflow && pctVol > 0 && pctVol <= 84){
+    // CBM fits but peso exceeds — override badge
+    statusIcon='⚠️'; statusLabel='EXCEDE PESO'; statusColor='var(--red)'; borderColor='rgba(239,68,68,.4)';
+  }
 
   const barVolPct = Math.min(100, pctVol);
   const barVolColor = pctVol<=84?'var(--green)':pctVol<=100?'var(--gold)':'var(--red)';
   const barPesoPct = Math.min(100, pctPeso);
   const barPesoColor = pctPeso<=84?'var(--green)':pctPeso<=100?'var(--gold)':'var(--red)';
 
+  const hasSummary = cbmTotal > 0 || pesoTotal > 0;
+  let summaryLine = '';
+  if(cbmTotal > 0){
+    summaryLine = pctVol <= 100
+      ? `<span style="color:${statusColor};font-weight:700">1 contenedor</span> · ${fmt4(ct.volUtil-cbmTotal)} m³ libre · ${fmt1(100-pctVol)}% disponible`
+      : `<span style="color:var(--red);font-weight:700">Necesitas ${numCtns} contenedores</span> · ${fmt4(cbmTotal - ct.volUtil)} m³ excedente`;
+  }
+  if(pesoTotal > 0){
+    const pesoLine = pesoOverflow
+      ? `<span style="color:var(--red)">⚠ Peso excede límite por ${fmt2(pesoTotal-ct.maxPeso)} kg</span>`
+      : `Peso: <strong>${fmt2(pesoTotal)} kg</strong> · ${fmt2(ct.maxPeso - pesoTotal)} kg libre`;
+    summaryLine += (summaryLine ? '<br>' : '') + pesoLine;
+  }
+
   return `<div style="background:var(--surface);border:1.5px solid ${borderColor};border-radius:var(--radius-lg);padding:18px;position:relative;overflow:hidden">
-    <!-- status badge -->
     <div style="position:absolute;top:12px;right:12px;font-size:11px;font-weight:800;color:${statusColor};background:rgba(0,0,0,.2);padding:3px 10px;border-radius:20px;letter-spacing:.05em">${statusIcon} ${statusLabel}</div>
 
     <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:2px">${ct.label}</div>
@@ -2940,14 +2965,14 @@ function renderSimContainerCard(ct, cbmTotal, pesoTotal){
     <div style="margin-bottom:10px">
       <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
         <span style="color:var(--dim)">Volumen usado</span>
-        <span style="font-weight:700;color:${barVolColor}">${fmt4(cbmTotal)} / ${ct.volUtil} m³ (${fmt1(pctVol)}%)</span>
+        <span style="font-weight:700;color:${barVolColor}">${cbmTotal>0?fmt4(cbmTotal)+' / '+ct.volUtil+' m³ ('+fmt1(pctVol)+'%)':'— (sin dimensiones)'}</span>
       </div>
       <div style="height:10px;background:rgba(148,163,184,.12);border-radius:99px;overflow:hidden">
         <div style="height:100%;width:${barVolPct}%;background:${barVolColor};border-radius:99px;transition:width .4s"></div>
       </div>
     </div>
 
-    <!-- Peso bar (only if data) -->
+    <!-- Peso bar (always shown when data available) -->
     ${pesoTotal>0?`<div style="margin-bottom:12px">
       <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
         <span style="color:var(--dim)">Peso cargado</span>
@@ -2958,14 +2983,8 @@ function renderSimContainerCard(ct, cbmTotal, pesoTotal){
       </div>
     </div>`:''}
 
-    <!-- Summary -->
-    ${cbmTotal>0?`<div style="font-size:12px;color:var(--dim);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
-      ${pctVol<=100
-        ? `<span style="color:${statusColor};font-weight:700">1 contenedor</span> · ${fmt4(ct.volUtil-cbmTotal)} m³ libre · ${fmt1(100-pctVol)}% disponible`
-        : `<span style="color:var(--red);font-weight:700">Necesitas ${numCtns} contenedores</span> · ${fmt4(cbmTotal - ct.volUtil)} m³ excedente`
-      }
-      ${pesoOverflow?`<br><span style="color:var(--red)">⚠ Peso excede límite por ${fmt2(pesoTotal-ct.maxPeso)} kg</span>`:''}
-    </div>`:''}
+    <!-- Summary — shows whenever CBM or peso has data -->
+    ${hasSummary?`<div style="font-size:12px;color:var(--dim);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">${summaryLine}</div>`:''}
   </div>`;
 }
 
