@@ -1986,7 +1986,7 @@ const UP_FIELDS=[
   {id:'brand',    label:'Marca / Fabricante',    req:false,
     pat:/marca|^brand$|fabricante|maker|manufacturer|品牌/i},
   {id:'cartons',  label:'Cartones / Cajas',       req:false,
-    pat:/^cartons?$|^ctns?$|^cajas?$|^box(es)?$|^pkgs?$|^bultos?$|master.?(box|ctn|qty)|箱数|^cases$|num.?(of\s+)?ctns?|no\.?\s*ctns?|#\s*ctns?|\bctns?\s*(qty|total|num|#)/i},
+    pat:/^carton|^ctns?$|^cajas?$|^box(es)?$|^pkgs?$|^bultos?\b|master.?(box|ctn|qty)|箱数|^cases$|num.?(of\s+)?ctns?|no\.?\s*ctns?|#\s*ctns?|\bctns?\s*(qty|total|num|#)/i},
   {id:'qtyPerCtn',label:'Uds por Cartón',         req:false,
     pat:/ud.*(ctn|cart|caja)|pcs.*(ctn|box)|unid.*ctn|pcs\/ctns?|qty.*ctns?|pcs\s*per|每箱|units.*box|q[/.]?ctns?/i},
   {id:'totalQty', label:'Cantidad Total de Uds',  req:false,
