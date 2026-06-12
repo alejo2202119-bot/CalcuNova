@@ -1991,7 +1991,7 @@ function loadSheetRows(name){
 
 const UP_FIELDS=[
   {id:'name',     label:'Nombre / Descripción ★', req:true,
-    pat:/descripti|descripci|nombre|^name$|product.?name|goods.?name|commodity|item.?desc|article|articulo|art[íi]culo|modelo|^item$|^goods$/i},
+    pat:/descripti|descripci|nombre|^name$|^producto?s?$|^mercanc[íi]a$|product.?name|goods.?name|commodity|item.?desc|article|articulo|art[íi]culo|modelo|^item$|^goods$/i},
   {id:'ref',      label:'Referencia / No. / SKU', req:false,
     pat:/^no\.?$|^item.?no|^s\.?no|^#$|^ref|^sku|^cod|^part.?no|item.?num|referencia|código|编号|型号|序号/i},
   {id:'brand',    label:'Marca / Fabricante',    req:false,
@@ -2193,37 +2193,10 @@ function buildSmartSummary(){
     return;
   }
 
-  // ── Calculate preview totals ──────────────────────────────
-  const priceCol=gc('price'), qtyCol=gc('totalQty'), amtCol=gc('totalAmt');
-  const cartonCol=gc('cartons'), qpcCol=gc('qtyPerCtn');
-  let totalCNY=0;
-  const samples=[];
-  validRows.forEach(r=>{
-    const fullName=String(r[namCol]||'').trim();
-    const name=fullName.substring(0,30);
-    // Skip summary/total rows — they inflate the sum
-    if(/^\s*(total(es)?|grand\s*total|sub[\s-]?total|importe\s*total|合计|总计|小计|grand\s+total)\s*$/i.test(fullName)) return;
-    let price=priceCol>=0?parseXlNum(String(r[priceCol]||'')):0;
-    let qty=0;
-    if(qtyCol>=0){qty=parseXlNum(String(r[qtyCol]||''));}
-    else if(cartonCol>=0){
-      const ctn=parseXlNum(String(r[cartonCol]||''))||1;
-      const qpc=qpcCol>=0?parseXlNum(String(r[qpcCol]||'')):1;
-      qty=ctn*(qpc||1);
-    }
-    let rowTotal=0;
-    // Prefer file's own per-row subtotal (most reliable), fallback to price×qty
-    if(amtCol>=0){rowTotal=parseXlNum(String(r[amtCol]||''));}
-    if(rowTotal<=0&&price>0&&qty>0){rowTotal=price*qty;}
-    if(rowTotal<=0&&price<=0) return; // no useful data on this row
-    if(rowTotal>0&&qty>0&&price<=0) price=rowTotal/qty;
-    totalCNY+=rowTotal;
-    if(samples.length<4&&name)samples.push({name,qty,price,rowTotal});
-  });
-
-  const cnyR=safeN(R.y);
-  const totalUSD=cnyR>0?totalCNY/cnyR:0;
-  const hasPriceCol=priceCol>=0||amtCol>=0;
+  // No monetary preview here — the real CNY/USD amounts are verified in la
+  // Factura (auto-rellenada) y en la tabla de Productos. We only flag whether
+  // a price column is mapped so the user knows the import will carry prices.
+  const hasPriceCol=gc('price')>=0||gc('totalAmt')>=0;
 
   // ── Chips for detected fields ─────────────────────────────
   const colors={name:'#10B981',price:'#F59E0B',cartons:'#3B82F6',qtyPerCtn:'#3B82F6',
@@ -2235,40 +2208,6 @@ function buildSmartSummary(){
     return `<span style="background:${c}22;color:${c};border:1px solid ${c}44;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600" title="${f.label}">${hdr} ✓</span>`;
   }).join(' ');
 
-  // ── Sample rows table ─────────────────────────────────────
-  const sampleHtml=samples.length&&hasPriceCol?`
-    <div style="margin-top:10px;border-radius:8px;overflow:hidden;border:1px solid rgba(148,163,184,.12)">
-      <table style="width:100%;border-collapse:collapse;font-size:11px">
-        <thead><tr style="background:rgba(15,23,42,.6);color:var(--dim)">
-          <th style="padding:5px 8px;text-align:left;font-weight:600">Producto</th>
-          <th style="padding:5px 8px;text-align:right;font-weight:600">Cant.</th>
-          <th style="padding:5px 8px;text-align:right;font-weight:600;color:var(--gold)">¥/ud</th>
-          <th style="padding:5px 8px;text-align:right;font-weight:600;color:var(--green)">${cnyR>0?'$/ud':''}</th>
-        </tr></thead>
-        <tbody>${samples.map((s,i)=>`<tr style="border-top:1px solid rgba(148,163,184,.07);background:${i%2?'rgba(255,255,255,.01)':''}">
-          <td style="padding:4px 8px;color:var(--text)">${esc(s.name)}</td>
-          <td style="padding:4px 8px;text-align:right;color:var(--dim)">${s.qty>0?fmtN(s.qty):'—'}</td>
-          <td style="padding:4px 8px;text-align:right;color:var(--gold)">${s.price>0?'¥'+s.price:'—'}</td>
-          <td style="padding:4px 8px;text-align:right;color:var(--green)">${cnyR>0&&s.price>0?'$'+fmt2(s.price/cnyR):'—'}</td>
-        </tr>`).join('')}</tbody>
-      </table>
-    </div>`:'';
-
-  // ── Total verification box ────────────────────────────────
-  const totalBox=totalCNY>0?`
-    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:10px">
-      <div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:8px 14px;flex:1;min-width:140px">
-        <div style="font-size:10px;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:.06em">Total CNY importado</div>
-        <div style="font-size:18px;font-weight:800;color:var(--gold);margin-top:2px">¥${fmtN(Math.round(totalCNY))}</div>
-        <div style="font-size:10px;color:var(--dim);margin-top:2px">Verifica vs tu factura del proveedor</div>
-      </div>
-      ${cnyR>0&&totalUSD>0?`<div style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:8px;padding:8px 14px;flex:1;min-width:140px">
-        <div style="font-size:10px;color:var(--green);font-weight:700;text-transform:uppercase;letter-spacing:.06em">≈ Total USD (solo mercancía)</div>
-        <div style="font-size:18px;font-weight:800;color:var(--green);margin-top:2px">$${fmt2(totalUSD)}</div>
-        <div style="font-size:10px;color:var(--dim);margin-top:2px">Tasa ¥/${fmt2(cnyR)} · Sin logística</div>
-      </div>`:''}
-    </div>`:'';
-
   const priceWarn=hasPriceCol?'':` <span style="color:var(--gold);font-size:11px">⚠ Asigna la columna de Precio ¥</span>`;
 
   smartEl.innerHTML=`
@@ -2279,7 +2218,7 @@ function buildSmartSummary(){
           <span style="font-size:12px;font-weight:400;color:var(--dim)"> · fila encabezado: ${hrow+1}</span>
         </div>
         <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">${chips}${priceWarn}</div>
-        ${sampleHtml}${totalBox}
+        <div style="font-size:11px;color:var(--dim);margin-top:8px">Los montos exactos en ¥ y $ se calculan en la <strong style="color:var(--green)">Factura</strong> al importar.</div>
       </div>
       <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0">
         <select id="up-mode-top" class="inp" style="width:auto;font-size:11px;background:rgba(15,23,42,.6)">
