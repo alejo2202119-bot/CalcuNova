@@ -2188,7 +2188,10 @@ function buildSmartSummary(){
   let totalCNY=0;
   const samples=[];
   validRows.forEach(r=>{
-    const name=String(r[namCol]||'').trim().substring(0,30);
+    const fullName=String(r[namCol]||'').trim();
+    const name=fullName.substring(0,30);
+    // Skip summary/total rows — they inflate the sum
+    if(/^\s*(total(es)?|grand\s*total|sub[\s-]?total|importe\s*total|合计|总计|小计|grand\s+total)\s*$/i.test(fullName)) return;
     let price=priceCol>=0?parseXlNum(String(r[priceCol]||'')):0;
     let qty=0;
     if(qtyCol>=0){qty=parseXlNum(String(r[qtyCol]||''));}
@@ -2198,11 +2201,11 @@ function buildSmartSummary(){
       qty=ctn*(qpc||1);
     }
     let rowTotal=0;
-    if(price>0&&qty>0){rowTotal=price*qty;}
-    else if(amtCol>=0){
-      rowTotal=parseXlNum(String(r[amtCol]||''));
-      if(rowTotal>0&&qty>0&&price<=0)price=rowTotal/qty;
-    }
+    // Prefer file's own per-row subtotal (most reliable), fallback to price×qty
+    if(amtCol>=0){rowTotal=parseXlNum(String(r[amtCol]||''));}
+    if(rowTotal<=0&&price>0&&qty>0){rowTotal=price*qty;}
+    if(rowTotal<=0&&price<=0) return; // no useful data on this row
+    if(rowTotal>0&&qty>0&&price<=0) price=rowTotal/qty;
     totalCNY+=rowTotal;
     if(samples.length<4&&name)samples.push({name,qty,price,rowTotal});
   });
