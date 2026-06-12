@@ -661,10 +661,11 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
         <div class="card-title"><span class="icon icon-b">📊</span>Resultados de conversión</div>
         <div style="font-size:12px;color:var(--dim);margin-top:2px" id="factura-count-label">0 productos</div>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-s btn-sm" onclick="copyFacturaTable()" title="Copiar en formato tabla para pegar en Excel">📋 Copiar tabla</button>
-        <button class="btn btn-s btn-sm" onclick="exportFacturaPDF()">🖨 PDF</button>
-        <button class="btn btn-s btn-sm" onclick="exportFacturaExcel()">⬇ Exportar Excel</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn-p btn-sm" onclick="guardarFactura()" title="Guardar esta factura en CalcNova para llevar el historial" style="font-size:12px;padding:7px 16px">💾 Guardar factura</button>
+        <button class="btn btn-s btn-sm" onclick="exportFacturaExcel()" title="Exportar a Excel">⬇ Excel</button>
+        <button class="btn btn-s btn-sm" onclick="exportFacturaPDF()" title="Ver / imprimir PDF">🖨 PDF</button>
+        <button class="btn btn-s btn-sm" onclick="copyFacturaTable()" title="Copiar tabla para Excel">📋 Copiar</button>
       </div>
     </div>
 
@@ -714,6 +715,15 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
         </tfoot>
       </table>
     </div>
+  </div>
+
+  <!-- Facturas guardadas -->
+  <div class="card" id="facturas-saved-card" style="display:none;margin-top:20px">
+    <div class="card-header">
+      <div class="card-title"><span class="icon icon-g">🗂</span>Facturas guardadas</div>
+      <span id="facturas-saved-count" style="font-size:11px;color:var(--dim)">0 facturas</span>
+    </div>
+    <div id="facturas-saved-list"></div>
   </div>
 </section>
 
@@ -859,6 +869,7 @@ let _facturaReport = null;// last validation report
 let _facturaRateSource = '';
 let _facturaSortCol = null;  // active sort column key
 let _facturaSortDir = 1;     // 1=asc, -1=desc
+let _savedFacturas = [];     // [{id,name,date,tasa,rows,totCNY,totUSD}]
 window.tasaCNY_USD = null;
 
 // ── STORAGE ────────────────────────────────────────────────
@@ -2376,11 +2387,12 @@ function doImportFile(){
   if(mode==='replace')prods=imported;
   else prods=[...prods,...imported];
   saveProds();renderProds();calcAll();renderDash();renderSim();
+  _autoFillFacturaFromImport(mode==='replace'?imported:[...prods]);
   closeUploadModal();
   const warnings=[];
   if(noPrices)warnings.push(`${noPrices} sin precio`);
-  toast(`✓ ${imported.length} productos importados${warnings.length?' · '+warnings.join(' · '):''}`,'ok');
-  nav('productos');
+  toast(`✓ ${imported.length} productos importados — Factura lista${warnings.length?' · '+warnings.join(' · '):''}`,'ok');
+  nav('factura');
 }
 
 function closeUploadModal(){
@@ -2531,9 +2543,11 @@ function processPaste(){
   const mode=document.getElementById('paste-mode').value;
   prods=mode==='replace'?rows:[...prods,...rows];
   saveProds();renderProds();calcAll();renderDash();renderSim();
+  _autoFillFacturaFromImport(mode==='replace'?rows:[...prods]);
   clearPaste();
   const warn=noPrices?` · ${noPrices} sin precio (edita en tabla)`:'';
-  toast(`${rows.length} productos importados${skipped?` · ${skipped} ignorados`:''}${warn}`,noPrices?'w':'ok');
+  toast(`${rows.length} productos importados — Factura lista${skipped?` · ${skipped} ignorados`:''}${warn}`,noPrices?'w':'ok');
+  nav('factura');
 }
 
 // ── HELPERS ────────────────────────────────────────────────
@@ -3033,6 +3047,7 @@ async function exportSimExcel(){
 function initFactura(){
   _renderRateHistDropdown();
   fetchFacturaRate(false);
+  _renderSavedFacturas();
 }
 
 // ── Rate history (last 10, localStorage) ──
@@ -3851,6 +3866,142 @@ function calcBox(){
   const inp=document.getElementById('login-input');
   if(inp) setTimeout(()=>inp.focus(),100);
 })();
+
+// ── FACTURA AUTO-FILL & SAVED FACTURAS ────────────────────
+
+function _loadSavedFacturas(){
+  try{ _savedFacturas=JSON.parse(localStorage.getItem('cn_saved_facturas')||'[]'); }catch(e){ _savedFacturas=[]; }
+}
+function _persistSavedFacturas(){
+  try{ localStorage.setItem('cn_saved_facturas',JSON.stringify(_savedFacturas)); }catch(e){ toast('Error al guardar (localStorage lleno)','err'); }
+}
+
+// Convert the imported prods array → _facturaRows and render
+function _autoFillFacturaFromImport(importedProds){
+  const rows = importedProds
+    .filter(p=>p.name||p.desc)
+    .map(p=>{
+      const name  = p.name||p.desc||'';
+      const qty   = Math.max(1, (p.cartons||1)*(p.qtyPerCtn||1));
+      const price = safeN(p.price);
+      const sub   = price>0 ? price*qty : 0;
+      return {desc:name, qty, curr:'CNY', unitVal:price, subVal:sub, valid:price>0};
+    });
+  if(!rows.length) return;
+  _facturaRows = rows;
+  _facturaReport = {
+    totalScanned:rows.length, validCount:rows.filter(r=>r.valid).length,
+    invalidCount:rows.filter(r=>!r.valid).length, errors:[], warnings:[], currencies:new Set(['CNY'])
+  };
+  facturaRender(rows, window.tasaCNY_USD);
+  // show validation banner if there are rows without price
+  const noBad=rows.filter(r=>!r.valid).length;
+  if(noBad){
+    _facturaReport.warnings.push(`${noBad} producto${noBad>1?'s':''} sin precio detectado — revisa y corrige.`);
+    _facturaRenderValidation(_facturaReport);
+    document.getElementById('factura-validation').style.display='block';
+  }
+}
+
+function guardarFactura(){
+  if(!_facturaRows.length){ toast('No hay factura para guardar','err'); return; }
+  _loadSavedFacturas();
+  const tasa = window.tasaCNY_USD||0;
+  let totCNY=0, totUSD=0;
+  _facturaRows.forEach(r=>{ const m=_facturaRowMoney(r,tasa); if(m.subCNY!=null)totCNY+=m.subCNY; if(m.subUSD!=null)totUSD+=m.subUSD; });
+
+  const now = new Date();
+  const dateStr = now.toLocaleString('es',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const autoName = `Factura ${dateStr}`;
+  const nombre = (prompt('Nombre para esta factura:', autoName)||'').trim() || autoName;
+
+  _savedFacturas.unshift({
+    id: Date.now(),
+    name: nombre,
+    date: now.toISOString(),
+    dateStr,
+    tasa,
+    rows: _facturaRows.map(r=>({...r})),
+    totCNY: Math.round(totCNY*100)/100,
+    totUSD: Math.round(totUSD*100)/100
+  });
+  // keep max 50 saved facturas
+  if(_savedFacturas.length>50) _savedFacturas = _savedFacturas.slice(0,50);
+  _persistSavedFacturas();
+  _renderSavedFacturas();
+  toast(`✓ "${nombre}" guardada en CalcNova`,'ok');
+}
+
+function _renderSavedFacturas(){
+  _loadSavedFacturas();
+  const card = document.getElementById('facturas-saved-card');
+  const list = document.getElementById('facturas-saved-list');
+  const cnt  = document.getElementById('facturas-saved-count');
+  if(!card||!list) return;
+  if(!_savedFacturas.length){ card.style.display='none'; return; }
+  card.style.display='block';
+  if(cnt) cnt.textContent = _savedFacturas.length+' factura'+(_savedFacturas.length!==1?'s':'');
+  list.innerHTML = _savedFacturas.map(f=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);flex-wrap:wrap">
+      <div style="flex:1;min-width:140px">
+        <div style="font-size:13px;font-weight:700;color:var(--text)">${esc(f.name)}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:1px">${f.dateStr} · ${f.rows.length} productos · Tasa ¥${fmt4(f.tasa)}</div>
+      </div>
+      <div style="display:flex;gap:18px">
+        <div style="text-align:right">
+          <div style="font-size:11px;color:var(--dim)">Total CNY</div>
+          <div style="font-size:13px;font-weight:800;color:var(--gold)">¥${fmtN(Math.round(f.totCNY))}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;color:var(--dim)">Total USD</div>
+          <div style="font-size:13px;font-weight:800;color:var(--green)">${f.totUSD>0?'$'+fmt2(f.totUSD):'—'}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-s btn-sm" onclick="cargarFacturaGuardada(${f.id})" title="Cargar esta factura">↩ Cargar</button>
+        <button class="btn btn-sm" onclick="exportarFacturaGuardada(${f.id})" title="Exportar a Excel" style="background:rgba(16,185,129,.15);color:var(--green);border:1px solid rgba(16,185,129,.3)">⬇ Excel</button>
+        <button class="btn btn-sm" onclick="borrarFacturaGuardada(${f.id})" title="Eliminar" style="background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.25)">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function cargarFacturaGuardada(id){
+  _loadSavedFacturas();
+  const f = _savedFacturas.find(x=>x.id===id);
+  if(!f){ toast('Factura no encontrada','err'); return; }
+  _facturaRows = f.rows.map(r=>({...r}));
+  _facturaReport = {totalScanned:f.rows.length, validCount:f.rows.filter(r=>r.valid).length,
+    invalidCount:f.rows.filter(r=>!r.valid).length, errors:[], warnings:[], currencies:new Set(['CNY'])};
+  facturaRender(_facturaRows, window.tasaCNY_USD||f.tasa);
+  toast(`↩ "${f.name}" cargada`,'ok');
+  document.getElementById('factura-results-card').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+async function exportarFacturaGuardada(id){
+  _loadSavedFacturas();
+  const f = _savedFacturas.find(x=>x.id===id);
+  if(!f){ toast('Factura no encontrada','err'); return; }
+  // temporarily swap rows, export, restore
+  const backup = _facturaRows;
+  const backupReport = _facturaReport;
+  _facturaRows = f.rows;
+  _facturaReport = {totalScanned:f.rows.length, validCount:f.rows.filter(r=>r.valid).length,
+    invalidCount:f.rows.filter(r=>!r.valid).length, errors:[], warnings:[], currencies:new Set(['CNY'])};
+  await exportFacturaExcel();
+  _facturaRows = backup;
+  _facturaReport = backupReport;
+}
+
+function borrarFacturaGuardada(id){
+  _loadSavedFacturas();
+  const f = _savedFacturas.find(x=>x.id===id);
+  if(!f) return;
+  if(!confirm(`¿Eliminar "${f.name}"?`)) return;
+  _savedFacturas = _savedFacturas.filter(x=>x.id!==id);
+  _persistSavedFacturas();
+  _renderSavedFacturas();
+  toast('Factura eliminada','ok');
+}
 </script>
 </body>
 </html>
