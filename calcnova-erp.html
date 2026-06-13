@@ -2114,7 +2114,7 @@ const UP_FIELDS=[
   {id:'cartons',  label:'Cartones / Cajas',       req:false,
     pat:/^carton|^ctns?$|^cajas?$|^box(es)?$|^pkgs?$|^bultos?\b|master.?(box|ctn|qty)|箱数|^cases$|num.?(of\s+)?ctns?|no\.?\s*ctns?|#\s*ctns?|\bctns?\s*(qty|total|num|#)/i},
   {id:'qtyPerCtn',label:'Uds por Cartón',         req:false,
-    pat:/ud.*(ctn|cart|caja)|pcs.*(ctn|box)|unid.*ctn|pcs\/ctns?|qty.*ctns?|pcs\s*per|每箱|units.*box|q[/.]?ctns?/i},
+    pat:/uds?\b.*(ctn|cart|caja|box)|unid(ad(es)?)?\b.*(ctn|cart|caja|box)|unidades?.*caja|pcs.*(ctn|box|caja)|pcs\/ctns?|qty.*ctns?|pcs\s*per|每箱|每箱数量|units?.*(box|ctn|caja)|q[/.]?ctns?|por.?caja|por.?ctn/i},
   {id:'totalQty', label:'Cantidad Total de Uds',  req:false,
     pat:/^qty$|^quantity$|^cantidad$|^cant\.?$|^total.?(qty|uds?|units?|pcs)|^uds?$|^pcs?$|^units?$|^total.?quantity|^total.?cant|数量|^q\.?t\.?y\.?$/i},
   {id:'weight',   label:'Peso KG (total)',         req:false,
@@ -2371,15 +2371,9 @@ function doImportFile(){
   if(namCol<0){toast('Selecciona la columna Nombre/Descripción','err');return;}
 
   function getStr(row,col){return col>=0?String(row[col]||'').trim():'';}
-  function getNum(row,col){
-    if(col<0)return 0;
-    const s=String(row[col]||'').trim();
-    if(!s)return 0;
-    // Extract the first numeric-looking substring; handles "USD 25.00", "¥1,234", "CNY25.5"
-    const m=s.match(/[+-]?[\d]{1,3}(?:[,.][\d]{3})*(?:[.,]\d+)?|[+-]?\d+(?:[.,]\d+)?/);
-    if(!m)return 0;
-    return safeN(parseXlNum(m[0]));
-  }
+  // Use the canonical parser — handles "USD 25.00", "¥1,234", "CNY25.5",
+  // plain "8400" (no truncation), and SheetJS numeric cells.
+  function getNum(row,col){return col>=0?safeN(parseMoney(row[col])):0;}
 
   const colCartons=gc('cartons'), colQpctn=gc('qtyPerCtn'), colTotalQty=gc('totalQty');
   const colPrice=gc('price'), colTotalAmt=gc('totalAmt');
@@ -2471,6 +2465,23 @@ function parseXlNum(s){
     n=after.length<=2?n.replace(',','.'):n.replace(/,/g,'');
   }
   return parseFloat(n)||0;
+}
+
+// ── CANONICAL money/number parser for ALL imported cells ──────────
+// Handles: JS numbers (SheetJS raw cells), currency symbols ($¥€£),
+// text currency codes (RMB/CNY/USD/…), and US/EU thousands separators.
+// NEVER truncates — a plain "8400" stays 8400 (the old regex made it 840).
+function parseMoney(s){
+  if(s===null||s===undefined||s==='') return 0;
+  if(typeof s === 'number') return isFinite(s) ? s : 0;
+  const str = String(s).trim();
+  if(!str || str==='-' || str==='—') return 0;
+  const clean = str
+    .replace(/[$¥€£]/g,'')
+    .replace(/\b(RMB|CNY|USD|EUR|HKD|GBP|JPY|元)\b/gi,'')
+    .trim();
+  if(!clean || clean==='-') return 0;
+  return parseXlNum(clean);
 }
 
 // Detect header row: if 2+ cells look like labels (not numbers)
@@ -3493,20 +3504,7 @@ function _facturaIsNumeric(s){
   return /[\d]/.test(s) && !isNaN(_facturaNum(s)) && _facturaNum(s)!==0 || /^0([.,]0+)?$/.test(String(s).trim());
 }
 
-function _facturaNum(s){
-  if(s===null||s===undefined||s==='') return 0;
-  // SheetJS returns numeric cells as JS numbers — use directly
-  if(typeof s === 'number') return isFinite(s) ? s : 0;
-  const str = String(s).trim();
-  if(!str || str==='-' || str==='—') return 0;
-  // Strip currency symbols ($¥€£) AND text currency codes (RMB, CNY, USD, EUR, HKD, GBP)
-  const clean = str
-    .replace(/[$¥€£]/g,'')
-    .replace(/\b(RMB|CNY|USD|EUR|HKD|GBP|JPY)\b/gi,'')
-    .trim();
-  if(!clean || clean==='-') return 0;
-  return parseXlNum(clean);
-}
+function _facturaNum(s){ return parseMoney(s); }  // canonical parser
 
 function _facturaRenderValidation(rep){
   const el = document.getElementById('factura-validation');
