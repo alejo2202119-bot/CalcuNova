@@ -3932,7 +3932,33 @@ function exportInvoicePDF(){
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',sans-serif;color:#1e293b;background:#fff;font-size:11px;line-height:1.4}
 @page{size:A4 landscape;margin:10mm 9mm}
-@media print{.no-print{display:none!important}body{font-size:10px}.page{padding:0}}
+*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
+@media print{
+  .no-print,.print-bar{display:none!important}
+  body{font-size:10px;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  .page{padding:0;max-width:100%}
+  thead{display:table-header-group!important}
+  tfoot{display:table-footer-group!important}
+  tr{page-break-inside:avoid}
+  .kpi{display:grid!important;grid-template-columns:repeat(6,1fr)!important;gap:6px!important}
+  .kpi-card{border:1px solid #e2e8f0!important;border-top-width:3px!important;background-color:inherit!important}
+  .kc-gold{background:#fffbeb!important}.kc-green{background:#f0fdf4!important}
+  .kc-blue{background:#eff6ff!important}.kc-purple{background:#faf5ff!important}
+  .kc-slate{background:#f8fafc!important}
+  .rate-bar{background:#0F172A!important;color:#cbd5e1!important}
+  .rate-bar .rl{color:#10B981!important}
+  .rate-bar .rt{color:#cbd5e1!important}
+  .rate-bar .rt b{color:#fff!important}
+  table.main thead tr{background:#0F172A!important}
+  table.main thead th{color:#fff!important;background:#0F172A!important}
+  .tot-row td{background:#0F172A!important;color:#fff!important}
+  .tot-row .tg{color:#fbbf24!important}
+  .tot-row .tgr{color:#4ade80!important}
+  .tot-row .tb{color:#60a5fa!important}
+  .tot-row .tp{color:#c4b5fd!important}
+  .logo-box{background:linear-gradient(135deg,#10B981 0%,#3B82F6 100%)!important}
+  .footer{border-top:2px solid #e2e8f0!important}
+}
 .page{max-width:1100px;margin:0 auto;padding:22px}
 .print-bar{background:#0F172A;padding:12px 24px;display:flex;gap:10px;align-items:center;position:sticky;top:0;z-index:10}
 .print-bar button{padding:9px 22px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
