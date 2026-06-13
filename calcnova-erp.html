@@ -817,9 +817,10 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
 <!-- PROYECTOS -->
 <section id="sec-proyectos" class="section">
   <div class="sec-hdr">
-    <div><div class="sec-title">📁 Proyectos / Operaciones</div><div class="sec-sub">Guarda y carga operaciones completas de importación</div></div>
+    <div><div class="sec-title">📁 Proyectos / Operaciones</div><div class="sec-sub">Guarda, carga y compara operaciones completas de importación</div></div>
     <button class="btn btn-p btn-sm" onclick="proyectoGuardar()">💾 Guardar operación actual</button>
   </div>
+  <div id="proyectos-comparador" style="margin-bottom:14px"></div>
   <div id="proyectos-list"><div class="empty"><div class="empty-ico">📁</div><div class="empty-ttl">Sin proyectos guardados</div><div class="empty-sub">Guarda tu operación actual para acceder luego</div></div></div>
 </section>
 
@@ -1532,18 +1533,20 @@ function renderDash(){
     </div>`;
   }).join('');
 
-  // Chart — distribute by USD cost
+  // Chart — distribute by USD cost (guard: Chart.js may not be loaded offline)
   const canvas=document.getElementById('chart-main');
-  if(canvas){
-    if(mainChart){mainChart.destroy();mainChart=null;}
-    const colors=['#10B981','#3B82F6','#F59E0B','#8B5CF6','#EF4444','#06B6D4','#84CC16','#F97316'];
-    mainChart=new Chart(canvas,{
-      type:'doughnut',
-      data:{labels:rs.map(r=>r.p.name||'—'),datasets:[{data:rs.map(r=>r.totalUSD),backgroundColor:colors.slice(0,rs.length),borderWidth:0,hoverOffset:6}]},
-      options:{responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{position:'bottom',labels:{color:'#94A3B8',font:{size:11},padding:10,boxWidth:10}},
-        tooltip:{callbacks:{label:c=>' $'+fmt2(c.parsed)}}}}
-    });
+  if(canvas && typeof Chart!=='undefined'){
+    try{
+      if(mainChart){mainChart.destroy();mainChart=null;}
+      const colors=['#10B981','#3B82F6','#F59E0B','#8B5CF6','#EF4444','#06B6D4','#84CC16','#F97316'];
+      mainChart=new Chart(canvas,{
+        type:'doughnut',
+        data:{labels:rs.map(r=>r.p.name||'—'),datasets:[{data:rs.map(r=>r.totalUSD),backgroundColor:colors.slice(0,rs.length),borderWidth:0,hoverOffset:6}]},
+        options:{responsive:true,maintainAspectRatio:false,
+          plugins:{legend:{position:'bottom',labels:{color:'#94A3B8',font:{size:11},padding:10,boxWidth:10}},
+          tooltip:{callbacks:{label:c=>' $'+fmt2(c.parsed)}}}}
+      });
+    }catch(e){ /* chart is non-critical — never let it break the dashboard */ }
   }
   updateDashR();
 }
@@ -3155,6 +3158,9 @@ function applyRateFromHistory(idx){
   const item = h[parseInt(idx)];
   if(!item) return;
   window.tasaCNY_USD = item.tasa;
+  // Sync manual input so the user sees which rate is active
+  const manualEl = document.getElementById('factura-rate-manual');
+  if(manualEl) manualEl.value = item.tasa;
   _facturaRateSource = item.source+' (historial)';
   _updateRateDisplay(item.tasa, 'Tasa del historial', _facturaRateSource);
   _facturaRerender();
@@ -4268,6 +4274,7 @@ function proyectoEliminar(id){
   const p=_projects.find(x=>x.id===id);
   if(!p||!confirm(`¿Eliminar "${p.name}"?`)) return;
   _projects=_projects.filter(x=>x.id!==id);
+  _compareSel=_compareSel.filter(x=>x!==id);  // drop from comparator selection
   _saveProjects();
   _audit('PROYECTO_ELIMINADO', p.name);
   proyectosRender();
@@ -4284,7 +4291,11 @@ function proyectosRender(){
   el.innerHTML=_projects.map(p=>{
     const client=_clients.find(c=>c.id===p.clientId);
     const supplier=_suppliers.find(s=>s.id===p.supplierId);
-    return `<div style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:10px;flex-wrap:wrap">
+    const checked=_compareSel.includes(p.id)?'checked':'';
+    return `<div style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--surface);border:1px solid ${checked?'var(--blue)':'var(--border)'};border-radius:12px;margin-bottom:10px;flex-wrap:wrap">
+      <label style="display:flex;align-items:center;cursor:pointer;flex-shrink:0" title="Marcar para comparar">
+        <input type="checkbox" ${checked} onchange="proyectoToggleCompare(${p.id})" style="width:18px;height:18px;cursor:pointer;accent-color:var(--blue)">
+      </label>
       <div style="flex:1;min-width:160px">
         <div style="font-size:14px;font-weight:800;color:var(--text)">${esc(p.name)}</div>
         <div style="font-size:10px;color:var(--muted);margin-top:2px">${p.dateStr} · ${p.prodCount} productos</div>
@@ -4307,6 +4318,57 @@ function proyectosRender(){
       </div>
     </div>`;
   }).join('');
+  _proyectoRenderComparador();
+}
+
+// ── COMPARADOR DE IMPORTACIONES ─────────────────────────────
+let _compareSel = [];  // selected project ids
+function proyectoToggleCompare(id){
+  const i=_compareSel.indexOf(id);
+  if(i>=0) _compareSel.splice(i,1); else _compareSel.push(id);
+  proyectosRender();
+}
+function _proyectoRenderComparador(){
+  const box=document.getElementById('proyectos-comparador');
+  if(!box) return;
+  const sel=_compareSel.map(id=>_projects.find(p=>p.id===id)).filter(Boolean);
+  if(sel.length<2){
+    box.innerHTML = _compareSel.length===1
+      ? '<div style="font-size:12px;color:var(--muted);padding:10px 14px;background:var(--surface);border:1px dashed var(--border);border-radius:10px">☑ Marca <strong>al menos 2 proyectos</strong> para compararlos lado a lado.</div>'
+      : '';
+    return;
+  }
+  // metrics per project (read-only — no invented values)
+  const rows=[
+    {lbl:'Fecha',         get:p=>p.dateStr||'—'},
+    {lbl:'Productos',     get:p=>fmtN(p.prodCount||0)},
+    {lbl:'Total CNY ¥',   get:p=>'¥'+fmtN(Math.round(p.totCNY||0)), hl:'gold'},
+    {lbl:'Total USD $',   get:p=>p.totUSD>0?'$'+fmt2(p.totUSD):'—', hl:'green'},
+    {lbl:'Costo prom./prod. $', get:p=>(p.totUSD>0&&p.prodCount>0)?'$'+fmt2(p.totUSD/p.prodCount):'—'},
+    {lbl:'Tasa CNY usada',get:p=>p.rates&&p.rates.y>0?'¥'+fmt2(p.rates.y)+' = $1':'—'}
+  ];
+  // best (lowest USD total) highlight
+  const usds=sel.map(p=>p.totUSD||0).filter(v=>v>0);
+  const minUSD=usds.length?Math.min(...usds):null;
+  const th=sel.map(p=>{
+    const best=minUSD!=null&&p.totUSD===minUSD;
+    return `<th style="padding:10px 12px;text-align:right;color:var(--text);font-size:12px;border-bottom:2px solid var(--border)">
+      ${esc(p.name)}${best?' <span style="color:var(--green);font-size:10px">★ menor $</span>':''}</th>`;
+  }).join('');
+  const body=rows.map(r=>`<tr style="border-bottom:1px solid var(--border)">
+    <td style="padding:8px 12px;color:var(--muted);font-size:12px;white-space:nowrap">${r.lbl}</td>
+    ${sel.map(p=>`<td style="padding:8px 12px;text-align:right;font-weight:700;font-size:13px;color:${r.hl==='gold'?'var(--gold)':r.hl==='green'?'var(--green)':'var(--text)'}">${r.get(p)}</td>`).join('')}
+  </tr>`).join('');
+  box.innerHTML=`<div class="card" style="padding:0;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(15,23,42,.5);border-bottom:1px solid var(--border)">
+      <div style="font-size:13px;font-weight:800;color:var(--text)">⚖️ Comparador de importaciones (${sel.length})</div>
+      <button class="btn btn-s btn-sm" onclick="_compareSel=[];proyectosRender()" style="font-size:11px">Limpiar</button>
+    </div>
+    <div class="tbl-wrap"><table style="width:100%;border-collapse:collapse">
+      <thead><tr><th style="padding:10px 12px;text-align:left;color:var(--dim);font-size:11px;border-bottom:2px solid var(--border)">Métrica</th>${th}</tr></thead>
+      <tbody>${body}</tbody>
+    </table></div>
+  </div>`;
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -4398,20 +4460,7 @@ function handleFileUpload(e){
   _handleFileUploadXLSX(file);
 }
 
-// ── FIX: Factura rate history ↔ manual input sync ──────────
-function applyRateFromHistory(val){
-  if(!val) return;
-  const tasa = parseFloat(val);
-  if(!(tasa>0)) return;
-  window.tasaCNY_USD = tasa;
-  // Sync manual input so user sees what's active
-  const manualEl = document.getElementById('factura-rate-manual');
-  if(manualEl) manualEl.value = tasa;
-  const cached = _loadRateHist().find(h=>Math.abs(h.tasa-tasa)<0.000001);
-  _facturaRateSource = cached ? cached.source+' (historial)' : 'historial';
-  _updateRateDisplay(tasa,'Tasa del historial',_facturaRateSource);
-  _facturaRerender();
-}
+// (applyRateFromHistory is defined earlier with the correct index-based signature)
 
 // ── AUDIT LOG UI ────────────────────────────────────────────
 function renderAuditLog(){
@@ -4439,12 +4488,7 @@ function renderAuditLog(){
     +'</tbody></table>';
 }
 
-// Audit key user actions
-const _origSaveProds = saveProds;
-function saveProds(){
-  _origSaveProds();
-  // Lightweight — don't audit every keystroke, only from explicit saves
-}
+// Audit key user actions (no saveProds wrapper — would self-recurse via hoisting)
 function _auditImport(n){ _audit('IMPORTAR_ARCHIVO', `${n} productos importados`); }
 function _auditExport(type){ _audit('EXPORTAR', type); }
 
