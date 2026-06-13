@@ -1697,6 +1697,27 @@ table.cost{width:100%;border-collapse:collapse;font-size:10.5px;margin-bottom:4p
 table.cost thead th{background:#334155;color:white;padding:7px 10px;text-align:left;font-weight:600;font-size:9.5px;text-transform:uppercase;letter-spacing:.05em}
 table.cost td{padding:6px 10px;border-bottom:1px solid #f1f5f9}
 
+/* ESCENARIOS DE VENTA */
+.escenarios{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:8px}
+.esc-card{border-radius:12px;padding:14px 16px;border:1px solid #e2e8f0}
+.esc-card.blue{border-top:4px solid #3B82F6;background:#eff6ff}
+.esc-card.gold{border-top:4px solid #F59E0B;background:#fffbeb}
+.esc-card.green{border-top:4px solid #10B981;background:#f0fdf4}
+.esc-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.esc-card.blue .esc-title{color:#1d4ed8}
+.esc-card.gold .esc-title{color:#b45309}
+.esc-card.green .esc-title{color:#15803d}
+.esc-ingreso-lbl{font-size:9px;color:#94A3B8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+.esc-ingreso{font-size:22px;font-weight:900;line-height:1}
+.esc-card.blue .esc-ingreso{color:#1d4ed8}
+.esc-card.gold .esc-ingreso{color:#b45309}
+.esc-card.green .esc-ingreso{color:#15803d}
+.esc-gan{margin-top:8px;font-size:11px;font-weight:700;padding:4px 0;border-top:1px dashed #cbd5e1}
+.esc-card.blue .esc-gan{color:#15803d}
+.esc-card.gold .esc-gan{color:#15803d}
+.esc-card.green .esc-gan{color:#15803d}
+.esc-sub{font-size:9px;color:#94A3B8;margin-top:2px}
+
 /* FOOTER */
 .footer{border-top:1px solid #e2e8f0;padding-top:10px;display:flex;justify-content:space-between;color:#94A3B8;font-size:9.5px;margin-top:12px}
 </style>
@@ -1793,6 +1814,33 @@ table.cost td{padding:6px 10px;border-bottom:1px solid #f1f5f9}
     </tr></thead>
     <tbody>${costos}</tbody>
   </table>
+
+  <!-- ESCENARIOS DE VENTA -->
+  <div class="sec-h" style="margin-top:22px">Precios de Venta Estimados — 3 Escenarios</div>
+  <div class="escenarios">
+    <div class="esc-card blue">
+      <div class="esc-title">📈 Venta con +30% de ganancia</div>
+      <div class="esc-ingreso-lbl">Ingreso total estimado</div>
+      <div class="esc-ingreso">$${fmt2(totInvUSD*1.30)}</div>
+      <div class="esc-gan">Ganancia: $${fmt2(totInvUSD*0.30)}</div>
+      <div class="esc-sub">Costo total: $${fmt2(totInvUSD)}</div>
+    </div>
+    <div class="esc-card gold">
+      <div class="esc-title">🚀 Venta con +50% de ganancia</div>
+      <div class="esc-ingreso-lbl">Ingreso total estimado</div>
+      <div class="esc-ingreso">$${fmt2(totInvUSD*1.50)}</div>
+      <div class="esc-gan">Ganancia: $${fmt2(totInvUSD*0.50)}</div>
+      <div class="esc-sub">Costo total: $${fmt2(totInvUSD)}</div>
+    </div>
+    <div class="esc-card green">
+      <div class="esc-title">💎 Venta con +70% de ganancia</div>
+      <div class="esc-ingreso-lbl">Ingreso total estimado</div>
+      <div class="esc-ingreso">$${fmt2(totInvUSD*1.70)}</div>
+      <div class="esc-gan">Ganancia: $${fmt2(totInvUSD*0.70)}</div>
+      <div class="esc-sub">Costo total: $${fmt2(totInvUSD)}</div>
+    </div>
+  </div>
+  <p style="font-size:9px;color:#94A3B8;margin-top:6px;text-align:right">* Escenarios sobre costo total (mercancía + logística). Valores orientativos.</p>
 
   <!-- FOOTER -->
   <div class="footer">
