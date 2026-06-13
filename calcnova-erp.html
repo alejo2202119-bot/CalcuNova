@@ -199,6 +199,8 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
     <button class="nav-btn" onclick="nav('costos')">Costos</button>
     <button class="nav-btn" onclick="nav('simulador')">Simulador</button>
     <button class="nav-btn" onclick="nav('factura')">📄 Factura</button>
+    <button class="nav-btn" onclick="nav('crm')">👥 CRM</button>
+    <button class="nav-btn" onclick="nav('proyectos')">📁 Proyectos</button>
     <button class="nav-btn" onclick="nav('config')">Config</button>
   </nav>
   <div class="header-rates">
@@ -281,7 +283,7 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
   </div>
 
   <!-- PASTE / UPLOAD ZONE -->
-  <input type="file" id="file-upload-input" accept=".xlsx,.xls,.csv,.ods" style="display:none" onchange="handleFileUpload(event)">
+  <input type="file" id="file-upload-input" accept=".xlsx,.xls,.csv,.ods,.jpg,.jpeg,.png,.webp" style="display:none" onchange="handleFileUpload(this.files[0])">
 
   <div class="card" style="margin-bottom:14px;border-color:rgba(59,130,246,.3);border-width:1.5px">
     <div class="card-header" style="margin-bottom:14px">
@@ -296,8 +298,8 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
       style="border:2px dashed rgba(59,130,246,.35);border-radius:12px;padding:22px 16px;text-align:center;cursor:pointer;margin-bottom:14px;transition:all .2s">
       <div style="font-size:28px;margin-bottom:6px">📂</div>
       <div style="font-size:14px;font-weight:700;color:var(--blue)">Haz clic aquí o arrastra tu archivo</div>
-      <div style="font-size:12px;color:var(--dim);margin-top:4px">Excel (.xlsx · .xls) · CSV · ODS</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:8px">El sistema detecta las columnas automáticamente y te deja confirmar el mapeo antes de importar</div>
+      <div style="font-size:12px;color:var(--dim);margin-top:4px">Excel (.xlsx · .xls) · CSV · ODS · Imagen (.jpg · .png) con OCR</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px">El sistema detecta columnas automáticamente. Las imágenes se leen con OCR y deberás revisar el mapeo.</div>
     </div>
 
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
@@ -533,13 +535,38 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
   <!-- ── PRODUCTOS DEL IMPORTADOR (lee del array prods) ── -->
   <div class="card">
     <div class="card-header">
-      <div class="card-title"><span class="icon icon-b">🚢</span>Productos del importador (Pestaña Productos)</div>
+      <div class="card-title"><span class="icon icon-b">🚢</span>Productos del importador</div>
       <div class="tabs" style="margin-bottom:0">
         <button class="tab active" onclick="simTab(this,'20ft')">20 pies</button>
         <button class="tab" onclick="simTab(this,'40ft')">40 pies</button>
         <button class="tab" onclick="simTab(this,'consolidada')">Consolidada</button>
       </div>
     </div>
+
+    <!-- KPIs monetarios — lo que pedía el usuario -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:14px;padding:14px;background:rgba(15,23,42,.4);border-radius:12px;border:1px solid rgba(148,163,184,.1)">
+      <div>
+        <div style="font-size:10px;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:.06em">Total CNY ¥</div>
+        <div style="font-size:18px;font-weight:800;color:var(--gold);margin-top:4px" id="sim-kpi-cny">—</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">Precio China</div>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--green);font-weight:700;text-transform:uppercase;letter-spacing:.06em">Total USD $</div>
+        <div style="font-size:18px;font-weight:800;color:var(--green);margin-top:4px" id="sim-kpi-usd">—</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px" id="sim-kpi-tasa">Tasa del día</div>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--blue);font-weight:700;text-transform:uppercase;letter-spacing:.06em">Peso Total</div>
+        <div style="font-size:18px;font-weight:800;color:var(--blue);margin-top:4px" id="sim-kpi-kg">—</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">Kilogramos</div>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--purple);font-weight:700;text-transform:uppercase;letter-spacing:.06em">Volumen Total</div>
+        <div style="font-size:18px;font-weight:800;color:var(--purple);margin-top:4px" id="sim-kpi-cbm">—</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">Metros cúbicos</div>
+      </div>
+    </div>
+
     <div class="g2" style="gap:10px;margin-bottom:10px">
       <div class="stat"><div class="stat-label">Max CBM</div><div class="stat-val" id="s-maxC" style="font-size:16px">33.20</div></div>
       <div class="stat"><div class="stat-label">Max Peso KG</div><div class="stat-val" id="s-maxW" style="font-size:16px">28,000</div></div>
@@ -556,7 +583,7 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
     </div>
     <div class="tbl-wrap" style="margin-top:12px">
       <table>
-        <thead><tr><th>Producto</th><th>Cant.</th><th>Peso KG</th><th>CBM</th><th>% CBM</th></tr></thead>
+        <thead><tr><th>Producto</th><th>Cant.</th><th>Precio ¥/ud</th><th>Total CNY</th><th>Total USD</th><th>Peso KG</th><th>CBM</th><th>% CBM</th></tr></thead>
         <tbody id="sim-tbody"></tbody>
       </table>
     </div>
@@ -752,12 +779,74 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
       </div>
     </div>
   </div>
+  <!-- Audit log -->
+  <div class="card" style="margin-top:20px">
+    <div class="card-header">
+      <div class="card-title"><span class="icon icon-b">📋</span>Log de Auditoría</div>
+      <button class="btn btn-s btn-sm" onclick="renderAuditLog()">↻ Actualizar</button>
+    </div>
+    <div id="audit-log-container" style="max-height:280px;overflow-y:auto"></div>
+  </div>
+</section>
+
+<!-- CRM -->
+<section id="sec-crm" class="section">
+  <div class="sec-hdr">
+    <div><div class="sec-title">👥 CRM — Clientes y Proveedores</div><div class="sec-sub">Gestión de contactos comerciales</div></div>
+  </div>
+  <div class="g2">
+    <!-- CLIENTES -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><span class="icon icon-g">🏢</span>Clientes</div>
+        <button class="btn btn-p btn-sm" onclick="crmOpenModal('client')">+ Nuevo cliente</button>
+      </div>
+      <div id="crm-clients-list"><div class="empty"><div class="empty-ico">🏢</div><div class="empty-ttl">Sin clientes</div><div class="empty-sub">Agrega tu primer cliente</div></div></div>
+    </div>
+    <!-- PROVEEDORES -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><span class="icon icon-o">🏭</span>Proveedores</div>
+        <button class="btn btn-p btn-sm" onclick="crmOpenModal('supplier')">+ Nuevo proveedor</button>
+      </div>
+      <div id="crm-suppliers-list"><div class="empty"><div class="empty-ico">🏭</div><div class="empty-ttl">Sin proveedores</div><div class="empty-sub">Agrega tu primer proveedor</div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- PROYECTOS -->
+<section id="sec-proyectos" class="section">
+  <div class="sec-hdr">
+    <div><div class="sec-title">📁 Proyectos / Operaciones</div><div class="sec-sub">Guarda y carga operaciones completas de importación</div></div>
+    <button class="btn btn-p btn-sm" onclick="proyectoGuardar()">💾 Guardar operación actual</button>
+  </div>
+  <div id="proyectos-list"><div class="empty"><div class="empty-ico">📁</div><div class="empty-ttl">Sin proyectos guardados</div><div class="empty-sub">Guarda tu operación actual para acceder luego</div></div></div>
 </section>
 
 </main>
 </div><!-- /.main-app -->
 
 <div id="toast"></div>
+
+<!-- CRM MODAL -->
+<div id="crm-modal" onclick="if(event.target===this)crmCloseModal()"
+  style="display:none;position:fixed;inset:0;z-index:2100;background:rgba(0,0,0,.8);backdrop-filter:blur(8px);overflow-y:auto;padding:20px 12px">
+  <div style="max-width:560px;margin:0 auto;background:#1e293b;border:1px solid rgba(148,163,184,.18);border-radius:20px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.6)">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 24px;background:rgba(15,23,42,.7);border-bottom:1px solid rgba(148,163,184,.1)">
+      <div style="font-size:15px;font-weight:800;color:var(--text)" id="crm-modal-title">Nuevo contacto</div>
+      <button onclick="crmCloseModal()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:4px 8px">✕</button>
+    </div>
+    <div style="padding:20px 24px">
+      <input type="hidden" id="crm-edit-id">
+      <input type="hidden" id="crm-edit-type">
+      <div class="gform" id="crm-form-fields" style="display:grid;gap:12px"></div>
+      <div style="display:flex;gap:8px;margin-top:20px;justify-content:flex-end">
+        <button class="btn btn-s btn-sm" onclick="crmCloseModal()">Cancelar</button>
+        <button class="btn btn-p btn-sm" onclick="crmSave()" style="padding:8px 24px">💾 Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- FILE UPLOAD MODAL -->
 <div id="upload-modal" onclick="if(event.target===this)closeUploadModal()"
@@ -872,6 +961,12 @@ let _facturaSortDir = 1;     // 1=asc, -1=desc
 let _savedFacturas = [];     // [{id,name,date,tasa,rows,totCNY,totUSD}]
 window.tasaCNY_USD = null;
 
+// ── CRM + PROYECTOS + AUDITORÍA (v2.0) ────────────────────
+let _clients   = [];  // [{id,name,company,phone,email,address,notes}]
+let _suppliers = [];  // [{id,company,country,city,email,phone,whatsapp,web,notes}]
+let _projects  = [];  // [{id,name,date,client,supplier,prods,cfg,rates,totCNY,totUSD}]
+let _auditLog  = [];  // [{ts,action,detail}] — últimas 200 entradas
+
 // ── STORAGE ────────────────────────────────────────────────
 function loadCfg(){
   const def={
@@ -890,24 +985,20 @@ function loadProds(){ try{ const s=localStorage.getItem('cn_prods'); return s?JS
 function saveProds(){ try{ localStorage.setItem('cn_prods',JSON.stringify(prods)); }catch(e){} }
 function saveRC(k,v,n){ try{ localStorage.setItem('cn_rc_'+k,JSON.stringify({v,n,ts:Date.now()})); }catch(e){} }
 function loadRC(k){ try{ const s=localStorage.getItem('cn_rc_'+k); return s?JSON.parse(s):null; }catch(e){ return null; } }
-
-// ── NAV ────────────────────────────────────────────────────
-function nav(id){
-  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-  const sec=document.getElementById('sec-'+id);
-  if(sec) sec.classList.add('active');
-  // match nav button by text
-  Array.from(document.querySelectorAll('.nav-btn')).forEach(b=>{
-    if(b.textContent.toLowerCase().startsWith(id.slice(0,4))) b.classList.add('active');
-  });
-  if(id==='dashboard') renderDash();
-  if(id==='costos') loadCostForm();
-  if(id==='simulador') renderSim();
-  if(id==='factura') initFactura();
-  if(id==='config') loadCfgForm();
+function _loadLS(key,def=[]){ try{const s=localStorage.getItem(key);return s?JSON.parse(s):def;}catch(e){return def;} }
+function _saveLS(key,val){ try{localStorage.setItem(key,JSON.stringify(val));}catch(e){toast('Error guardando: localStorage lleno','err');} }
+function _loadCRM(){ _clients=_loadLS('cn_clients'); _suppliers=_loadLS('cn_suppliers'); }
+function _saveCRM(){ _saveLS('cn_clients',_clients); _saveLS('cn_suppliers',_suppliers); }
+function _loadProjects(){ _projects=_loadLS('cn_projects'); }
+function _saveProjects(){ _saveLS('cn_projects',_projects); }
+function _loadAudit(){ _auditLog=_loadLS('cn_audit'); }
+function _audit(action,detail=''){
+  _auditLog.unshift({ts:new Date().toISOString(),action,detail:String(detail).substring(0,200)});
+  if(_auditLog.length>200) _auditLog=_auditLog.slice(0,200);
+  _saveLS('cn_audit',_auditLog);
 }
 
+// ── NAV ────────────────────────────────────────────────────
 // ── RATES ──────────────────────────────────────────────────
 async function jf(url,ms=5000){
   const ac=new AbortController();
@@ -1468,6 +1559,8 @@ function renderSim(){
   setText('s-maxC',maxC?fmt2(maxC):'—');setText('s-maxW',maxW?fmtN(maxW):'—');
   const totC=safeN(prods.reduce((s,p)=>s+safeN(p.cbm),0));
   const totW=safeN(prods.reduce((s,p)=>s+safeN(p.weight),0));
+  const totCNY=safeN(prods.reduce((s,p)=>s+safeN(getQty(p))*safeN(p.price),0));
+  const totUSD=R.y>0?totCNY/R.y:0;
   const cp=maxC&&totC>0?Math.min(100,safeN(totC/maxC*100)):0;
   const wp=maxW&&totW>0?Math.min(100,safeN(totW/maxW*100)):0;
   setText('s-cpct',maxC?fmt1(cp)+'%':'—');setText('s-wpct',maxW?fmt1(wp)+'%':'—');
@@ -1476,14 +1569,35 @@ function renderSim(){
   const cb=document.getElementById('s-cbar'),wb=document.getElementById('s-wbar');
   if(cb){cb.style.width=cp+'%';cb.className='cbar-fill'+(cp>85?' warn':'');}
   if(wb){wb.style.width=wp+'%';wb.className='cbar-fill'+(wp>85?' warn':'');}
+  // ── KPIs monetarios y logísticos ──────────────────────────
+  setText('sim-kpi-cny', totCNY>0?'¥'+fmtN(Math.round(totCNY)):'—');
+  setText('sim-kpi-usd', totUSD>0?'$'+fmt2(totUSD):'—');
+  setText('sim-kpi-kg',  totW>0?fmt2(totW)+' kg':'—');
+  setText('sim-kpi-cbm', totC>0?fmt4(totC)+' m³':'—');
+  if(R.y>0) setText('sim-kpi-tasa','Tasa ¥'+fmt2(R.y)+' = $1');
+  // ── Tabla de productos ─────────────────────────────────────
   const tb=document.getElementById('sim-tbody');
   if(!tb)return;
-  if(!prods.length){tb.innerHTML='<tr><td colspan="5"><div class="empty"><div class="empty-ico">🚢</div><div class="empty-ttl">Sin productos</div></div></td></tr>';return;}
+  if(!prods.length){
+    tb.innerHTML='<tr><td colspan="8"><div class="empty"><div class="empty-ico">🚢</div><div class="empty-ttl">Sin productos</div><div class="empty-sub">Importa productos desde la sección Productos</div></div></td></tr>';
+    return;
+  }
   tb.innerHTML=prods.map(p=>{
-    const pC=p.cbm||0,pW=p.weight||0;
+    const pC=safeN(p.cbm),pW=safeN(p.weight);
     const qty=getQty(p);
+    const pCNY=safeN(qty)*safeN(p.price);
+    const pUSD=R.y>0?pCNY/R.y:0;
     const pct=maxC>0?fmt1(pC/maxC*100)+'%':'—';
-    return `<tr><td><strong>${esc(p.name||'—')}</strong>${p.ref?`<div style="font-size:10px;color:var(--muted)">${esc(p.ref)}</div>`:''}</td><td class="tn">${p.cartons||1} ctns / ${fmtN(qty)} uds</td><td class="tn">${fmt2(pW)}</td><td class="tn">${fmt4(pC)}</td><td><span class="badge b-b">${pct}</span></td></tr>`;
+    return `<tr>
+      <td><strong>${esc(p.name||'—')}</strong>${p.ref?`<div style="font-size:10px;color:var(--muted)">${esc(p.ref)}</div>`:''}</td>
+      <td class="tn">${p.cartons||1} ctns / ${fmtN(qty)} uds</td>
+      <td class="tn to">${p.price>0?'¥'+fmt2(p.price):'—'}</td>
+      <td class="tn to" style="font-weight:700">${pCNY>0?'¥'+fmtN(Math.round(pCNY)):'—'}</td>
+      <td class="tn tg" style="font-weight:700">${pUSD>0?'$'+fmt2(pUSD):'—'}</td>
+      <td class="tn">${pW>0?fmt2(pW):' —'}</td>
+      <td class="tn">${pC>0?fmt4(pC):'—'}</td>
+      <td><span class="badge b-b">${pct}</span></td>
+    </tr>`;
   }).join('');
 }
 
@@ -1936,12 +2050,10 @@ function handleDrop(e){
   const dz=document.getElementById('drop-zone');
   if(dz){dz.style.borderColor='';dz.style.background='';}
   const file=e.dataTransfer?.files?.[0];
-  if(file)parseUploadFile(file);
+  if(file) handleFileUpload(file);
 }
 
-async function handleFileUpload(e){
-  const file=e.target.files?.[0];
-  e.target.value='';
+async function _handleFileUploadXLSX(file){
   if(file)parseUploadFile(file);
 }
 
@@ -2550,10 +2662,36 @@ async function doLogin(){
 function initApp(){
   prods=loadProds();
   cfg=loadCfg();
+  _loadCRM();
+  _loadProjects();
+  _loadAudit();
   renderProds();
   loadCostForm();
   loadCfgForm();
-  refreshRates();
+  // Fire rates async — renders update when they arrive (already awaited inside)
+  refreshRates().then(()=>{
+    renderSim();        // re-render simulator once rates are live
+    renderDash();
+  }).catch(()=>{});
+  _audit('INICIO','Sistema iniciado');
+}
+
+// Nav + load data for new modules
+function nav(id){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const sec=document.getElementById('sec-'+id);
+  if(sec) sec.classList.add('active');
+  Array.from(document.querySelectorAll('.nav-btn')).forEach(b=>{
+    if(b.textContent.toLowerCase().startsWith(id.slice(0,4))) b.classList.add('active');
+  });
+  if(id==='dashboard')  renderDash();
+  if(id==='costos')     loadCostForm();
+  if(id==='simulador')  renderSim();
+  if(id==='factura')    initFactura();
+  if(id==='config')     loadCfgForm();
+  if(id==='crm')        { _loadCRM(); crmRenderClients(); crmRenderSuppliers(); }
+  if(id==='proyectos')  { _loadProjects(); proyectosRender(); }
 }
 
 // ── COTIZACIÓN ─────────────────────────────────────────────
@@ -3941,6 +4079,375 @@ function borrarFacturaGuardada(id){
   _renderSavedFacturas();
   toast('Factura eliminada','ok');
 }
+
+// ══════════════════════════════════════════════════════════════
+//  CRM — CLIENTES Y PROVEEDORES                    CalcNova v2.0
+// ══════════════════════════════════════════════════════════════
+
+const CRM_CLIENT_FIELDS = [
+  {id:'name',    label:'Nombre completo',  type:'text',  ph:'Juan García'},
+  {id:'company', label:'Empresa',          type:'text',  ph:'Importaciones S.A.'},
+  {id:'phone',   label:'Teléfono',         type:'tel',   ph:'+57 300 000 0000'},
+  {id:'email',   label:'Correo electrónico',type:'email',ph:'contacto@empresa.com'},
+  {id:'address', label:'Dirección / Ciudad',type:'text', ph:'Bogotá, Colombia'},
+  {id:'notes',   label:'Observaciones',    type:'text',  ph:'Cliente VIP, pago a 30 días'},
+];
+const CRM_SUPPLIER_FIELDS = [
+  {id:'company', label:'Empresa / Fábrica', type:'text', ph:'Guangzhou Factory Co.'},
+  {id:'country', label:'País',              type:'text', ph:'China'},
+  {id:'city',    label:'Ciudad',            type:'text', ph:'Guangzhou'},
+  {id:'email',   label:'Correo',            type:'email',ph:'sales@factory.cn'},
+  {id:'phone',   label:'Teléfono',          type:'tel',  ph:'+86 20 0000 0000'},
+  {id:'whatsapp',label:'WhatsApp',          type:'tel',  ph:'+86 137 0000 0000'},
+  {id:'web',     label:'Sitio web',         type:'text', ph:'www.factory.cn'},
+  {id:'notes',   label:'Observaciones',     type:'text', ph:'Pago T/T 30%, 70% contra BL'},
+];
+
+let _crmEditType = 'client';
+
+function crmOpenModal(type, id=null){
+  _crmEditType = type;
+  const fields = type==='client' ? CRM_CLIENT_FIELDS : CRM_SUPPLIER_FIELDS;
+  const existing = id ? (type==='client'?_clients:_suppliers).find(x=>x.id===id) : null;
+  document.getElementById('crm-modal-title').textContent = id
+    ? (type==='client'?'Editar cliente':'Editar proveedor')
+    : (type==='client'?'Nuevo cliente':'Nuevo proveedor');
+  document.getElementById('crm-edit-id').value = id||'';
+  document.getElementById('crm-edit-type').value = type;
+  const ff = document.getElementById('crm-form-fields');
+  ff.innerHTML = fields.map(f=>`
+    <div class="field">
+      <label style="font-size:11px;color:var(--dim);font-weight:600;text-transform:uppercase;letter-spacing:.05em">${f.label}</label>
+      <input class="inp" id="crm-f-${f.id}" type="${f.type}" placeholder="${f.ph}" value="${esc(existing?.[f.id]||'')}">
+    </div>`).join('');
+  document.getElementById('crm-modal').style.display='block';
+  setTimeout(()=>{ const first=ff.querySelector('input'); if(first)first.focus(); },80);
+}
+function crmCloseModal(){ document.getElementById('crm-modal').style.display='none'; }
+
+function crmSave(){
+  const type = document.getElementById('crm-edit-type').value;
+  const editId = document.getElementById('crm-edit-id').value;
+  const fields = type==='client' ? CRM_CLIENT_FIELDS : CRM_SUPPLIER_FIELDS;
+  const obj = { id: editId ? Number(editId) : Date.now() };
+  fields.forEach(f=>{ obj[f.id]=(document.getElementById('crm-f-'+f.id)?.value||'').trim(); });
+  const label = type==='client' ? obj.name||obj.company : obj.company;
+  if(!label){ toast('Completa al menos el nombre/empresa','err'); return; }
+  if(type==='client'){
+    if(editId){ const i=_clients.findIndex(x=>x.id===Number(editId)); if(i>=0)_clients[i]=obj; else _clients.unshift(obj); }
+    else _clients.unshift(obj);
+  } else {
+    if(editId){ const i=_suppliers.findIndex(x=>x.id===Number(editId)); if(i>=0)_suppliers[i]=obj; else _suppliers.unshift(obj); }
+    else _suppliers.unshift(obj);
+  }
+  _saveCRM();
+  _audit(`CRM_${type.toUpperCase()}_SAVE`, label);
+  crmCloseModal();
+  type==='client' ? crmRenderClients() : crmRenderSuppliers();
+  toast(`✓ ${type==='client'?'Cliente':'Proveedor'} guardado`,'ok');
+}
+
+function crmDelete(type, id){
+  const arr = type==='client' ? _clients : _suppliers;
+  const obj = arr.find(x=>x.id===id);
+  if(!obj||!confirm(`¿Eliminar "${obj.name||obj.company}"?`)) return;
+  if(type==='client') _clients=_clients.filter(x=>x.id!==id);
+  else _suppliers=_suppliers.filter(x=>x.id!==id);
+  _saveCRM();
+  _audit(`CRM_${type.toUpperCase()}_DELETE`, obj.name||obj.company);
+  type==='client' ? crmRenderClients() : crmRenderSuppliers();
+  toast('Eliminado');
+}
+
+function crmRenderClients(){
+  const el=document.getElementById('crm-clients-list');
+  if(!el) return;
+  if(!_clients.length){ el.innerHTML='<div class="empty"><div class="empty-ico">🏢</div><div class="empty-ttl">Sin clientes</div></div>'; return; }
+  el.innerHTML=_clients.map(c=>`
+    <div style="display:flex;align-items:flex-start;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)">
+      <div style="width:36px;height:36px;background:linear-gradient(135deg,#10B981,#3B82F6);border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:800;color:white;font-size:14px">${(c.name||c.company||'?')[0].toUpperCase()}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;color:var(--text)">${esc(c.name||'—')}</div>
+        <div style="font-size:11px;color:var(--dim)">${esc(c.company||'')}${c.company&&c.phone?' · ':''}${esc(c.phone||'')}</div>
+        ${c.email?`<div style="font-size:11px;color:var(--blue)">${esc(c.email)}</div>`:''}
+        ${c.notes?`<div style="font-size:10px;color:var(--muted);margin-top:2px;font-style:italic">${esc(c.notes)}</div>`:''}
+      </div>
+      <div style="display:flex;gap:5px;flex-shrink:0">
+        <button class="btn btn-sm" onclick="crmOpenModal('client',${c.id})" style="padding:4px 10px;font-size:11px">✏</button>
+        <button class="btn btn-sm" onclick="crmDelete('client',${c.id})" style="padding:4px 10px;font-size:11px;color:var(--red);border-color:rgba(239,68,68,.3)">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function crmRenderSuppliers(){
+  const el=document.getElementById('crm-suppliers-list');
+  if(!el) return;
+  if(!_suppliers.length){ el.innerHTML='<div class="empty"><div class="empty-ico">🏭</div><div class="empty-ttl">Sin proveedores</div></div>'; return; }
+  el.innerHTML=_suppliers.map(s=>`
+    <div style="display:flex;align-items:flex-start;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)">
+      <div style="width:36px;height:36px;background:linear-gradient(135deg,#F59E0B,#EF4444);border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:800;color:white;font-size:14px">${(s.company||'?')[0].toUpperCase()}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;color:var(--text)">${esc(s.company||'—')}</div>
+        <div style="font-size:11px;color:var(--dim)">${[s.city,s.country].filter(Boolean).join(', ')}${s.phone?' · '+s.phone:''}</div>
+        ${s.email?`<div style="font-size:11px;color:var(--blue)">${esc(s.email)}</div>`:''}
+        ${s.whatsapp?`<div style="font-size:11px;color:var(--green)">WhatsApp: ${esc(s.whatsapp)}</div>`:''}
+        ${s.web?`<div style="font-size:11px;color:var(--muted)">${esc(s.web)}</div>`:''}
+        ${s.notes?`<div style="font-size:10px;color:var(--muted);margin-top:2px;font-style:italic">${esc(s.notes)}</div>`:''}
+      </div>
+      <div style="display:flex;gap:5px;flex-shrink:0">
+        <button class="btn btn-sm" onclick="crmOpenModal('supplier',${s.id})" style="padding:4px 10px;font-size:11px">✏</button>
+        <button class="btn btn-sm" onclick="crmDelete('supplier',${s.id})" style="padding:4px 10px;font-size:11px;color:var(--red);border-color:rgba(239,68,68,.3)">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+//  PROYECTOS — Guardar/Cargar Operaciones          CalcNova v2.0
+// ══════════════════════════════════════════════════════════════
+
+function proyectoGuardar(){
+  if(!prods.length){ toast('No hay productos en la operación actual','err'); return; }
+  const totCNY=safeN(prods.reduce((s,p)=>s+safeN(getQty(p))*safeN(p.price),0));
+  const totUSD=R.y>0?totCNY/R.y:0;
+  const now=new Date();
+  const autoName=`Operación ${now.toLocaleDateString('es',{day:'2-digit',month:'short',year:'numeric'})}`;
+  const nombre=(prompt('Nombre del proyecto / operación:',autoName)||'').trim()||autoName;
+
+  // Let user pick client and supplier
+  _loadCRM();
+  const clientOpts=_clients.map((c,i)=>`${i+1}. ${c.name||c.company}`).join('\n');
+  const supplierOpts=_suppliers.map((s,i)=>`${i+1}. ${s.company}`).join('\n');
+  let clientId=null, supplierId=null;
+  if(_clients.length){
+    const idx=parseInt(prompt(`Asociar cliente (Enter para ninguno):\n${clientOpts}`)||'0')-1;
+    if(idx>=0&&idx<_clients.length) clientId=_clients[idx].id;
+  }
+  if(_suppliers.length){
+    const idx=parseInt(prompt(`Asociar proveedor (Enter para ninguno):\n${supplierOpts}`)||'0')-1;
+    if(idx>=0&&idx<_suppliers.length) supplierId=_suppliers[idx].id;
+  }
+
+  const proyecto = {
+    id: Date.now(),
+    name: nombre,
+    date: now.toISOString(),
+    dateStr: now.toLocaleString('es',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}),
+    clientId,
+    supplierId,
+    prods: prods.map(p=>({...p})),
+    cfg: {...cfg},
+    rates: {y:R.y,c:R.c,v:R.v},
+    totCNY: Math.round(totCNY*100)/100,
+    totUSD: Math.round(totUSD*100)/100,
+    prodCount: prods.length,
+  };
+  _projects.unshift(proyecto);
+  if(_projects.length>100) _projects=_projects.slice(0,100);
+  _saveProjects();
+  _audit('PROYECTO_GUARDADO', nombre);
+  proyectosRender();
+  toast(`✓ "${nombre}" guardado`,'ok');
+}
+
+function proyectoCargar(id){
+  _loadProjects();
+  const p=_projects.find(x=>x.id===id);
+  if(!p){ toast('Proyecto no encontrado','err'); return; }
+  if(!confirm(`¿Cargar "${p.name}"?\nEsto reemplazará los productos y costos actuales.`)) return;
+  prods=p.prods.map(x=>({...x}));
+  Object.assign(cfg,p.cfg||{});
+  saveCfg(cfg); saveProds();
+  renderProds(); loadCostForm(); calcAll(); renderDash(); renderSim();
+  _audit('PROYECTO_CARGADO', p.name);
+  nav('productos');
+  toast(`↩ "${p.name}" cargado`,'ok');
+}
+
+function proyectoEliminar(id){
+  _loadProjects();
+  const p=_projects.find(x=>x.id===id);
+  if(!p||!confirm(`¿Eliminar "${p.name}"?`)) return;
+  _projects=_projects.filter(x=>x.id!==id);
+  _saveProjects();
+  _audit('PROYECTO_ELIMINADO', p.name);
+  proyectosRender();
+  toast('Proyecto eliminado');
+}
+
+function proyectosRender(){
+  const el=document.getElementById('proyectos-list');
+  if(!el) return;
+  if(!_projects.length){
+    el.innerHTML='<div class="empty"><div class="empty-ico">📁</div><div class="empty-ttl">Sin proyectos guardados</div><div class="empty-sub">Guarda tu operación actual con el botón de arriba</div></div>';
+    return;
+  }
+  el.innerHTML=_projects.map(p=>{
+    const client=_clients.find(c=>c.id===p.clientId);
+    const supplier=_suppliers.find(s=>s.id===p.supplierId);
+    return `<div style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:10px;flex-wrap:wrap">
+      <div style="flex:1;min-width:160px">
+        <div style="font-size:14px;font-weight:800;color:var(--text)">${esc(p.name)}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">${p.dateStr} · ${p.prodCount} productos</div>
+        ${client?`<div style="font-size:11px;color:var(--blue);margin-top:3px">👤 ${esc(client.name||client.company)}</div>`:''}
+        ${supplier?`<div style="font-size:11px;color:var(--gold);margin-top:1px">🏭 ${esc(supplier.company)}</div>`:''}
+      </div>
+      <div style="display:flex;gap:20px">
+        <div style="text-align:right">
+          <div style="font-size:10px;color:var(--dim)">Total CNY</div>
+          <div style="font-size:14px;font-weight:800;color:var(--gold)">¥${fmtN(Math.round(p.totCNY))}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:10px;color:var(--dim)">Total USD</div>
+          <div style="font-size:14px;font-weight:800;color:var(--green)">${p.totUSD>0?'$'+fmt2(p.totUSD):'—'}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button class="btn btn-p btn-sm" onclick="proyectoCargar(${p.id})" style="font-size:11px;padding:6px 14px">↩ Cargar</button>
+        <button class="btn btn-sm" onclick="proyectoEliminar(${p.id})" style="font-size:11px;padding:6px 10px;color:var(--red);border-color:rgba(239,68,68,.3)">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+//  OCR — Imágenes JPG/PNG con Tesseract.js          CalcNova v2.0
+// ══════════════════════════════════════════════════════════════
+
+let _ocrWorker = null;
+async function _ensureOCR(){
+  if(_ocrWorker) return _ocrWorker;
+  toast('Cargando motor OCR...','w');
+  // Dynamic load — only when user uploads an image
+  if(!window.Tesseract){
+    await new Promise((res,rej)=>{
+      const s=document.createElement('script');
+      s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+      s.onload=res; s.onerror=rej;
+      document.head.appendChild(s);
+    });
+  }
+  _ocrWorker = await Tesseract.createWorker(['eng','chi_sim'],1,{logger:m=>{
+    if(m.status==='recognizing text' && m.progress>0){
+      toast(`OCR: ${Math.round(m.progress*100)}%...`,'w');
+    }
+  }});
+  return _ocrWorker;
+}
+
+async function handleFileUploadWithOCR(file){
+  if(!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  if(['jpg','jpeg','png','webp','bmp','tiff'].includes(ext)){
+    // Image → OCR → parse as factura
+    try{
+      const worker = await _ensureOCR();
+      toast('Leyendo imagen con OCR...','w');
+      const {data:{text}} = await worker.recognize(file);
+      toast('OCR completado — procesando datos...','ok');
+      _parseOCRText(text, file.name);
+    }catch(e){
+      toast('Error OCR: '+e.message,'err');
+    }
+    return;
+  }
+  // For non-images fall back to normal XLSX/CSV handler
+  handleFileUpload({target:{files:[file]}});
+}
+
+function _parseOCRText(text, filename){
+  // Split into lines, try to find a table structure
+  const lines = text.split('\n').map(l=>l.trim()).filter(l=>l.length>2);
+  const rows = [];
+  for(const line of lines){
+    // Skip lines that look like headers or totals
+    if(/total|grand|合计|sub.?total/i.test(line) && !/\d{2,}/.test(line)) continue;
+    // Try to extract: description + numbers (qty, price)
+    const nums = line.match(/[\d,]+\.?\d*/g)?.map(n=>parseFloat(n.replace(/,/g,''))).filter(v=>v>0);
+    const desc = line.replace(/[\d,.\$¥￥%×x\|]/g,' ').replace(/\s+/g,' ').trim();
+    if(desc.length>2 && nums && nums.length>=1){
+      rows.push({
+        name: desc.substring(0,80),
+        price: nums[nums.length-1]||0,  // last number often the price
+        cartons: 1, qtyPerCtn: nums[0]||1,
+        weight:0, cbm:0, ref:'OCR'
+      });
+    }
+  }
+  if(!rows.length){ toast('OCR: No se detectaron productos. Verifica la imagen.','err'); return; }
+  // Show in the upload modal for review / confirmation
+  _uploadRawRows = [['DESCRIPCIÓN','CANT.','PRECIO ¥'], ...rows.map(r=>[r.name,r.qtyPerCtn,r.price])];
+  document.getElementById('up-hrow').value='1';
+  document.getElementById('up-fname').textContent = filename+' (OCR)';
+  document.getElementById('up-sheet-info').textContent = `${rows.length} filas detectadas por OCR`;
+  document.getElementById('upload-modal').style.display='block';
+  document.getElementById('up-hrow').value='1';
+  renderUploadPreview();
+  toast(`OCR: ${rows.length} productos detectados — verifica y ajusta columnas`,'ok');
+  _audit('OCR_IMPORT', `${rows.length} rows from ${filename}`);
+}
+
+// Wire the products file input to also accept images
+function handleFileUpload(e){
+  const file = (e && e.target) ? e.target.files?.[0] : e;
+  if(!file) return;
+  const ext = (file.name||'').split('.').pop().toLowerCase();
+  if(['jpg','jpeg','png','webp','bmp'].includes(ext)){
+    handleFileUploadWithOCR(file);
+    return;
+  }
+  _handleFileUploadXLSX(file);
+}
+
+// ── FIX: Factura rate history ↔ manual input sync ──────────
+function applyRateFromHistory(val){
+  if(!val) return;
+  const tasa = parseFloat(val);
+  if(!(tasa>0)) return;
+  window.tasaCNY_USD = tasa;
+  // Sync manual input so user sees what's active
+  const manualEl = document.getElementById('factura-rate-manual');
+  if(manualEl) manualEl.value = tasa;
+  const cached = _loadRateHist().find(h=>Math.abs(h.tasa-tasa)<0.000001);
+  _facturaRateSource = cached ? cached.source+' (historial)' : 'historial';
+  _updateRateDisplay(tasa,'Tasa del historial',_facturaRateSource);
+  _facturaRerender();
+}
+
+// ── AUDIT LOG UI ────────────────────────────────────────────
+function renderAuditLog(){
+  _loadAudit();
+  const el = document.getElementById('audit-log-container');
+  if(!el) return;
+  if(!_auditLog.length){
+    el.innerHTML='<div style="padding:16px;color:var(--muted);font-size:12px;text-align:center">Sin registros de auditoría</div>';
+    return;
+  }
+  el.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:11px">'
+    +'<thead><tr style="background:rgba(15,23,42,.6);color:var(--dim)">'
+    +'<th style="padding:6px 10px;text-align:left">Fecha / Hora</th>'
+    +'<th style="padding:6px 10px;text-align:left">Acción</th>'
+    +'<th style="padding:6px 10px;text-align:left">Detalle</th>'
+    +'</tr></thead><tbody>'
+    +_auditLog.map((e,i)=>{
+      const d=new Date(e.ts).toLocaleString('es',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+      return `<tr style="border-top:1px solid var(--border);background:${i%2?'rgba(255,255,255,.01)':''}">
+        <td style="padding:5px 10px;color:var(--muted);white-space:nowrap">${d}</td>
+        <td style="padding:5px 10px;color:var(--blue);font-weight:600;white-space:nowrap">${esc(e.action)}</td>
+        <td style="padding:5px 10px;color:var(--dim)">${esc(e.detail||'—')}</td>
+      </tr>`;
+    }).join('')
+    +'</tbody></table>';
+}
+
+// Audit key user actions
+const _origSaveProds = saveProds;
+function saveProds(){
+  _origSaveProds();
+  // Lightweight — don't audit every keystroke, only from explicit saves
+}
+function _auditImport(n){ _audit('IMPORTAR_ARCHIVO', `${n} productos importados`); }
+function _auditExport(type){ _audit('EXPORTAR', type); }
+
 </script>
 </body>
 </html>
