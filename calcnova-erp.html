@@ -2114,17 +2114,17 @@ const UP_FIELDS=[
   {id:'cartons',  label:'Cartones / Cajas',       req:false,
     pat:/^carton|^ctns?$|^cajas?$|^box(es)?$|^pkgs?$|^bultos?\b|master.?(box|ctn|qty)|箱数|^cases$|num.?(of\s+)?ctns?|no\.?\s*ctns?|#\s*ctns?|\bctns?\s*(qty|total|num|#)/i},
   {id:'qtyPerCtn',label:'Uds por Cartón',         req:false,
-    pat:/uds?\b.*(ctn|cart|caja|box)|unid(ad(es)?)?\b.*(ctn|cart|caja|box)|unidades?.*caja|pcs.*(ctn|box|caja)|pcs\/ctns?|qty.*ctns?|pcs\s*per|每箱|每箱数量|units?.*(box|ctn|caja)|q[/.]?ctns?|por.?caja|por.?ctn/i},
+    pat:/uds?\b.*(ctn|cart|caja|box)|unid(ad(es)?)?\b.*(ctn|cart|caja|box)|unidades?.*caja|pcs.*(ctn|box|caja)|pcs\/ctns?|qty.*ctns?|pcs\s*per|每箱|每箱数量|units?.*(box|ctn|caja)|q[/.]?ctns?|por.?caja|por.?ctn|cant.{0,3}\/.{0,3}ctns?|\/\s*ctns?\b|cant\s*\/\s*c/i},
   {id:'totalQty', label:'Cantidad Total de Uds',  req:false,
-    pat:/^qty$|^quantity$|^cantidad$|^cant\.?$|^total.?(qty|uds?|units?|pcs)|^uds?$|^pcs?$|^units?$|^total.?quantity|^total.?cant|数量|^q\.?t\.?y\.?$/i},
+    pat:/^qty$|^quantity$|^cantidad$|^cant\.?$|^total.?(qty|uds?|units?|pcs)|^uds?$|^pcs?$|^units?$|^total.?quantity|^total.?cant|cant\w*\s*total|cantidad\s*total|total.?cantidad|数量|^q\.?t\.?y\.?$/i},
   {id:'weight',   label:'Peso KG (total)',         req:false,
     pat:/^weight\b|g\.?\s*w\.?\b|n\.?\s*w\.?\b|gross.?weight|net.?weight|^peso\b|total.?weight|total\s+kg|^kg$|kilo|毛重|净重/i},
   {id:'cbm',      label:'Volumen M³ (total)',      req:false,
     pat:/^cbm$|^m3$|^m\.?3$|volum|cubic|^volume$|体积|total.?cbm/i},
   {id:'price',    label:'Precio ¥ / Unitario',     req:false,
-    pat:/unit.?price|price.?unit|^price$|^unit.?cost|precio.*rmb|precio.*cny|precio.*yuan|precio.*¥|^precio$|precio.?unit|valor.?unit|^v\.?u\.?$|costo.?unit|^costo$|p[\.\s]?unit|^p\.?u\.?$|^cny$|^yuan$|^rmb$|^u\.?p\.?$|单价|p\.?v\.?p|^¥$/i},
+    pat:/unit.?price|price.?unit|^price$|^unit.?cost|precio.*rmb|precio.*cny|precio.*yuan|precio.*¥|^precio$|precio.?unit|valor.?unit|^v\.?u\.?$|costo.?unit|^costo$|p[\.\s]*unit|unit.*(yuan|¥|rmb|cny)|^p\.?u\.?$|^cny$|^yuan$|^rmb$|^u\.?p\.?$|单价|p\.?v\.?p|^¥$/i},
   {id:'totalAmt', label:'Monto Total',             req:false,
-    pat:/^amount$|^monto$|monto.?total|total.?amount|amount.?total|^importe$|^subtotal$|金额|total.?price|^total.?usd$|^total.?cny$|^total.?rmb$/i},
+    pat:/^amount$|^monto$|monto.?total|total.?amount|amount.?total|^importe$|^subtotal$|金额|total.?price|^total.?usd$|^total.?cny$|^total.?rmb$|monto.*(yuan|¥|rmb|cny)|total.*(yuan|¥)/i},
 ];
 
 // ── SMART HEADER DETECTION ─────────────────────────────────
