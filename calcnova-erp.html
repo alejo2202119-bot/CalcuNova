@@ -3274,11 +3274,26 @@ function facturaRefreshHeader(){
 }
 
 function _facturaFindHeader(aoa){
-  for(let i=0;i<Math.min(12,aoa.length);i++){
-    const nonEmpty = aoa[i].filter(c=>String(c||'').trim().length>0).length;
-    if(nonEmpty >= 3) return i;
+  // Score each candidate row: reward cells that look like column headers
+  const HDR_PAT = /descri|nombre|product|item|goods|mercanc|名称|品名|商品|detalle|articulo|cant|qty|quantity|pcs|pieces|units?|数量|件数|unit.?price|precio|price|单价|costo|subtotal|amount|total|金额|总价|小计|合计|moneda|currency|importe|monto/i;
+  const NUM_PAT = /^\d[\d.,\s]*$/; // looks like a plain number
+  let bestRow=0, bestScore=-99;
+  for(let i=0;i<Math.min(15,aoa.length);i++){
+    const row = aoa[i];
+    const nonEmpty = row.filter(c=>String(c||'').trim().length>0);
+    if(nonEmpty.length < 2) continue;
+    let score = 0;
+    for(const c of nonEmpty){
+      const v = String(c||'').trim();
+      if(HDR_PAT.test(v)) score += 3;   // matches a known header keyword
+      else if(NUM_PAT.test(v)) score -= 2; // looks like a data number (bad for header)
+      else if(v.length > 1) score += 1;   // non-numeric text — probably a header label
+    }
+    // Prefer rows with 3+ non-empty cells over sparse rows
+    if(nonEmpty.length >= 3) score += 2;
+    if(score > bestScore){ bestScore=score; bestRow=i; }
   }
-  return 0;
+  return bestRow;
 }
 
 function _facturaLoadSheet(name, hrowOverride){
@@ -3313,7 +3328,9 @@ function _facturaLoadSheet(name, hrowOverride){
   _facturaSetColSelectors(cols);
   document.getElementById('factura-colmap-wrap').style.display='block';
 
-  if(cols.desc>=0 && cols.price>=0){
+  // Process if we have description + (unit price OR subtotal/amount column)
+  const canProcess = cols.desc>=0 && (cols.price>=0 || cols.sub>=0);
+  if(canProcess){
     _facturaProcess(cols);
   } else {
     setText('factura-colmap-msg','⚠ No se detectaron todas las columnas — asígnalas manualmente:');
@@ -3400,6 +3417,10 @@ function _facturaDetectCurr(s){
   return '';
 }
 
+// Descriptions that mark a summary/total row — must be excluded from product list
+// Rows matching this are supplementary/summary lines — not imported products
+const _SUMMARY_RE = /^(total(es)?|subtotal(es)?|grand[\s\-]?total|合计|总计|小计|sum\b|summary|resumen|suma|sub.?total|freight|flete\b|fletes|seguro\b|seguros|insurance|envio\b|envío\b|shipping|handling|cargo(s)?\b|charges\b|bank.?fee|tax\b|taxes|impuesto(s)?|gastos\b|descuento\b|discount\b|arancel(es)?|nota\b)\s*:?$/i;
+
 function _facturaProcess(cols){
   const rows = [];
   const report = {totalScanned:0, validCount:0, invalidCount:0, errors:[], warnings:[], currencies:new Set()};
@@ -3408,9 +3429,10 @@ function _facturaProcess(cols){
 
   for(let ri=0;ri<_facturaRawData.length;ri++){
     const row = _facturaRawData[ri];
-    const rowNum = ri + 2; // approximate spreadsheet line (1-based + header)
+    const rowNum = ri + 2;
     const desc = String(row[cols.desc]||'').trim();
-    if(!desc) continue; // skip blank-description rows silently
+    if(!desc) continue;                        // blank description → skip
+    if(_SUMMARY_RE.test(desc)) continue;       // summary/total row → skip silently
     report.totalScanned++;
 
     const qtyRaw   = cols.qty>=0   ? String(row[cols.qty]||'').trim()   : '';
@@ -3473,13 +3495,16 @@ function _facturaIsNumeric(s){
 
 function _facturaNum(s){
   if(s===null||s===undefined||s==='') return 0;
-  // SheetJS returns numeric cells as JS numbers — use directly, no string parsing needed
+  // SheetJS returns numeric cells as JS numbers — use directly
   if(typeof s === 'number') return isFinite(s) ? s : 0;
   const str = String(s).trim();
   if(!str || str==='-' || str==='—') return 0;
-  // Strip currency symbols not handled by parseXlNum (it already strips $¥€)
-  const clean = str.replace(/[$¥€£]/g,'').trim();
-  if(!clean) return 0;
+  // Strip currency symbols ($¥€£) AND text currency codes (RMB, CNY, USD, EUR, HKD, GBP)
+  const clean = str
+    .replace(/[$¥€£]/g,'')
+    .replace(/\b(RMB|CNY|USD|EUR|HKD|GBP|JPY)\b/gi,'')
+    .trim();
+  if(!clean || clean==='-') return 0;
   return parseXlNum(clean);
 }
 
