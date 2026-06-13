@@ -434,39 +434,25 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
   </div>
   <div class="g2">
     <div class="card">
-      <div class="card-header"><div class="card-title"><span class="icon icon-b">🇨🇳</span>China → Embarque (USD)</div></div>
-      <div class="gform">
-        <div class="field"><label>Flete Marítimo ($)</label><input class="inp" id="c-freight" type="number" min="0" placeholder="0"></div>
-        <div class="field"><label>Seguro ($)</label><input class="inp" id="c-ins" type="number" min="0" placeholder="0"></div>
-        <div class="field"><label>Puerto Origen ($)</label><input class="inp" id="c-portO" type="number" min="0" placeholder="0"></div>
-        <div class="field"><label>Comisión Bancaria (%)</label><input class="inp" id="c-bank" type="number" min="0" max="100" placeholder="0"></div>
+      <div class="card-header"><div class="card-title"><span class="icon icon-b">🇨🇳</span>China → Buenaventura (USD)</div></div>
+      <div style="font-size:11px;color:var(--dim);margin-bottom:14px">Ingresa el monto total — incluye flete marítimo, impuestos, aduana y cualquier gasto hasta llegar a Buenaventura.</div>
+      <div class="field">
+        <label>Monto total China → Buenaventura ($)</label>
+        <input class="inp" id="c-freight-china" type="number" min="0" step="0.01" placeholder="0" style="font-size:17px;font-weight:700;color:var(--blue)">
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:12px;padding:8px 10px;background:rgba(59,130,246,.06);border-radius:8px;border:1px solid rgba(59,130,246,.15)">
+        💡 El sistema distribuye este costo a cada producto según su <strong style="color:var(--blue)">% del valor total de la factura</strong>.
       </div>
     </div>
     <div class="card">
-      <div class="card-header"><div class="card-title"><span class="icon icon-o">🇨🇴</span>Colombia — todo en COP (pesos)</div></div>
-      <div style="font-size:11px;color:var(--dim);margin-bottom:10px">Fletes, descargas y operativos se pagan en peso colombiano</div>
-      <div class="gform">
-        <div class="field"><label>Puerto de entrada</label><select class="inp" id="c-port"><option value="buenaventura">Buenaventura</option><option value="barranquilla">Barranquilla</option><option value="cartagena">Cartagena</option></select></div>
-        <div class="field"><label>Gastos Puerto descarga (COP)</label><input class="inp" id="c-portC" type="number" min="0" placeholder="0"></div>
-        <div class="field"><label>Aduana / Nacionalización COL (COP)</label><input class="inp" id="c-custom" type="number" min="0" placeholder="0"></div>
-        <div class="field"><label>Transporte interno Colombia (COP)</label><input class="inp" id="c-trCOL" type="number" min="0" placeholder="0"></div>
-        <div class="field"><label>Operativos Cúcuta (COP)</label><input class="inp" id="c-cuc" type="number" min="0" placeholder="0"></div>
-        <div class="field"><label>Flete Cúcuta → San Cristóbal (COP)</label><input class="inp" id="c-cucSC" type="number" min="0" placeholder="0"></div>
-        <div class="field"><label>Extras Colombia (COP)</label><input class="inp" id="c-exCOL" type="number" min="0" placeholder="0"></div>
+      <div class="card-header"><div class="card-title"><span class="icon icon-o">🇨🇴</span>Buenaventura → Cúcuta (USD)</div></div>
+      <div style="font-size:11px;color:var(--dim);margin-bottom:14px">Ingresa el monto total — incluye transporte interno, operativos, fletes y cualquier gasto hasta llegar a Cúcuta.</div>
+      <div class="field">
+        <label>Monto total Buenaventura → Cúcuta ($)</label>
+        <input class="inp" id="c-freight-cucuta" type="number" min="0" step="0.01" placeholder="0" style="font-size:17px;font-weight:700;color:var(--gold)">
       </div>
-    </div>
-    <div class="card">
-      <div class="card-header"><div class="card-title"><span class="icon icon-r">🇻🇪</span>Venezuela</div></div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:12px;padding:8px;background:rgba(239,68,68,.05);border-radius:8px;border:1px solid rgba(239,68,68,.15)">
-        Solo la <strong style="color:var(--red)">aduana/nacionalización</strong> se ingresa en Bs (al tipo BCV). El resto en USD.
-      </div>
-      <div class="gform">
-        <div class="field"><label>Aduana / Nacionalización VEN (Bs — BCV)</label><input class="inp" id="c-nat" type="number" min="0" placeholder="0"></div>
-        <div class="field"><label>Arancel sobre valor ($) (%)</label><input class="inp" id="c-tariff" type="number" min="0" max="100" placeholder="0"></div>
-        <div class="field"><label>Transporte a otros estados ($)</label><input class="inp" id="c-trVEN" type="number" min="0" placeholder="0"></div>
-        <div class="field"><label>Costos Operativos ($)</label><input class="inp" id="c-op" type="number" min="0" placeholder="0"></div>
-        <div class="field"><label>Extras Venezuela ($)</label><input class="inp" id="c-exVEN" type="number" min="0" placeholder="0"></div>
-        <div class="field"><label>IVA (%)</label><input class="inp" id="c-iva" type="number" min="0" max="100" placeholder="16" value="16"></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:12px;padding:8px 10px;background:rgba(245,158,11,.06);border-radius:8px;border:1px solid rgba(245,158,11,.15)">
+        💡 El sistema distribuye este costo a cada producto según su <strong style="color:var(--gold)">% del valor total de la factura</strong>.
       </div>
     </div>
     <div class="card">
@@ -474,7 +460,6 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
       <div class="gform">
         <div class="field"><label>% Ganancia Mayor</label><input class="inp" id="c-mw" type="number" min="0" placeholder="20"></div>
         <div class="field"><label>% Ganancia Detal</label><input class="inp" id="c-mr" type="number" min="0" placeholder="40"></div>
-        <div class="field"><label>Distribución de Costos</label><select class="inp" id="c-dist"><option value="weight">Por Peso KG</option><option value="cbm">Por CBM</option><option value="value">Por Valor $</option><option value="equal">Igualitario</option></select></div>
       </div>
     </div>
   </div>
@@ -973,11 +958,8 @@ let _auditLog  = [];  // [{ts,action,detail}] — últimas 200 entradas
 // ── STORAGE ────────────────────────────────────────────────
 function loadCfg(){
   const def={
-    freight:0,insurance:0,portOrigin:0,bankCommission:0,
-    portCOL:0,customsCOL:0,transportCOL:0,cucuta:0,cucutaSC:0,extraCOL:0,
-    nationalizationBs:0,tariffVEN:0,transportVEN:0,operatingVEN:0,extraVEN:0,
-    iva:16,marginWholesale:0,marginRetail:0,
-    distribution:'weight',port:'buenaventura',
+    freightChina:0,freightCucuta:0,
+    marginWholesale:0,marginRetail:0,
     company:'',refresh:30
   };
   try{ const s=localStorage.getItem('cn_cfg'); return s?Object.assign({},def,JSON.parse(s)):def; }
@@ -1193,131 +1175,75 @@ function clearProds(){
 // ── COSTS FORM ─────────────────────────────────────────────
 function loadCostForm(){
   const sv=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v||0;};
-  sv('c-freight',cfg.freight);sv('c-ins',cfg.insurance);sv('c-portO',cfg.portOrigin);sv('c-bank',cfg.bankCommission);
-  // Colombia — all COP
-  sv('c-portC',cfg.portCOL);sv('c-custom',cfg.customsCOL);sv('c-trCOL',cfg.transportCOL);
-  sv('c-cuc',cfg.cucuta);sv('c-cucSC',cfg.cucutaSC);sv('c-exCOL',cfg.extraCOL);
-  // Venezuela — nat in Bs, rest in USD
-  sv('c-nat',cfg.nationalizationBs);sv('c-tariff',cfg.tariffVEN);
-  sv('c-trVEN',cfg.transportVEN);sv('c-op',cfg.operatingVEN);sv('c-exVEN',cfg.extraVEN);
-  sv('c-iva',cfg.iva??16);sv('c-mw',cfg.marginWholesale);sv('c-mr',cfg.marginRetail);
-  const p=document.getElementById('c-port');if(p)p.value=cfg.port||'buenaventura';
-  const d=document.getElementById('c-dist');if(d)d.value=cfg.distribution||'weight';
+  sv('c-freight-china', cfg.freightChina);
+  sv('c-freight-cucuta', cfg.freightCucuta);
+  sv('c-mw', cfg.marginWholesale);
+  sv('c-mr', cfg.marginRetail);
 }
 
 function saveCosts(){
   const g=id=>parseFloat(document.getElementById(id)?.value)||0;
-  // China/Maritime (USD)
-  cfg.freight=g('c-freight');cfg.insurance=g('c-ins');cfg.portOrigin=g('c-portO');cfg.bankCommission=g('c-bank');
-  // Colombia (COP)
-  cfg.portCOL=g('c-portC');cfg.customsCOL=g('c-custom');cfg.transportCOL=g('c-trCOL');
-  cfg.cucuta=g('c-cuc');cfg.cucutaSC=g('c-cucSC');cfg.extraCOL=g('c-exCOL');
-  // Venezuela (nationalizationBs in Bs, rest in USD)
-  cfg.nationalizationBs=g('c-nat');cfg.tariffVEN=g('c-tariff');
-  cfg.transportVEN=g('c-trVEN');cfg.operatingVEN=g('c-op');cfg.extraVEN=g('c-exVEN');
-  cfg.iva=g('c-iva');cfg.marginWholesale=g('c-mw');cfg.marginRetail=g('c-mr');
-  cfg.port=document.getElementById('c-port')?.value||'buenaventura';
-  cfg.distribution=document.getElementById('c-dist')?.value||'weight';
-  saveCfg(cfg);toast('Costos guardados');
+  cfg.freightChina  = g('c-freight-china');
+  cfg.freightCucuta = g('c-freight-cucuta');
+  cfg.marginWholesale = g('c-mw');
+  cfg.marginRetail    = g('c-mr');
+  saveCfg(cfg);
+  toast('Costos guardados');
 }
 
 // ── CALC ───────────────────────────────────────────────────
-// Pipeline: CNY→USD | Maritime(USD) | Colombia(COP÷rate→USD) | Aduana VEN(Bs÷BCV→USD) | VEN interno(USD) | IVA
+// Pipeline: CNY→USD | China→BUE (USD, value%) | BUE→CUC (USD, value%)
 function calcAll(){
   if(!prods.length){
     const rs=document.getElementById('res-section');if(rs)rs.style.display='none';
     return null;
   }
   const yr=safeN(R.y);   // yuan per USD
-  const cr=safeN(R.c);   // COP per USD
-  const vr=safeN(R.v);   // BCV Bs/USD — nationalization only
   if(yr<=0){
     const rs=document.getElementById('res-section');if(rs)rs.style.display='none';
     return null;
   }
 
-  // Aggregate totals — needed for distribution ratio
-  const totW  =safeN(prods.reduce((s,p)=>s+safeN(p.weight),0));
-  const totCBM=safeN(prods.reduce((s,p)=>s+safeN(p.cbm),0));
-  const totVal=safeN(prods.reduce((s,p)=>s+safeN(getQty(p))*safeN(p.price)/yr,0));
+  // Total USD value of all merchandise (for proportional distribution)
+  const totVal=safeN(prods.reduce((s,p)=>s+safeN(getQty(p))*safeN(p.price),0))/yr;
   const nP=prods.length||1;
 
-  // ── Adaptive distribution: fall back gracefully when data is missing ──
-  let effDist=cfg.distribution||'weight';
-  if(effDist==='weight'&&totW<=0) effDist=totCBM>0?'cbm':totVal>0?'value':'equal';
-  if(effDist==='cbm'  &&totCBM<=0) effDist=totW>0?'weight':totVal>0?'value':'equal';
-  if(effDist==='value'&&totVal<=0) effDist='equal';
+  const freightChina  = safeN(cfg.freightChina  ||0);
+  const freightCucuta = safeN(cfg.freightCucuta ||0);
 
   const results=prods.map(p=>{
-    const qty=Math.max(1,safeN(getQty(p),1));
-    const pW  =safeN(p.weight);
-    const pCBM=safeN(p.cbm);
-    const pVal=safeN(qty*safeN(p.price)/yr);
+    const qty    = Math.max(1, safeN(getQty(p), 1));
+    const prodCNY= safeN(qty * safeN(p.price));
+    const prodUSD= safeDiv(prodCNY, yr);
 
-    // Cost-sharing weight ratio (always sums to 1 across products)
-    let wR;
-    if     (effDist==='weight') wR=safeDiv(pW,   totW,   1/nP);
-    else if(effDist==='cbm')    wR=safeDiv(pCBM, totCBM, 1/nP);
-    else if(effDist==='value')  wR=safeDiv(pVal, totVal, 1/nP);
-    else                         wR=1/nP;
-    wR=safeN(wR,1/nP);
+    // % of total invoice value → this product's share of logistics costs
+    const wR = totVal>0 ? safeDiv(prodUSD, totVal, 1/nP) : 1/nP;
 
-    // Stage 1: CNY → USD
-    const prodCNY=safeN(qty*safeN(p.price));
-    const prodUSD=safeDiv(prodCNY,yr);
-    const bankFee=safeN(prodUSD*safeN(cfg.bankCommission)/100);
-    const s1=safeN(prodUSD+bankFee);
+    // Stage 2: China → Buenaventura (USD, prorrateado por valor)
+    const chinaShare  = safeN(freightChina  * wR);
+    // Stage 3: Buenaventura → Cúcuta (USD, prorrateado por valor)
+    const cucutaShare = safeN(freightCucuta * wR);
 
-    // Stage 2: Maritime costs (USD)
-    const freightShare=safeN(safeN(cfg.freight)*wR);
-    const insShare    =safeN(safeN(cfg.insurance)*wR);
-    const portOShare  =safeN(safeN(cfg.portOrigin)*wR);
-    const s2=safeN(s1+freightShare+insShare+portOShare);
+    const totalLogUSD = chinaShare + cucutaShare;
+    const totalUSD    = prodUSD + totalLogUSD;
+    const unitUSD     = safeDiv(totalUSD, qty);
 
-    // Stage 3: Colombia costs — all COP → convert to USD
-    const colCOP_total=safeN((cfg.portCOL||0)+(cfg.customsCOL||0)+(cfg.transportCOL||0)+
-                             (cfg.cucuta||0)+(cfg.cucutaSC||0)+(cfg.extraCOL||0));
-    const colCOP=safeN(colCOP_total*wR);
-    const colUSD=safeDiv(colCOP,cr);
-    const s3=safeN(s2+colUSD);
-
-    // Stage 4: VEN aduana (Bs÷BCV→USD) + aranceles %
-    const natBs  =safeN(safeN(cfg.nationalizationBs)*wR);
-    const natUSD =safeDiv(natBs,vr);
-    const tariffUSD=safeN(s3*safeN(cfg.tariffVEN)/100);
-    const s4=safeN(s3+natUSD+tariffUSD);
-
-    // Stage 5: Venezuela internal costs (USD)
-    const venCosts=safeN((safeN(cfg.transportVEN)+safeN(cfg.operatingVEN)+safeN(cfg.extraVEN))*wR);
-    const s5=safeN(s4+venCosts);
-
-    // Stage 6: IVA
-    const ivaRate=safeN(cfg.iva??16);
-    const ivaAmt=safeN(s5*ivaRate/100);
-    const totalUSD=safeN(s5+ivaAmt);
-    const unitUSD=safeDiv(totalUSD,qty);
-
-    // Selling prices (USD + margin)
     const mw=safeN(cfg.marginWholesale);
     const mr=safeN(cfg.marginRetail);
-    const pMayorUSD=safeN(unitUSD*(1+mw/100));
-    const pDetalUSD=safeN(unitUSD*(1+mr/100));
-    const gananciaUSD=mr>0?safeN(pDetalUSD*qty-totalUSD):0;
-    const margen=totalUSD>0?safeN(gananciaUSD/totalUSD*100):0;
+    const pMayorUSD   = safeN(unitUSD*(1+mw/100));
+    const pDetalUSD   = safeN(unitUSD*(1+mr/100));
+    const gananciaUSD = mr>0 ? safeN(pDetalUSD*qty - totalUSD) : 0;
+    const margen      = totalUSD>0 ? safeN(gananciaUSD/totalUSD*100) : 0;
 
-    // Recommendation
-    const hasLogistic=(cfg.freight||0)+(cfg.transportCOL||0)+(cfg.transportVEN||0)>0;
-    const logCostShare=totalUSD>0?safeN((freightShare+colUSD+venCosts)/totalUSD*100):0;
     let rec='MARGEN BAJO';
     if(margen>50)rec='ALTA RENTABILIDAD';
     else if(margen>30)rec='IDEAL DETAL';
     else if(margen>10)rec='IDEAL MAYOR';
-    else if(hasLogistic&&logCostShare>60)rec='ALTO COSTO LOGÍSTICO';
+    else if((freightChina+freightCucuta)>0 && totalLogUSD/totalUSD>0.6)rec='ALTO COSTO LOGÍSTICO';
 
-    return {p,qty,totalUSD,unitUSD,pMayorUSD,pDetalUSD,gananciaUSD,margen,rec,
-      prodCNY,prodUSD,bankFee,s1,freightShare,insShare,portOShare,s2,
-      colCOP_total,colCOP,colUSD,s3,natBs,natUSD,tariffUSD,s4,venCosts,s5,ivaAmt,
-      wR,cartons:p.cartons||1,effDist,logCostShare};
+    return {p, qty, totalUSD, unitUSD, pMayorUSD, pDetalUSD, gananciaUSD, margen, rec,
+      prodCNY, prodUSD, chinaShare, cucutaShare, totalLogUSD,
+      wR, cartons:p.cartons||1};
   });
 
   renderResults(results);
@@ -1357,9 +1283,7 @@ function showCalc(id){
   if(!rs){toast('Falta la tasa Yuan/USD','err');return;}
   const r=rs.find(x=>x.p.id===id);
   if(!r){return;}
-  const yr=R.y||0,cr=R.c||0,vr=R.v||0;
-  const pct=(r.wR*100).toFixed(1);
-  const distLabel={'weight':'Peso KG','cbm':'Volumen M3','value':'Valor $','equal':'Igualitario'}[cfg.distribution||'weight'];
+  const yr=R.y||0;
 
   const LINE=(label,val,color)=>`<div style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0 5px 12px;border-bottom:1px solid rgba(148,163,184,.07)">
     <span style="color:var(--dim);font-size:12px">${label}</span>
@@ -1371,58 +1295,33 @@ function showCalc(id){
   </div>`;
   const HDR=(num,title,color)=>`<div style="margin:14px 0 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:${color||'var(--muted)'}">⬡ Etapa ${num} — ${title}</div>`;
 
+  const pct=(r.wR*100).toFixed(2);
+
   let h=`<div style="background:rgba(15,23,42,.7);border-radius:10px;padding:12px 14px;margin-bottom:16px">
     <div style="font-size:13px;font-weight:700">${esc(r.p.name||'—')}</div>
     <div style="font-size:11px;color:var(--dim);margin-top:3px">${r.p.ref?esc(r.p.ref)+' · ':''}<strong>${r.cartons}</strong> cartones · <strong style="color:var(--green)">${fmtN(r.qty)}</strong> uds${r.p.brand?' · '+esc(r.p.brand):''}</div>
-    <div style="font-size:11px;color:var(--muted);margin-top:2px">Distribución por ${distLabel} · Porción de costos compartidos: <strong style="color:var(--gold)">${pct}%</strong></div>
+    <div style="font-size:11px;color:var(--muted);margin-top:2px">Distribución por valor de mercancía · Porción del total: <strong style="color:var(--gold)">${pct}%</strong></div>
   </div>`;
 
-  // Stage 1
-  h+=HDR(1,'Costo Mercancía ¥ → $','#3B82F6');
+  // Stage 1: CNY → USD
+  h+=HDR(1,'Mercancía China (¥ → $)','#3B82F6');
   h+=LINE(`${fmtN(r.qty)} uds × ¥${fmt2(r.p.price||0)}/ud`,`¥ ${fmtN(r.prodCNY)}`,'var(--gold)');
-  h+=LINE(`¥ ${fmtN(r.prodCNY)} ÷ ¥${fmt2(yr)}/$`,`$${fmt2(r.prodUSD)}`);
-  if((cfg.bankCommission||0)>0) h+=LINE(`Comisión bancaria ${cfg.bankCommission}%`,`+ $${fmt2(r.bankFee)}`,'var(--red)');
-  h+=SUB('Subtotal 1',r.s1,'#3B82F6');
+  h+=LINE(`¥${fmtN(r.prodCNY)} ÷ ¥${fmt2(yr)}/$`,`$${fmt2(r.prodUSD)}`);
+  h+=SUB('Subtotal Mercancía',r.prodUSD,'#3B82F6');
 
-  // Stage 2
-  if(r.freightShare+r.insShare+r.portOShare>0){
-    h+=HDR(2,'Flete Marítimo (USD)','#8B5CF6');
-    if((cfg.freight||0)>0) h+=LINE(`Flete $${fmt2(cfg.freight)} × ${pct}%`,`+ $${fmt2(r.freightShare)}`);
-    if((cfg.insurance||0)>0) h+=LINE(`Seguro $${fmt2(cfg.insurance)} × ${pct}%`,`+ $${fmt2(r.insShare)}`);
-    if((cfg.portOrigin||0)>0) h+=LINE(`Puerto Origen $${fmt2(cfg.portOrigin)} × ${pct}%`,`+ $${fmt2(r.portOShare)}`);
-    h+=SUB('Subtotal 2',r.s2,'#8B5CF6');
+  // Stage 2: China → Buenaventura
+  if((cfg.freightChina||0)>0){
+    h+=HDR(2,'China → Buenaventura (USD)','#8B5CF6');
+    h+=LINE(`Total China→BUE $${fmt2(cfg.freightChina||0)} × ${pct}%`,`+ $${fmt2(r.chinaShare)}`);
+    h+=SUB('Subtotal China→Buenaventura',r.prodUSD+r.chinaShare,'#8B5CF6');
   }
 
-  // Stage 3
-  if(r.colCOP_total>0){
-    h+=HDR(3,'Colombia COP → USD','#F59E0B');
-    h+=LINE(`Total gastos COP: ${fmtN(Math.round(r.colCOP_total))}`,`× ${pct}% = ${fmtN(Math.round(r.colCOP))} COP`,'var(--gold)');
-    h+=LINE(`${fmtN(Math.round(r.colCOP))} COP ÷ ${fmtN(Math.round(cr))} COP/$`,`+ $${fmt2(r.colUSD)}`);
-    h+=SUB('Subtotal 3',r.s3,'#F59E0B');
+  // Stage 3: Buenaventura → Cúcuta
+  if((cfg.freightCucuta||0)>0){
+    h+=HDR(3,'Buenaventura → Cúcuta (USD)','#F59E0B');
+    h+=LINE(`Total BUE→CUC $${fmt2(cfg.freightCucuta||0)} × ${pct}%`,`+ $${fmt2(r.cucutaShare)}`);
+    h+=SUB('Subtotal BUE→Cúcuta',r.prodUSD+r.chinaShare+r.cucutaShare,'#F59E0B');
   }
-
-  // Stage 4
-  if((cfg.nationalizationBs||0)>0||(cfg.tariffVEN||0)>0){
-    h+=HDR(4,'Venezuela — Aduana VEN','#EF4444');
-    if((cfg.nationalizationBs||0)>0&&vr>0){
-      h+=LINE(`Nac. Bs ${fmtN(Math.round(cfg.nationalizationBs))} × ${pct}%`,`${fmtN(Math.round(r.natBs))} Bs`,'#EF4444');
-      h+=LINE(`${fmtN(Math.round(r.natBs))} Bs ÷ Bs${fmt2(vr)}/$`,`+ $${fmt2(r.natUSD)}`);
-    }
-    if((cfg.tariffVEN||0)>0) h+=LINE(`Arancel ${cfg.tariffVEN}% de $${fmt2(r.s3)}`,`+ $${fmt2(r.tariffUSD)}`,'var(--red)');
-    h+=SUB('Subtotal 4',r.s4,'#EF4444');
-  }
-
-  // Stage 5
-  if(r.venCosts>0){
-    h+=HDR(5,'Venezuela — Costos Internos (USD)','#10B981');
-    const vt=((cfg.transportVEN||0)+(cfg.operatingVEN||0)+(cfg.extraVEN||0));
-    h+=LINE(`$${fmt2(vt)} × ${pct}%`,`+ $${fmt2(r.venCosts)}`);
-    h+=SUB('Subtotal 5',r.s5,'#10B981');
-  }
-
-  // Stage 6
-  h+=HDR(6,`IVA ${cfg.iva??16}%`,'#94A3B8');
-  h+=LINE(`$${fmt2(r.s5)} × ${(cfg.iva??16)/100}`,`+ $${fmt2(r.ivaAmt)}`,'#94A3B8');
 
   // Result box
   const hasMW=(cfg.marginWholesale||0)>0;
@@ -1433,6 +1332,14 @@ function showCalc(id){
       <span style="font-size:20px;font-weight:800;color:var(--green)">$${fmt2(r.totalUSD)}</span>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">
+      <div style="background:rgba(15,23,42,.5);border-radius:8px;padding:10px">
+        <div style="color:var(--dim);font-size:11px;margin-bottom:4px">Mercancía $</div>
+        <div style="font-weight:700;color:var(--blue)">$${fmt2(r.prodUSD)}</div>
+      </div>
+      <div style="background:rgba(15,23,42,.5);border-radius:8px;padding:10px">
+        <div style="color:var(--dim);font-size:11px;margin-bottom:4px">Logística total $</div>
+        <div style="font-weight:700;color:var(--purple,#8B5CF6)">$${fmt2(r.totalLogUSD)}</div>
+      </div>
       <div style="background:rgba(15,23,42,.5);border-radius:8px;padding:10px">
         <div style="color:var(--dim);font-size:11px;margin-bottom:4px">Costo unitario</div>
         <div style="font-weight:700;color:var(--text)">$${fmt2(r.unitUSD)}</div>
@@ -1452,10 +1359,8 @@ function showCalc(id){
       </div>`:''}
     </div>
     <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
-      <span style="font-size:11px;font-weight:700;color:var(--dim)">TASAS USADAS:</span>
-      <span style="font-size:11px;background:rgba(59,130,246,.12);color:var(--blue);padding:2px 8px;border-radius:12px">¥${fmt2(yr)} = $1</span>
-      ${cr>0?`<span style="font-size:11px;background:rgba(245,158,11,.12);color:var(--gold);padding:2px 8px;border-radius:12px">COP ${fmtN(Math.round(cr))} = $1</span>`:''}
-      ${vr>0?`<span style="font-size:11px;background:rgba(239,68,68,.12);color:var(--red);padding:2px 8px;border-radius:12px">Bs ${fmt2(vr)} = $1</span>`:''}
+      <span style="font-size:11px;font-weight:700;color:var(--dim)">TASA USADA:</span>
+      <span style="font-size:11px;background:rgba(59,130,246,.12);color:var(--blue);padding:2px 8px;border-radius:12px">¥${fmt2(yr)} = $1 USD</span>
     </div>
   </div>`;
 
@@ -1660,8 +1565,7 @@ function exportPDF(){
     const co=cfg.company||'CalcNova Import';
     const fecha=new Date().toLocaleDateString('es',{year:'numeric',month:'long',day:'numeric'});
     const hora=new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
-    const distLabel={'weight':'Por Peso KG','cbm':'Por Volumen CBM','value':'Por Valor $','equal':'Igualitario'}[cfg.distribution||'weight'];
-    const cr2=cr>0?cr:1,vr2=vr>0?vr:1;
+    const cr2=cr>0?cr:1;
 
     const prodRows=rs.map((r,i)=>{
       const rc=r.margen>30?'b-g':r.margen>10?'b-b':r.margen>0?'b-o':'b-r';
@@ -1701,24 +1605,10 @@ function exportPDF(){
     </tr>`;
 
     const costos=[
-      ['🇨🇳 China','Flete Marítimo','USD',fmt2(cfg.freight||0),'$'+fmt2(cfg.freight||0)],
-      ['','Seguro','USD',fmt2(cfg.insurance||0),'$'+fmt2(cfg.insurance||0)],
-      ['','Puerto Origen','USD',fmt2(cfg.portOrigin||0),'$'+fmt2(cfg.portOrigin||0)],
-      ['','Comisión Bancaria','%',(cfg.bankCommission||0)+'%','sobre valor mercancía'],
-      ['🇨🇴 Colombia','Gastos Puerto','COP',fmtN(Math.round(cfg.portCOL||0)),'$'+fmt2((cfg.portCOL||0)/cr2)],
-      ['','Aduana / Nac. COL','COP',fmtN(Math.round(cfg.customsCOL||0)),'$'+fmt2((cfg.customsCOL||0)/cr2)],
-      ['','Transporte Interno','COP',fmtN(Math.round(cfg.transportCOL||0)),'$'+fmt2((cfg.transportCOL||0)/cr2)],
-      ['','Operativos Cúcuta','COP',fmtN(Math.round(cfg.cucuta||0)),'$'+fmt2((cfg.cucuta||0)/cr2)],
-      ['','Flete Cúcuta → S.Cristóbal','COP',fmtN(Math.round(cfg.cucutaSC||0)),'$'+fmt2((cfg.cucutaSC||0)/cr2)],
-      ['','Extras Colombia','COP',fmtN(Math.round(cfg.extraCOL||0)),'$'+fmt2((cfg.extraCOL||0)/cr2)],
-      ['🇻🇪 Venezuela','Aduana / Nac. VEN','Bs (BCV)',fmtN(Math.round(cfg.nationalizationBs||0)),'$'+fmt2((cfg.nationalizationBs||0)/vr2)],
-      ['','Arancel sobre valor','%',(cfg.tariffVEN||0)+'%','sobre costo acumulado'],
-      ['','Transporte a estados','USD',fmt2(cfg.transportVEN||0),'$'+fmt2(cfg.transportVEN||0)],
-      ['','Costos Operativos','USD',fmt2(cfg.operatingVEN||0),'$'+fmt2(cfg.operatingVEN||0)],
-      ['','Extras Venezuela','USD',fmt2(cfg.extraVEN||0),'$'+fmt2(cfg.extraVEN||0)],
-      ['Impuestos','IVA','%',(cfg.iva??16)+'%','sobre costo total antes de IVA'],
+      ['🇨🇳 China → Buenaventura','Flete + Impuestos + Aduana (todo incluido)','USD','$'+fmt2(cfg.freightChina||0),'Distribuido por % valor factura'],
+      ['🇨🇴 Buenaventura → Cúcuta','Transporte + Operativos (todo incluido)','USD','$'+fmt2(cfg.freightCucuta||0),'Distribuido por % valor factura'],
     ].map((c,i)=>`<tr style="${i%2===0?'background:#f8fafc':''}">
-      <td style="font-weight:${c[0]?700:400};color:${c[0]?'#0F172A':'#64748B'};font-size:${c[0]?11:11}px">${c[0]||''}</td>
+      <td style="font-weight:700;color:#0F172A;font-size:11px">${c[0]}</td>
       <td>${c[1]}</td>
       <td style="text-align:center;color:#64748B">${c[2]}</td>
       <td style="text-align:right;font-weight:600">${c[3]}</td>
@@ -1836,7 +1726,7 @@ table.cost td{padding:6px 10px;border-bottom:1px solid #f1f5f9}
     <div class="hdr-right">
       <div class="hdr-co">${esc(co)}</div>
       <div class="hdr-meta">Reporte generado: ${fecha} a las ${hora}</div>
-      <div class="hdr-meta">Distribución de costos: ${distLabel}</div>
+      <div class="hdr-meta">Distribución logística: por % de valor de factura</div>
     </div>
   </div>
 
@@ -1870,7 +1760,7 @@ table.cost td{padding:6px 10px;border-bottom:1px solid #f1f5f9}
     <span class="rate-tag">Yuan: <strong>¥${fmt2(yr)} = $1</strong></span>
     ${cr>0?`<span class="rate-tag">COP: <strong>${fmtN(Math.round(cr))} = $1</strong></span>`:''}
     ${vr>0?`<span class="rate-tag">BCV (nac.): <strong>Bs${fmt2(vr)} = $1</strong></span>`:''}
-    <span class="rate-tag" style="margin-left:auto">IVA: <strong>${cfg.iva??16}%</strong></span>
+    <span class="rate-tag" style="margin-left:auto">China→BUE: <strong>$${fmt2(cfg.freightChina||0)}</strong> · BUE→CUC: <strong>$${fmt2(cfg.freightCucuta||0)}</strong></span>
     ${hasMW?`<span class="rate-tag">Margen Mayor: <strong>${cfg.marginWholesale}%</strong></span>`:''}
     ${hasMR?`<span class="rate-tag">Margen Detal: <strong>${cfg.marginRetail}%</strong></span>`:''}
   </div>
@@ -1993,24 +1883,10 @@ function exportCSV(){
 
     // COSTOS LOGÍSTICOS
     out+=`COSTOS LOGÍSTICOS\r\n`;
-    out+=`Etapa\tConcepto\tMoneda\tValor Ingresado\tEquivalente USD\r\n`;
+    out+=`Etapa\tConcepto\tMoneda\tValor Total\tDistribución\r\n`;
     const cRows=[
-      ['China','Flete Marítimo','USD',N(cfg.freight||0),'$'+N(cfg.freight||0)],
-      ['China','Seguro','USD',N(cfg.insurance||0),'$'+N(cfg.insurance||0)],
-      ['China','Puerto Origen','USD',N(cfg.portOrigin||0),'$'+N(cfg.portOrigin||0)],
-      ['China','Comisión Bancaria','%',(cfg.bankCommission||0)+'%','sobre valor mercancía'],
-      ['Colombia','Gastos Puerto','COP',NI(cfg.portCOL||0),'$'+N((cfg.portCOL||0)/cr2)],
-      ['Colombia','Aduana / Nac. COL','COP',NI(cfg.customsCOL||0),'$'+N((cfg.customsCOL||0)/cr2)],
-      ['Colombia','Transporte Interno','COP',NI(cfg.transportCOL||0),'$'+N((cfg.transportCOL||0)/cr2)],
-      ['Colombia','Operativos Cúcuta','COP',NI(cfg.cucuta||0),'$'+N((cfg.cucuta||0)/cr2)],
-      ['Colombia','Flete Cúcuta → San Cristóbal','COP',NI(cfg.cucutaSC||0),'$'+N((cfg.cucutaSC||0)/cr2)],
-      ['Colombia','Extras Colombia','COP',NI(cfg.extraCOL||0),'$'+N((cfg.extraCOL||0)/cr2)],
-      ['Venezuela','Aduana / Nac. VEN','Bs (BCV)',NI(cfg.nationalizationBs||0),'$'+N((cfg.nationalizationBs||0)/vr2)],
-      ['Venezuela','Arancel sobre valor','%',(cfg.tariffVEN||0)+'%','sobre costo acumulado'],
-      ['Venezuela','Transporte a estados','USD',N(cfg.transportVEN||0),'$'+N(cfg.transportVEN||0)],
-      ['Venezuela','Costos Operativos','USD',N(cfg.operatingVEN||0),'$'+N(cfg.operatingVEN||0)],
-      ['Venezuela','Extras Venezuela','USD',N(cfg.extraVEN||0),'$'+N(cfg.extraVEN||0)],
-      ['Impuestos','IVA','%',(cfg.iva??16)+'%','sobre costo total antes IVA'],
+      ['China → Buenaventura','Flete + Impuestos + Aduana (todo incluido)','USD','$'+N(cfg.freightChina||0),'Por % valor de la factura'],
+      ['Buenaventura → Cúcuta','Transporte + Operativos (todo incluido)','USD','$'+N(cfg.freightCucuta||0),'Por % valor de la factura'],
     ];
     cRows.forEach(c=>{ out+=c.join('\t')+'\r\n'; });
 
@@ -2804,7 +2680,8 @@ function exportCotizacion(){
         <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#64748B">Yuan (¥) por USD</span><strong>¥ ${fmt2(yr)}</strong></div>
         ${vr>0?`<div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#64748B">BCV Bs por USD</span><strong>Bs ${fmt2(vr)}</strong></div>`:''}
         ${cr>0?`<div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#64748B">COP por USD</span><strong>${fmtN(Math.round(cr))}</strong></div>`:''}
-        <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#64748B">IVA aplicado</span><strong>${cfg.iva??16}%</strong></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#64748B">China→BUE</span><strong>$${fmt2(cfg.freightChina||0)}</strong></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#64748B">BUE→Cúcuta</span><strong>$${fmt2(cfg.freightCucuta||0)}</strong></div>
       </div>
     </div>
     <div style="background:white;border:1px solid #e2e8f0;border-radius:12px;padding:16px 20px">
@@ -2855,7 +2732,7 @@ function exportCotizacion(){
       • Los precios en USD incluyen todos los costos logísticos configurados (flete, aduana, IVA).<br>
       • Los precios en Bs se calculan con la tasa BCV del día de emisión (Bs ${fmt2(vr)}).<br>
       • Esta cotización es válida por 15 días sujeta a variación de tasas de cambio.<br>
-      • Distribución de costos: ${{weight:'Por Peso KG',cbm:'Por Volumen CBM',value:'Por Valor $',equal:'Igualitario'}[cfg.distribution||'weight']}.
+      • Distribución logística: por % del valor de la factura (China→BUE: $${fmt2(cfg.freightChina||0)} · BUE→CUC: $${fmt2(cfg.freightCucuta||0)}).
     </div>
   </div>
 
@@ -4103,6 +3980,116 @@ function _buildInvoicePDF(){
     doc.roundedRect(M, fy+4, contentW, 10, 1.5, 1.5, 'FD');
     doc.setFont('helvetica','bold'); doc.setFontSize(8); txt([180,83,9]);
     doc.text(sinPrecio+' producto(s) sin precio (marcados en rojo) - no suman al total. Verifica con el proveedor.', M+4, fy+10.3);
+    fy += 14;
+  }
+
+  // ── Sección de Desglose Logístico (si hay costos configurados) ──
+  const fChina  = safeN(cfg.freightChina  ||0);
+  const fCucuta = safeN(cfg.freightCucuta ||0);
+  if(fChina>0 || fCucuta>0){
+    const totLogUSD = fChina + fCucuta;
+    // Calcula totales para la tabla logística usando los mismos wR que calcAll
+    const totValUSD = safeN(prods.reduce((s,p)=>s+safeN(getQty(p))*safeN(p.price),0)) / yr;
+    const nP = prods.length||1;
+    const logBody = prods.map((p,i)=>{
+      const qty   = getQty(p);
+      const pUSD  = safeN(qty)*safeN(p.price)/yr;
+      const wR    = totValUSD>0 ? Math.min(1, pUSD/totValUSD) : 1/nP;
+      const pct   = money(wR*100,2);
+      const cS    = safeN(fChina  * wR);
+      const kS    = safeN(fCucuta * wR);
+      const logS  = cS + kS;
+      const total = pUSD + logS;
+      return [
+        String(i+1),
+        p.ref||'-',
+        (p.name||'-')+(p.brand?'\n'+p.brand:''),
+        '$'+money(pUSD),
+        pct+'%',
+        fChina>0  ? '$'+money(cS)  : '-',
+        fCucuta>0 ? '$'+money(kS)  : '-',
+        '$'+money(logS),
+        '$'+money(total)
+      ];
+    });
+    // Totals row
+    const totFinalUSD = prods.reduce((s,p)=>{
+      const qty = getQty(p);
+      const pUSD = safeN(qty)*safeN(p.price)/yr;
+      const wR = totValUSD>0 ? Math.min(1,pUSD/totValUSD) : 1/nP;
+      return s + pUSD + fChina*wR + fCucuta*wR;
+    }, 0);
+
+    // New page if not enough space
+    if(fy>160){ doc.addPage(); fy=16; }
+    else fy+=12;
+
+    // Section header bar
+    fill([15,23,42]); doc.roundedRect(M, fy, contentW, 10, 1.5, 1.5, 'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(9); txt([16,185,129]);
+    doc.text('DESGLOSE LOGÍSTICO POR PRODUCTO', M+5, fy+6.6);
+    doc.setFont('helvetica','normal'); doc.setFontSize(7.5); txt([100,116,139]);
+    doc.text('Distribución por valor % de la factura  ·  China→BUE: $'+money(fChina)+'  ·  BUE→CUC: $'+money(fCucuta)+'  ·  Total: $'+money(totLogUSD), PW-M-4, fy+6.6, {align:'right'});
+    fy+=13;
+
+    const logCols = fChina>0 && fCucuta>0 ? 9 : 8;
+    const logHead = fChina>0 && fCucuta>0
+      ? ['#','Referencia','Descripción','Mercanc. $','% Fact.','China→BUE $','BUE→CUC $','Log. Total $','Precio Final $']
+      : fChina>0
+        ? ['#','Referencia','Descripción','Mercanc. $','% Fact.','China→BUE $','-','Log. Total $','Precio Final $']
+        : ['#','Referencia','Descripción','Mercanc. $','% Fact.','-','BUE→CUC $','Log. Total $','Precio Final $'];
+
+    doc.autoTable({
+      startY: fy,
+      margin:{left:M, right:M, top:16, bottom:14},
+      head:[logHead],
+      body: logBody,
+      foot:[[
+        {content:'TOTALES  ·  '+prods.length+' productos', colSpan:3},
+        '$'+money(totValUSD), '100%',
+        fChina>0  ? '$'+money(fChina)  : '-',
+        fCucuta>0 ? '$'+money(fCucuta) : '-',
+        '$'+money(totLogUSD),
+        '$'+money(totFinalUSD)
+      ]],
+      styles:{font:'helvetica', fontSize:7.5, cellPadding:{top:1.4,right:2,bottom:1.4,left:2},
+              lineColor:[241,245,249], lineWidth:0.1, textColor:[30,41,59], overflow:'linebreak', valign:'middle'},
+      headStyles:{fillColor:[15,23,42], textColor:[255,255,255], fontStyle:'bold', fontSize:6.8,
+                  cellPadding:{top:2,right:2,bottom:2,left:2}},
+      footStyles:{fillColor:[15,23,42], textColor:[255,255,255], fontStyle:'bold', fontSize:8,
+                  cellPadding:{top:2.2,right:2,bottom:2.2,left:2}},
+      alternateRowStyles:{fillColor:[248,250,252]},
+      columnStyles:{
+        0:{halign:'right', textColor:[148,163,184], cellWidth:7},
+        1:{textColor:[71,85,105], cellWidth:22, fontSize:7},
+        2:{textColor:[15,23,42], cellWidth:'auto'},
+        3:{halign:'right', textColor:[21,128,61], fontStyle:'bold', cellWidth:20},
+        4:{halign:'right', textColor:[100,116,139], cellWidth:14},
+        5:{halign:'right', textColor:[59,130,246], cellWidth:22},
+        6:{halign:'right', textColor:[245,158,11], cellWidth:22},
+        7:{halign:'right', textColor:[139,92,246], fontStyle:'bold', cellWidth:22},
+        8:{halign:'right', textColor:[16,185,129], fontStyle:'bold', cellWidth:24}
+      },
+      rowPageBreak:'avoid',
+      showHead:'everyPage',
+      showFoot:'lastPage',
+      didParseCell:(d)=>{
+        if(d.section==='foot'){
+          const c=d.column.index;
+          const map={3:[74,222,128],7:[196,181,253],8:[74,222,128]};
+          d.cell.styles.textColor=map[c]||[255,255,255];
+          if(c>=3) d.cell.styles.halign='right';
+        }
+      },
+      didDrawPage:(d)=>{
+        const ph=doc.internal.pageSize.getHeight(), pw=doc.internal.pageSize.getWidth();
+        draw([226,232,240]); doc.setLineWidth(0.4); doc.line(M, ph-11, pw-M, ph-11);
+        doc.setFont('helvetica','normal'); doc.setFontSize(7); txt([100,116,139]);
+        doc.text('CalcNova Import · Precios China en ¥ Yuan · Conversión a $ USD a la tasa del día · Documento privado', M, ph-6);
+        doc.setFont('helvetica','bold'); txt([15,23,42]);
+        doc.text('Pág. '+d.pageNumber+'  ·  Generado '+horaExacta, pw-M, ph-6, {align:'right'});
+      }
+    });
   }
 
   // ── DESCARGAR (guarda el archivo en la carpeta Descargas) ──
