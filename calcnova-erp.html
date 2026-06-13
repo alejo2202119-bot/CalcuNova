@@ -1615,6 +1615,12 @@ function exportPDF(){
       <td style="text-align:right;color:#1d4ed8;font-weight:600">${c[4]}</td>
     </tr>`).join('');
 
+    // Resumen de inversión (aproximado) — complementa los escenarios de venta
+    const logisticaUSD  = safeN(cfg.freightChina||0)+safeN(cfg.freightCucuta||0);
+    const mercanciaUSD  = safeN(totInvUSD - logisticaUSD);
+    const costoUnitProm = totUnits>0 ? totInvUSD/totUnits : 0;
+    const logiPct       = totInvUSD>0 ? logisticaUSD/totInvUSD*100 : 0;
+
     const win=window.open('','_blank','width=1100,height=850');
     win.document.write(`<!DOCTYPE html>
 <html lang="es"><head>
@@ -1696,6 +1702,23 @@ td.red{color:#b91c1c;font-weight:600}
 table.cost{width:100%;border-collapse:collapse;font-size:10.5px;margin-bottom:4px}
 table.cost thead th{background:#334155;color:white;padding:7px 10px;text-align:left;font-weight:600;font-size:9.5px;text-transform:uppercase;letter-spacing:.05em}
 table.cost td{padding:6px 10px;border-bottom:1px solid #f1f5f9}
+
+/* RESUMEN DE INVERSIÓN (APROXIMADO) */
+.resumen-inv{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:8px}
+.inv-card{border-radius:12px;padding:13px 15px;border:1px solid #e2e8f0;position:relative;overflow:hidden}
+.inv-card.merc{border-left:4px solid #F59E0B;background:#fffbeb}
+.inv-card.logi{border-left:4px solid #3B82F6;background:#eff6ff}
+.inv-card.total{border-left:4px solid #0F172A;background:#0F172A;color:#fff}
+.inv-card.unit{border-left:4px solid #8B5CF6;background:#f5f3ff}
+.inv-lbl{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#64748B;margin-bottom:5px}
+.inv-card.total .inv-lbl{color:#94A3B8}
+.inv-val{font-size:21px;font-weight:900;line-height:1}
+.inv-card.merc .inv-val{color:#b45309}
+.inv-card.logi .inv-val{color:#1d4ed8}
+.inv-card.total .inv-val{color:#34D399}
+.inv-card.unit .inv-val{color:#7c3aed}
+.inv-sub{font-size:9px;color:#94A3B8;margin-top:4px}
+.inv-card.total .inv-sub{color:#cbd5e1}
 
 /* ESCENARIOS DE VENTA */
 .escenarios{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:8px}
@@ -1814,6 +1837,31 @@ table.cost td{padding:6px 10px;border-bottom:1px solid #f1f5f9}
     </tr></thead>
     <tbody>${costos}</tbody>
   </table>
+
+  <!-- RESUMEN DE INVERSIÓN -->
+  <div class="sec-h" style="margin-top:22px">Resumen de Inversión — Aproximado</div>
+  <div class="resumen-inv">
+    <div class="inv-card merc">
+      <div class="inv-lbl">🛍️ Mercancía (China)</div>
+      <div class="inv-val">$${fmt2(mercanciaUSD)}</div>
+      <div class="inv-sub">Valor de productos · ¥${fmtN(Math.round(totCNY))}</div>
+    </div>
+    <div class="inv-card logi">
+      <div class="inv-lbl">🚢 Logística total</div>
+      <div class="inv-val">$${fmt2(logisticaUSD)}</div>
+      <div class="inv-sub">Fletes + impuestos · ${fmt1(logiPct)}% del total</div>
+    </div>
+    <div class="inv-card total">
+      <div class="inv-lbl">📦 Inversión total</div>
+      <div class="inv-val">$${fmt2(totInvUSD)}</div>
+      <div class="inv-sub">Mercancía + logística (todo incluido)</div>
+    </div>
+    <div class="inv-card unit">
+      <div class="inv-lbl">📊 Costo por unidad</div>
+      <div class="inv-val">$${fmt2(costoUnitProm)}</div>
+      <div class="inv-sub">Promedio · ${fmtN(totUnits)} unidades</div>
+    </div>
+  </div>
 
   <!-- ESCENARIOS DE VENTA -->
   <div class="sec-h" style="margin-top:22px">Precios de Venta Estimados — 3 Escenarios</div>
@@ -4136,6 +4184,46 @@ function _buildInvoicePDF(){
       }
     });
     fy = doc.lastAutoTable.finalY;
+  }
+
+  // ── Resumen de Inversión (aproximado) — mercancía + logística + costo/unidad ──
+  if(hasRate){
+    const logiUSD  = fChina + fCucuta;
+    const mercUSD  = safeN(totFinalUSD - logiUSD);
+    const unitProm = totUnits>0 ? totFinalUSD/totUnits : 0;
+    const logiPct  = totFinalUSD>0 ? logiUSD/totFinalUSD*100 : 0;
+
+    if(fy>150){ doc.addPage(); fy=16; }
+    else fy+=12;
+
+    // Section header bar
+    fill([15,23,42]); doc.roundedRect(M, fy, contentW, 10, 1.5, 1.5, 'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(9); txt([16,185,129]);
+    doc.text('RESUMEN DE INVERSIÓN — APROXIMADO', M+5, fy+6.6);
+    doc.setFont('helvetica','normal'); doc.setFontSize(7.5); txt([100,116,139]);
+    doc.text('Mercancía + logística (todo incluido)  ·  costo real por unidad', PW-M-4, fy+6.6, {align:'right'});
+    fy+=14;
+
+    const inv=[
+      {top:[245,158,11], bg:[255,251,235], vc:[180,83,9],  label:'MERCANCIA (CHINA)', val:'$'+money(mercUSD),     sub:'¥'+money(totCNY,0)+' en productos'},
+      {top:[59,130,246], bg:[239,246,255], vc:[29,78,216],  label:'LOGISTICA TOTAL',   val:'$'+money(logiUSD),     sub:money(logiPct,1)+'% del total'},
+      {top:[15,23,42],   bg:[15,23,42],    vc:[52,211,153],  label:'INVERSION TOTAL',   val:'$'+money(totFinalUSD), sub:'todo incluido', dark:true},
+      {top:[139,92,246], bg:[245,243,255], vc:[124,58,237],  label:'COSTO POR UNIDAD',  val:'$'+money(unitProm),    sub:money(totUnits,0)+' unidades'}
+    ];
+    const iGap=8, iW=(contentW-3*iGap)/4, iH=22;
+    let ix=M;
+    inv.forEach(c=>{
+      fill(c.bg);  doc.roundedRect(ix, fy, iW, iH, 2, 2, 'F');
+      fill(c.top); doc.roundedRect(ix, fy, iW, 2, 1, 1, 'F');
+      doc.setFont('helvetica','bold'); doc.setFontSize(7); txt(c.dark?[148,163,184]:[100,116,139]);
+      doc.text(c.label, ix+4, fy+7.5);
+      doc.setFontSize(14); txt(c.vc);
+      doc.text(c.val, ix+4, fy+14.5);
+      doc.setFont('helvetica','normal'); doc.setFontSize(6.5); txt(c.dark?[203,213,225]:[148,163,184]);
+      doc.text(c.sub, ix+4, fy+19);
+      ix += iW+iGap;
+    });
+    fy += iH;
   }
 
   // ── Sección de PRECIOS DE VENTA ESTIMADOS (3 escenarios: +30/50/70%) ──
