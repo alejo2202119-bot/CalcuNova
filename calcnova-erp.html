@@ -3983,42 +3983,40 @@ function _buildInvoicePDF(){
     fy += 14;
   }
 
-  // ── Sección de Desglose Logístico (si hay costos configurados) ──
+  // ── Costo por producto (mercancía + logística prorrateada por valor) ──
   const fChina  = safeN(cfg.freightChina  ||0);
   const fCucuta = safeN(cfg.freightCucuta ||0);
+  const totValUSD = safeN(prods.reduce((s,p)=>s+safeN(getQty(p))*safeN(p.price),0)) / yr;
+  const nP = prods.length||1;
+  // Helper único: garantiza que logística y precios de venta usen el mismo costo
+  const _prodCost = (p)=>{
+    const qty  = Math.max(1, safeN(getQty(p),1));
+    const pUSD = safeN(getQty(p))*safeN(p.price)/yr;
+    const wR   = totValUSD>0 ? Math.min(1, pUSD/totValUSD) : 1/nP;
+    const cS   = safeN(fChina  * wR);
+    const kS   = safeN(fCucuta * wR);
+    const total= pUSD + cS + kS;
+    return {qty, pUSD, wR, cS, kS, total, unit: total/qty};
+  };
+  const totFinalUSD = safeN(prods.reduce((s,p)=>s+_prodCost(p).total,0));
+
+  // ── Sección de Desglose Logístico (si hay costos configurados) ──
   if(fChina>0 || fCucuta>0){
     const totLogUSD = fChina + fCucuta;
-    // Calcula totales para la tabla logística usando los mismos wR que calcAll
-    const totValUSD = safeN(prods.reduce((s,p)=>s+safeN(getQty(p))*safeN(p.price),0)) / yr;
-    const nP = prods.length||1;
     const logBody = prods.map((p,i)=>{
-      const qty   = getQty(p);
-      const pUSD  = safeN(qty)*safeN(p.price)/yr;
-      const wR    = totValUSD>0 ? Math.min(1, pUSD/totValUSD) : 1/nP;
-      const pct   = money(wR*100,2);
-      const cS    = safeN(fChina  * wR);
-      const kS    = safeN(fCucuta * wR);
-      const logS  = cS + kS;
-      const total = pUSD + logS;
+      const c = _prodCost(p);
       return [
         String(i+1),
         p.ref||'-',
         (p.name||'-')+(p.brand?'\n'+p.brand:''),
-        '$'+money(pUSD),
-        pct+'%',
-        fChina>0  ? '$'+money(cS)  : '-',
-        fCucuta>0 ? '$'+money(kS)  : '-',
-        '$'+money(logS),
-        '$'+money(total)
+        '$'+money(c.pUSD),
+        money(c.wR*100,2)+'%',
+        fChina>0  ? '$'+money(c.cS)  : '-',
+        fCucuta>0 ? '$'+money(c.kS)  : '-',
+        '$'+money(c.cS+c.kS),
+        '$'+money(c.total)
       ];
     });
-    // Totals row
-    const totFinalUSD = prods.reduce((s,p)=>{
-      const qty = getQty(p);
-      const pUSD = safeN(qty)*safeN(p.price)/yr;
-      const wR = totValUSD>0 ? Math.min(1,pUSD/totValUSD) : 1/nP;
-      return s + pUSD + fChina*wR + fCucuta*wR;
-    }, 0);
 
     // New page if not enough space
     if(fy>160){ doc.addPage(); fy=16; }
@@ -4029,15 +4027,14 @@ function _buildInvoicePDF(){
     doc.setFont('helvetica','bold'); doc.setFontSize(9); txt([16,185,129]);
     doc.text('DESGLOSE LOGÍSTICO POR PRODUCTO', M+5, fy+6.6);
     doc.setFont('helvetica','normal'); doc.setFontSize(7.5); txt([100,116,139]);
-    doc.text('Distribución por valor % de la factura  ·  China→BUE: $'+money(fChina)+'  ·  BUE→CUC: $'+money(fCucuta)+'  ·  Total: $'+money(totLogUSD), PW-M-4, fy+6.6, {align:'right'});
+    doc.text('Distribución por valor % de la factura  ·  China->BUE: $'+money(fChina)+'  ·  BUE->CUC: $'+money(fCucuta)+'  ·  Total: $'+money(totLogUSD), PW-M-4, fy+6.6, {align:'right'});
     fy+=13;
 
-    const logCols = fChina>0 && fCucuta>0 ? 9 : 8;
     const logHead = fChina>0 && fCucuta>0
-      ? ['#','Referencia','Descripción','Mercanc. $','% Fact.','China→BUE $','BUE→CUC $','Log. Total $','Precio Final $']
+      ? ['#','Referencia','Descripción','Mercanc. $','% Fact.','China->BUE $','BUE->CUC $','Log. Total $','Precio Final $']
       : fChina>0
-        ? ['#','Referencia','Descripción','Mercanc. $','% Fact.','China→BUE $','-','Log. Total $','Precio Final $']
-        : ['#','Referencia','Descripción','Mercanc. $','% Fact.','-','BUE→CUC $','Log. Total $','Precio Final $'];
+        ? ['#','Referencia','Descripción','Mercanc. $','% Fact.','China->BUE $','-','Log. Total $','Precio Final $']
+        : ['#','Referencia','Descripción','Mercanc. $','% Fact.','-','BUE->CUC $','Log. Total $','Precio Final $'];
 
     doc.autoTable({
       startY: fy,
@@ -4089,6 +4086,117 @@ function _buildInvoicePDF(){
         doc.setFont('helvetica','bold'); txt([15,23,42]);
         doc.text('Pág. '+d.pageNumber+'  ·  Generado '+horaExacta, pw-M, ph-6, {align:'right'});
       }
+    });
+    fy = doc.lastAutoTable.finalY;
+  }
+
+  // ── Sección de PRECIOS DE VENTA ESTIMADOS (3 escenarios: +30/50/70%) ──
+  if(hasRate && (prods.length - sinPrecio) > 0){
+    const ventaBody = prods.map((p,i)=>{
+      const c = _prodCost(p);
+      const np = safeN(p.price)<=0;
+      return [
+        String(i+1),
+        p.ref||'-',
+        (p.name||'-')+(p.brand?'\n'+p.brand:''),
+        money(c.qty,0),
+        np ? 's/p' : '$'+money(c.unit),
+        np ? '-'   : '$'+money(c.unit*1.30),
+        np ? '-'   : '$'+money(c.unit*1.50),
+        np ? '-'   : '$'+money(c.unit*1.70)
+      ];
+    });
+
+    if(fy>150){ doc.addPage(); fy=16; }
+    else fy+=12;
+
+    // Section header bar
+    fill([15,23,42]); doc.roundedRect(M, fy, contentW, 10, 1.5, 1.5, 'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(9); txt([16,185,129]);
+    doc.text('PRECIOS DE VENTA ESTIMADOS — 3 ESCENARIOS', M+5, fy+6.6);
+    doc.setFont('helvetica','normal'); doc.setFontSize(7.5); txt([100,116,139]);
+    doc.text('Sobre el costo final (mercancía + logística)  ·  +30% / +50% / +70%  ·  referencial', PW-M-4, fy+6.6, {align:'right'});
+    fy+=13;
+
+    doc.autoTable({
+      startY: fy,
+      margin:{left:M, right:M, top:16, bottom:14},
+      head:[['#','Referencia','Descripción','Cant.','Costo final $/u','Venta +30% $/u','Venta +50% $/u','Venta +70% $/u']],
+      body: ventaBody,
+      foot:[[
+        {content:'MONTOS TOTALES  ·  '+prods.length+' productos', colSpan:4},
+        '$'+money(totFinalUSD),
+        '$'+money(totFinalUSD*1.30),
+        '$'+money(totFinalUSD*1.50),
+        '$'+money(totFinalUSD*1.70)
+      ]],
+      styles:{font:'helvetica', fontSize:7.5, cellPadding:{top:1.4,right:2,bottom:1.4,left:2},
+              lineColor:[241,245,249], lineWidth:0.1, textColor:[30,41,59], overflow:'linebreak', valign:'middle'},
+      headStyles:{fillColor:[15,23,42], textColor:[255,255,255], fontStyle:'bold', fontSize:6.8,
+                  cellPadding:{top:2,right:2,bottom:2,left:2}},
+      footStyles:{fillColor:[15,23,42], textColor:[255,255,255], fontStyle:'bold', fontSize:8,
+                  cellPadding:{top:2.2,right:2,bottom:2.2,left:2}},
+      alternateRowStyles:{fillColor:[248,250,252]},
+      columnStyles:{
+        0:{halign:'right', textColor:[148,163,184], cellWidth:7},
+        1:{textColor:[71,85,105], cellWidth:22, fontSize:7},
+        2:{textColor:[15,23,42], cellWidth:'auto'},
+        3:{halign:'right', textColor:[100,116,139], cellWidth:14},
+        4:{halign:'right', textColor:[139,92,246], fontStyle:'bold', cellWidth:26},
+        5:{halign:'right', textColor:[59,130,246], cellWidth:26},
+        6:{halign:'right', textColor:[180,83,9], cellWidth:26},
+        7:{halign:'right', textColor:[16,185,129], fontStyle:'bold', cellWidth:26}
+      },
+      rowPageBreak:'avoid',
+      showHead:'everyPage',
+      showFoot:'lastPage',
+      didParseCell:(d)=>{
+        if(d.section==='foot'){
+          const c=d.column.index;
+          const map={4:[226,232,240],5:[147,197,253],6:[253,224,71],7:[134,239,172]};
+          d.cell.styles.textColor=map[c]||[255,255,255];
+          if(c>=4) d.cell.styles.halign='right';
+        }
+        if(d.section==='body' && safeN((prods[d.row.index]||{}).price)<=0){
+          d.cell.styles.fillColor=[254,242,242];
+          if(d.column.index===4) d.cell.styles.textColor=[220,38,38];
+        }
+      },
+      didDrawPage:(d)=>{
+        const ph=doc.internal.pageSize.getHeight(), pw=doc.internal.pageSize.getWidth();
+        draw([226,232,240]); doc.setLineWidth(0.4); doc.line(M, ph-11, pw-M, ph-11);
+        doc.setFont('helvetica','normal'); doc.setFontSize(7); txt([100,116,139]);
+        doc.text('CalcNova Import · Precios China en ¥ Yuan · Conversión a $ USD a la tasa del día · Documento privado', M, ph-6);
+        doc.setFont('helvetica','bold'); txt([15,23,42]);
+        doc.text('Pág. '+d.pageNumber+'  ·  Generado '+horaExacta, pw-M, ph-6, {align:'right'});
+      }
+    });
+
+    // ── Tarjetas resumen de ganancia por escenario ──
+    let gy = doc.lastAutoTable.finalY;
+    if(gy>168){ doc.addPage(); gy=16; }
+    else gy+=8;
+    const escn=[
+      {m:30, top:[59,130,246], bg:[239,246,255], vc:[29,78,216]},
+      {m:50, top:[245,158,11], bg:[255,251,235], vc:[180,83,9]},
+      {m:70, top:[16,185,129], bg:[240,253,244], vc:[21,128,61]}
+    ];
+    const gGap=8, gW=(contentW-2*gGap)/3, gH=25;
+    let gx=M;
+    escn.forEach(e=>{
+      const ingreso  = totFinalUSD*(1+e.m/100);
+      const ganancia = totFinalUSD*(e.m/100);
+      fill(e.bg);  doc.roundedRect(gx, gy, gW, gH, 2, 2, 'F');
+      fill(e.top); doc.roundedRect(gx, gy, gW, 2, 1, 1, 'F');
+      doc.setFont('helvetica','bold'); doc.setFontSize(8); txt([100,116,139]);
+      doc.text('VENTA CON +'+e.m+'% DE GANANCIA', gx+4, gy+7.5);
+      doc.setFontSize(15); txt(e.vc);
+      doc.text('$'+money(ingreso), gx+4, gy+15);
+      doc.setFont('helvetica','normal'); doc.setFontSize(7); txt([100,116,139]);
+      doc.text('Ingreso total estimado vendiendo todo', gx+4, gy+19);
+      doc.setFont('helvetica','bold'); doc.setFontSize(8.5); txt(e.vc);
+      doc.text('Ganancia: $'+money(ganancia), gx+4, gy+23.5);
+      gx += gW+gGap;
     });
   }
 
