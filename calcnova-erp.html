@@ -2050,6 +2050,23 @@ async function ensureXlsx(){
   });
 }
 
+// Carga jsPDF + autoTable (para DESCARGA directa de la factura como archivo PDF)
+function _loadScriptOnce(src,errMsg){
+  return new Promise((res,rej)=>{
+    const s=document.createElement('script');
+    s.src=src; s.onload=res; s.onerror=()=>rej(new Error(errMsg||('No se pudo cargar '+src)));
+    document.head.appendChild(s);
+  });
+}
+async function ensureJsPDF(){
+  if(!(window.jspdf && window.jspdf.jsPDF)){
+    await _loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js','No se pudo cargar jsPDF');
+  }
+  if(typeof (new window.jspdf.jsPDF()).autoTable !== 'function'){
+    await _loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js','No se pudo cargar la tabla PDF');
+  }
+}
+
 function handleDrop(e){
   e.preventDefault();
   const dz=document.getElementById('drop-zone');
@@ -3884,7 +3901,218 @@ td.c-green{color:#15803d;font-weight:600}
 //  FACTURA PDF PROFESIONAL — lee de prods[] (precio + peso + CBM)
 //  Incluye: totales ¥ y $, CBM utilizado, peso, fecha+hora exacta
 // ══════════════════════════════════════════════════════════════
-function exportInvoicePDF(){
+// ── FACTURA PDF: DESCARGA DIRECTA (archivo real → carpeta Descargas) ──
+async function exportInvoicePDF(){
+  if(!prods || !prods.length){ toast('No hay productos para generar la factura','err'); return; }
+  try{
+    toast('Generando factura PDF…','ok');
+    await ensureJsPDF();
+    _buildInvoicePDF();            // construye y descarga el archivo .pdf
+  }catch(e){
+    // Sin conexión / CDN bloqueado → abre la versión imprimible como respaldo
+    try{
+      _exportInvoicePDFPrintFallback();
+      toast('Sin descarga directa (sin conexión): abrí la versión imprimible','w');
+    }catch(e2){
+      toast('Error generando factura: '+(e&&e.message||e),'err');
+    }
+  }
+}
+
+// Genera el PDF real con jsPDF + autoTable y lo guarda en Descargas
+function _buildInvoicePDF(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({orientation:'landscape', unit:'mm', format:'a4'});
+  if(typeof doc.autoTable !== 'function') throw new Error('autoTable no disponible');
+
+  const yr = safeN(R.y), hasRate = yr > 0;                 // CNY por USD
+  // Formato es garantizado (miles con punto, decimales con coma) — ej: 387.501,10
+  // No depende de toLocaleString para que el separador de miles SIEMPRE aparezca.
+  const money = (n,d)=>{
+    const dec = (d==null?2:d);
+    const v = safeN(n), neg = v<0;
+    const fixed = Math.abs(v).toFixed(dec);
+    const parts = fixed.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+    return (neg?'-':'') + parts[0] + (dec>0 ? ','+parts[1] : '');
+  };
+  const cap = s => s ? s.charAt(0).toUpperCase()+s.slice(1) : s;
+  const ts = new Date();
+  const fechaLarga = cap(ts.toLocaleDateString('es',{weekday:'long',year:'numeric',month:'long',day:'numeric'}));
+  const horaExacta = ts.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true});
+  const co = (typeof cfg!=='undefined' && cfg.company) ? cfg.company : 'CalcNova Import';
+  const folio = 'CN-' + ts.getFullYear() + String(ts.getMonth()+1).padStart(2,'0') + String(ts.getDate()).padStart(2,'0') + '-' + String(ts.getHours()).padStart(2,'0') + String(ts.getMinutes()).padStart(2,'0');
+
+  // ── Acumular totales + filas ──
+  let totCNY=0, totWeight=0, totCBM=0, totUnits=0, sinPrecio=0;
+  const body = prods.map((p,i)=>{
+    const qty = getQty(p), pCNY = safeN(p.price), subCNY = qty*pCNY;
+    const w = safeN(p.weight), cbm = safeN(p.cbm);
+    const pUSD = hasRate ? pCNY/yr : 0, subUSD = hasRate ? subCNY/yr : 0;
+    totCNY+=subCNY; totWeight+=w; totCBM+=cbm; totUnits+=qty;
+    if(pCNY<=0) sinPrecio++;
+    const nm = (p.name||p.desc||'-') + (p.brand ? '\n'+p.brand : '');
+    return [
+      String(i+1),
+      p.ref || '-',
+      nm,
+      money(qty,0),
+      pCNY>0 ? '¥'+money(pCNY) : 's/p',
+      (hasRate&&pCNY>0) ? '$'+money(pUSD) : '-',
+      pCNY>0 ? '¥'+money(subCNY) : '-',
+      (hasRate&&pCNY>0) ? '$'+money(subUSD) : '-',
+      w>0 ? money(w) : '-',
+      cbm>0 ? money(cbm,4) : '-'
+    ];
+  });
+  const totUSD = hasRate ? totCNY/yr : 0;
+
+  // ── Helpers de color ──
+  const M=12, PW=297, contentW=PW-2*M;
+  const fill=c=>doc.setFillColor(c[0],c[1],c[2]);
+  const txt =c=>doc.setTextColor(c[0],c[1],c[2]);
+  const draw=c=>doc.setDrawColor(c[0],c[1],c[2]);
+
+  // ── Cabecera / logo ──
+  let y=16;
+  fill([16,185,129]); doc.roundedRect(M, y-4, 15, 15, 3, 3, 'F');
+  txt([255,255,255]); doc.setFont('helvetica','bold'); doc.setFontSize(12);
+  doc.text('CN', M+7.5, y+5, {align:'center'});
+
+  doc.setFont('helvetica','bold'); doc.setFontSize(17); txt([15,23,42]);
+  doc.text('CalcNova', M+19, y+2);
+  const bw = doc.getTextWidth('CalcNova');
+  txt([16,185,129]); doc.text(' Import', M+19+bw, y+2);
+  doc.setFont('helvetica','normal'); doc.setFontSize(8); txt([100,116,139]);
+  doc.text('Factura de productos · China -> Colombia / Venezuela', M+19, y+8);
+
+  doc.setFont('helvetica','bold'); doc.setFontSize(13); txt([15,23,42]);
+  doc.text('FACTURA / COTIZACIÓN', PW-M, y-1, {align:'right'});
+  doc.setFontSize(10); txt([16,185,129]);
+  doc.text('N° '+folio, PW-M, y+4.5, {align:'right'});
+  doc.setFont('helvetica','normal'); doc.setFontSize(8.5); txt([71,85,105]);
+  doc.text(co, PW-M, y+9, {align:'right'});
+  doc.setFontSize(8); txt([100,116,139]);
+  doc.text(fechaLarga, PW-M, y+13, {align:'right'});
+  doc.text('Descargado a las '+horaExacta, PW-M, y+16.5, {align:'right'});
+
+  y += 22;
+  draw([16,185,129]); doc.setLineWidth(0.8); doc.line(M, y, PW-M, y);
+  y += 7;
+
+  // ── Tarjetas KPI ──
+  const cards=6, gap=3, cardW=(contentW-(cards-1)*gap)/cards, cardH=18;
+  const kpis = [
+    {top:[100,116,139], bg:[248,250,252], label:'PRODUCTOS',     val:String(prods.length),                vc:[51,65,85],   sub:money(totUnits,0)+' unidades'},
+    {top:[245,158,11],  bg:[255,251,235], label:'TOTAL ¥ YUAN',  val:'¥'+money(totCNY,0),                  vc:[180,83,9],   sub:'precio China'},
+    {top:[16,185,129],  bg:[240,253,244], label:'TOTAL $ USD',   val:hasRate?'$'+money(totUSD):'Sin tasa', vc:[21,128,61],  sub:hasRate?'a tasa del día':'configura la tasa'},
+    {top:[59,130,246],  bg:[239,246,255], label:'PESO TOTAL',    val:money(totWeight),                     vc:[29,78,216],  sub:'kilogramos'},
+    {top:[139,92,246],  bg:[250,245,255], label:'VOLUMEN CBM',   val:money(totCBM,4),                      vc:[124,58,237], sub:'m³ utilizados'},
+    {top:[100,116,139], bg:[248,250,252], label:'TASA CNY->USD', val:hasRate?'¥'+money(yr):'-',            vc:[51,65,85],   sub:'= $1 USD'}
+  ];
+  let cx=M;
+  kpis.forEach(k=>{
+    fill(k.bg);  doc.roundedRect(cx, y, cardW, cardH, 1.5, 1.5, 'F');
+    fill(k.top); doc.roundedRect(cx, y, cardW, 1.5, 0.7, 0.7, 'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(6); txt([100,116,139]);
+    doc.text(k.label, cx+3, y+6);
+    doc.setFontSize(12); txt(k.vc);
+    doc.text(k.val, cx+3, y+11.8);
+    doc.setFont('helvetica','normal'); doc.setFontSize(6); txt([148,163,184]);
+    doc.text(k.sub, cx+3, y+15.6);
+    cx += cardW+gap;
+  });
+  y += cardH+5;
+
+  // ── Barra de tasa ──
+  fill([15,23,42]); doc.roundedRect(M, y, contentW, 9, 2, 2, 'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(7); txt([16,185,129]);
+  doc.text('TASA APLICADA', M+4, y+5.8);
+  doc.setFont('helvetica','normal'); doc.setFontSize(8.5); txt([203,213,225]);
+  doc.text('1 USD = ¥'+(hasRate?money(yr):'-')+'        1 CNY = $'+(hasRate?money(1/yr,4):'-'), M+34, y+5.8);
+  doc.setFont('helvetica','bold'); txt([255,255,255]);
+  doc.text('Folio '+folio, PW-M-4, y+5.8, {align:'right'});
+  y += 13;
+
+  // ── Tabla de productos ──
+  doc.autoTable({
+    startY: y,
+    margin:{left:M, right:M, top:16, bottom:14},
+    head:[['#','Referencia','Descripción','Cant.','P.Unit ¥','P.Unit $','Subtotal ¥','Subtotal $','Peso kg','CBM m³']],
+    body: body,
+    foot:[[ {content:'TOTALES  ·  '+prods.length+' productos', colSpan:3}, money(totUnits,0), '', '', '¥'+money(totCNY), hasRate?'$'+money(totUSD):'-', money(totWeight), money(totCBM,4) ]],
+    styles:{font:'helvetica', fontSize:7.5, cellPadding:{top:1.4,right:2,bottom:1.4,left:2}, lineColor:[241,245,249], lineWidth:0.1, textColor:[30,41,59], overflow:'linebreak', valign:'middle'},
+    headStyles:{fillColor:[15,23,42], textColor:[255,255,255], fontStyle:'bold', fontSize:6.8, cellPadding:{top:2,right:2,bottom:2,left:2}},
+    footStyles:{fillColor:[15,23,42], textColor:[255,255,255], fontStyle:'bold', fontSize:8, cellPadding:{top:2.2,right:2,bottom:2.2,left:2}},
+    alternateRowStyles:{fillColor:[248,250,252]},
+    columnStyles:{
+      0:{halign:'right', textColor:[148,163,184], cellWidth:8},
+      1:{textColor:[71,85,105], cellWidth:24, fontSize:7},
+      2:{textColor:[15,23,42], cellWidth:'auto'},
+      3:{halign:'right', cellWidth:14},
+      4:{halign:'right', textColor:[180,83,9], cellWidth:21},
+      5:{halign:'right', textColor:[21,128,61], cellWidth:20},
+      6:{halign:'right', textColor:[180,83,9], fontStyle:'bold', cellWidth:24},
+      7:{halign:'right', textColor:[21,128,61], fontStyle:'bold', cellWidth:22},
+      8:{halign:'right', textColor:[29,78,216], cellWidth:18},
+      9:{halign:'right', textColor:[124,58,237], cellWidth:18}
+    },
+    rowPageBreak:'avoid',
+    showHead:'everyPage',
+    showFoot:'lastPage',
+    didParseCell:(d)=>{
+      if(d.section==='head'){ d.cell.styles.textColor=[255,255,255]; }
+      if(d.section==='foot'){
+        const c=d.column.index;
+        const map={6:[251,191,36],7:[74,222,128],8:[96,165,250],9:[196,181,253]};
+        d.cell.styles.textColor = map[c] || [255,255,255];
+        if(c>=4 && c<=9) d.cell.styles.halign='right';
+      }
+      if(d.section==='body'){
+        const p=prods[d.row.index];
+        if(p && safeN(p.price)<=0){
+          d.cell.styles.fillColor=[254,242,242];
+          if(d.column.index===4) d.cell.styles.textColor=[220,38,38];
+        }
+      }
+    },
+    didDrawPage:(d)=>{
+      const ph=doc.internal.pageSize.getHeight(), pw=doc.internal.pageSize.getWidth();
+      // Encabezado de continuación (páginas 2+)
+      if(d.pageNumber>1){
+        fill([16,185,129]); doc.roundedRect(M, 8, 7, 7, 1.5, 1.5, 'F');
+        doc.setFont('helvetica','bold'); doc.setFontSize(9); txt([15,23,42]);
+        doc.text('CalcNova Import', M+10, 11);
+        doc.setFont('helvetica','normal'); doc.setFontSize(7); txt([100,116,139]);
+        doc.text('Factura '+folio+' (continuación)', M+10, 15);
+      }
+      // Pie de página
+      draw([226,232,240]); doc.setLineWidth(0.4); doc.line(M, ph-11, pw-M, ph-11);
+      doc.setFont('helvetica','normal'); doc.setFontSize(7); txt([100,116,139]);
+      doc.text('CalcNova Import · Precios China en ¥ Yuan · Conversión a $ USD a la tasa del día · Documento privado', M, ph-6);
+      doc.setFont('helvetica','bold'); txt([15,23,42]);
+      doc.text('Pág. '+d.pageNumber+'  ·  Generado '+horaExacta, pw-M, ph-6, {align:'right'});
+    }
+  });
+
+  // ── Nota de productos sin precio ──
+  let fy = doc.lastAutoTable.finalY;
+  if(sinPrecio>0){
+    if(fy>178){ doc.addPage(); fy=18; }
+    fill([255,251,235]); draw([253,230,138]); doc.setLineWidth(0.3);
+    doc.roundedRect(M, fy+4, contentW, 10, 1.5, 1.5, 'FD');
+    doc.setFont('helvetica','bold'); doc.setFontSize(8); txt([180,83,9]);
+    doc.text(sinPrecio+' producto(s) sin precio (marcados en rojo) - no suman al total. Verifica con el proveedor.', M+4, fy+10.3);
+  }
+
+  // ── DESCARGAR (guarda el archivo en la carpeta Descargas) ──
+  doc.save('CalcNova-Factura-'+folio+'.pdf');
+  _audit('FACTURA_PDF', prods.length+' productos · ¥'+Math.round(totCNY));
+  toast('✓ Factura descargada: CalcNova-Factura-'+folio+'.pdf','ok');
+}
+
+// Respaldo: ventana imprimible (solo si no hay conexión para la descarga directa)
+function _exportInvoicePDFPrintFallback(){
   if(!prods || !prods.length){ toast('No hay productos para generar la factura','err'); return; }
   try{
     const yr = safeN(R.y);                 // CNY por USD
