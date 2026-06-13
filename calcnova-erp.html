@@ -267,7 +267,8 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
   <div class="sec-hdr">
     <div><div class="sec-title">Productos</div><div class="sec-sub">Agrega los productos de tu importación</div></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-p btn-sm" onclick="exportCotizacion()" style="background:linear-gradient(135deg,#8B5CF6,#3B82F6)">📄 Cotización</button>
+      <button class="btn btn-p btn-sm" onclick="exportInvoicePDF()" style="background:linear-gradient(135deg,#10B981,#3B82F6)" title="Factura PDF con totales ¥/$, peso y CBM">📄 Factura PDF</button>
+      <button class="btn btn-p btn-sm" onclick="exportCotizacion()" style="background:linear-gradient(135deg,#8B5CF6,#3B82F6)">💵 Cotización</button>
       <button class="btn btn-d btn-sm" onclick="clearProds()">🗑 Limpiar</button>
       <button class="btn btn-p" onclick="addProd()">+ Agregar Producto</button>
     </div>
@@ -689,9 +690,10 @@ td{padding:9px 11px;font-size:13px;vertical-align:middle}
         <div style="font-size:12px;color:var(--dim);margin-top:2px" id="factura-count-label">0 productos</div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <button class="btn btn-p btn-sm" onclick="guardarFactura()" title="Guardar esta factura en CalcNova para llevar el historial" style="font-size:12px;padding:7px 16px">💾 Guardar factura</button>
+        <button class="btn btn-p btn-sm" onclick="exportInvoicePDF()" title="Descargar factura PDF profesional con logo, totales ¥/$, peso y CBM" style="font-size:12px;padding:7px 16px">📄 Factura PDF</button>
+        <button class="btn btn-s btn-sm" onclick="guardarFactura()" title="Guardar esta factura en CalcNova para llevar el historial">💾 Guardar</button>
         <button class="btn btn-s btn-sm" onclick="exportFacturaExcel()" title="Exportar a Excel">⬇ Excel</button>
-        <button class="btn btn-s btn-sm" onclick="exportFacturaPDF()" title="Ver / imprimir PDF">🖨 PDF</button>
+        <button class="btn btn-s btn-sm" onclick="exportFacturaPDF()" title="Ver detalle de conversión CNY→USD">🖨 Detalle</button>
         <button class="btn btn-s btn-sm" onclick="copyFacturaTable()" title="Copiar tabla para Excel">📋 Copiar</button>
       </div>
     </div>
@@ -3876,6 +3878,184 @@ td.c-green{color:#15803d;font-weight:600}
 </body></html>`);
     win.document.close();
   }catch(e){toast('Error PDF: '+e.message,'err');}
+}
+
+// ══════════════════════════════════════════════════════════════
+//  FACTURA PDF PROFESIONAL — lee de prods[] (precio + peso + CBM)
+//  Incluye: totales ¥ y $, CBM utilizado, peso, fecha+hora exacta
+// ══════════════════════════════════════════════════════════════
+function exportInvoicePDF(){
+  if(!prods || !prods.length){ toast('No hay productos para generar la factura','err'); return; }
+  try{
+    const yr = safeN(R.y);                 // CNY por USD
+    const hasRate = yr > 0;
+    const ts = new Date();
+    // Fecha y hora EXACTAS de la descarga (con segundos)
+    const fechaLarga = ts.toLocaleDateString('es',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+    const horaExacta = ts.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true});
+    const co = (typeof cfg!=='undefined' && cfg.company) ? cfg.company : 'CalcNova Import';
+    const folio = 'CN-' + ts.getFullYear() + String(ts.getMonth()+1).padStart(2,'0') + String(ts.getDate()).padStart(2,'0') + '-' + String(ts.getHours()).padStart(2,'0') + String(ts.getMinutes()).padStart(2,'0');
+
+    let totCNY=0, totWeight=0, totCBM=0, totUnits=0, sinPrecio=0;
+    const rowsHtml = prods.map((p,i)=>{
+      const qty   = getQty(p);
+      const pCNY  = safeN(p.price);
+      const subCNY= qty * pCNY;
+      const pUSD  = hasRate ? pCNY/yr : 0;
+      const subUSD= hasRate ? subCNY/yr : 0;
+      const w     = safeN(p.weight);
+      const cbm   = safeN(p.cbm);
+      totCNY+=subCNY; totWeight+=w; totCBM+=cbm; totUnits+=qty;
+      if(pCNY<=0) sinPrecio++;
+      const bg = i%2===0 ? '' : 'background:#f8fafc';
+      const noP = pCNY<=0 ? 'background:#fef2f2' : '';
+      return `<tr style="${noP||bg}">
+        <td class="num c-muted">${i+1}</td>
+        <td class="c-ref">${esc(p.ref||'—')}</td>
+        <td class="c-name">${esc(p.name||'—')}${p.brand?`<span class="brand">${esc(p.brand)}</span>`:''}</td>
+        <td class="num">${fmtN(qty)}</td>
+        <td class="num c-gold">${pCNY>0?'¥'+fmt2(pCNY):'<span class="np">s/p</span>'}</td>
+        <td class="num c-green">${hasRate&&pCNY>0?'$'+fmt2(pUSD):'—'}</td>
+        <td class="num bold c-gold">${pCNY>0?'¥'+fmtN(Math.round(subCNY*100)/100):'—'}</td>
+        <td class="num bold c-green">${hasRate&&pCNY>0?'$'+fmt2(subUSD):'—'}</td>
+        <td class="num c-blue">${w>0?fmt2(w):'—'}</td>
+        <td class="num c-purple">${cbm>0?fmt4(cbm):'—'}</td>
+      </tr>`;
+    }).join('');
+    const totUSD = hasRate ? totCNY/yr : 0;
+
+    const win = window.open('','_blank','width=1180,height=860');
+    if(!win){ toast('Permite ventanas emergentes para descargar el PDF','w'); return; }
+    win.document.write(`<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"><title>CalcNova — Factura ${folio}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',sans-serif;color:#1e293b;background:#fff;font-size:11px;line-height:1.4}
+@page{size:A4 landscape;margin:10mm 9mm}
+@media print{.no-print{display:none!important}body{font-size:10px}.page{padding:0}}
+.page{max-width:1100px;margin:0 auto;padding:22px}
+.print-bar{background:#0F172A;padding:12px 24px;display:flex;gap:10px;align-items:center;position:sticky;top:0;z-index:10}
+.print-bar button{padding:9px 22px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-p{background:linear-gradient(135deg,#10B981,#3B82F6);color:white}
+.btn-c{background:#334155;color:#cbd5e1}
+.print-bar .hint{color:#94A3B8;font-size:12px;margin-left:6px}
+.print-bar .hint b{color:#10B981}
+.hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;padding-bottom:14px;border-bottom:3px solid #10B981}
+.logo-wrap{display:flex;align-items:center;gap:12px}
+.logo-box{width:52px;height:52px;background:linear-gradient(135deg,#10B981 0%,#3B82F6 100%);border-radius:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(16,185,129,.35)}
+.logo-t{font-size:23px;font-weight:900;color:#0F172A;letter-spacing:-.5px}
+.logo-t span{color:#10B981}
+.logo-s{font-size:10px;color:#64748B;margin-top:3px}
+.hdr-r{text-align:right}
+.doc-title{font-size:15px;font-weight:900;color:#0F172A;letter-spacing:.02em}
+.folio{font-size:11px;color:#10B981;font-weight:800;margin-top:2px}
+.hdr-co{font-size:11px;color:#475569;margin-top:4px;font-weight:600}
+.hdr-dt{font-size:10px;color:#64748B;margin-top:2px}
+.kpi{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:14px}
+.kpi-card{border-radius:10px;padding:11px 12px;border:1px solid #e2e8f0;border-top-width:3px}
+.kc-gold{border-top-color:#F59E0B;background:#fffbeb}
+.kc-green{border-top-color:#10B981;background:#f0fdf4}
+.kc-blue{border-top-color:#3B82F6;background:#eff6ff}
+.kc-purple{border-top-color:#8B5CF6;background:#faf5ff}
+.kc-slate{border-top-color:#64748B;background:#f8fafc}
+.kpi-l{font-size:8.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#64748B;margin-bottom:4px}
+.kpi-v{font-size:17px;font-weight:900;line-height:1}
+.kpi-s{font-size:8.5px;color:#94A3B8;margin-top:3px}
+.rate-bar{display:flex;gap:14px;background:#0F172A;border-radius:8px;padding:8px 14px;margin-bottom:14px;align-items:center;flex-wrap:wrap}
+.rate-bar .rl{font-size:9px;font-weight:800;color:#10B981;text-transform:uppercase;letter-spacing:.08em}
+.rate-bar .rt{font-size:11px;color:#cbd5e1}
+.rate-bar .rt b{color:#fff}
+table.main{width:100%;border-collapse:collapse;font-size:10px}
+table.main thead tr{background:#0F172A}
+table.main thead th{color:#fff;padding:8px 7px;text-align:left;font-weight:700;font-size:8.5px;text-transform:uppercase;letter-spacing:.04em}
+table.main thead th.num{text-align:right}
+table.main td{padding:5px 7px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+td.bold{font-weight:800}
+td.c-muted{color:#94A3B8}
+td.c-ref{color:#475569;font-size:9px;font-weight:600}
+td.c-name{color:#0F172A;font-weight:600}
+td.c-name .brand{display:block;font-size:8.5px;color:#94A3B8;font-weight:500}
+td.c-gold{color:#b45309}
+td.c-green{color:#15803d}
+td.c-blue{color:#1d4ed8}
+td.c-purple{color:#7c3aed}
+.np{color:#dc2626;font-weight:700;font-size:9px}
+.tot-row td{background:#0F172A!important;color:#fff!important;font-weight:800!important;padding:9px 7px;font-size:10.5px;border:none}
+.tot-row td.num{text-align:right}
+.tot-row .tg{color:#fbbf24!important}.tot-row .tgr{color:#4ade80!important}.tot-row .tb{color:#60a5fa!important}.tot-row .tp{color:#c4b5fd!important}
+.note{margin-top:12px;font-size:10px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:7px;padding:8px 12px}
+.footer{border-top:2px solid #e2e8f0;margin-top:16px;padding-top:10px;display:flex;justify-content:space-between;align-items:center;color:#64748B;font-size:9px}
+.footer .stamp{font-weight:700;color:#0F172A}
+</style></head><body>
+<div class="print-bar no-print">
+  <button class="btn-p" onclick="window.print()">⬇ Descargar / Guardar como PDF</button>
+  <button class="btn-c" onclick="window.close()">✕ Cerrar</button>
+  <span class="hint">En el diálogo elige <b>Guardar como PDF</b> · Orientación <b>Horizontal</b></span>
+</div>
+<div class="page">
+  <div class="hdr">
+    <div class="logo-wrap">
+      <div class="logo-box"><svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M13 2L4.5 13.5H11L10 22L19.5 10.5H13L13 2Z"/></svg></div>
+      <div><div class="logo-t">CalcNova <span>Import</span></div><div class="logo-s">Factura de productos · China → Colombia / Venezuela</div></div>
+    </div>
+    <div class="hdr-r">
+      <div class="doc-title">FACTURA / COTIZACIÓN</div>
+      <div class="folio">N° ${folio}</div>
+      <div class="hdr-co">${esc(co)}</div>
+      <div class="hdr-dt">📅 ${fechaLarga}</div>
+      <div class="hdr-dt">🕐 Descargado a las ${horaExacta}</div>
+    </div>
+  </div>
+
+  <div class="kpi">
+    <div class="kpi-card kc-slate"><div class="kpi-l">Productos</div><div class="kpi-v" style="color:#334155">${prods.length}</div><div class="kpi-s">${fmtN(totUnits)} unidades</div></div>
+    <div class="kpi-card kc-gold"><div class="kpi-l">Total ¥ Yuan</div><div class="kpi-v" style="color:#b45309">¥${fmtN(Math.round(totCNY))}</div><div class="kpi-s">precio China</div></div>
+    <div class="kpi-card kc-green"><div class="kpi-l">Total $ USD</div><div class="kpi-v" style="color:#15803d">${hasRate?'$'+fmt2(totUSD):'Sin tasa'}</div><div class="kpi-s">${hasRate?'a tasa del día':'configura la tasa'}</div></div>
+    <div class="kpi-card kc-blue"><div class="kpi-l">Peso total</div><div class="kpi-v" style="color:#1d4ed8">${fmt2(totWeight)}</div><div class="kpi-s">kilogramos</div></div>
+    <div class="kpi-card kc-purple"><div class="kpi-l">Volumen (CBM)</div><div class="kpi-v" style="color:#7c3aed">${fmt4(totCBM)}</div><div class="kpi-s">m³ utilizados</div></div>
+    <div class="kpi-card kc-slate"><div class="kpi-l">Tasa CNY→USD</div><div class="kpi-v" style="font-size:14px;color:#334155">${hasRate?'¥'+fmt2(yr):'—'}</div><div class="kpi-s">= $1 USD</div></div>
+  </div>
+
+  <div class="rate-bar">
+    <span class="rl">Tasa aplicada</span>
+    <span class="rt">1 USD = <b>¥${hasRate?fmt2(yr):'—'}</b></span>
+    <span class="rt">1 CNY = <b>$${hasRate?fmt4(1/yr):'—'}</b></span>
+    <span class="rt" style="margin-left:auto">Folio <b>${folio}</b></span>
+  </div>
+
+  <table class="main">
+    <thead><tr>
+      <th class="num">#</th><th>Referencia</th><th>Descripción</th>
+      <th class="num">Cant.</th>
+      <th class="num">P. Unit ¥</th><th class="num">P. Unit $</th>
+      <th class="num">Subtotal ¥</th><th class="num">Subtotal $</th>
+      <th class="num">Peso kg</th><th class="num">CBM m³</th>
+    </tr></thead>
+    <tbody>${rowsHtml}</tbody>
+    <tfoot><tr class="tot-row">
+      <td colspan="3">TOTALES — ${prods.length} productos</td>
+      <td class="num">${fmtN(totUnits)}</td>
+      <td class="num">—</td><td class="num">—</td>
+      <td class="num tg">¥${fmtN(Math.round(totCNY*100)/100)}</td>
+      <td class="num tgr">${hasRate?'$'+fmt2(totUSD):'—'}</td>
+      <td class="num tb">${fmt2(totWeight)}</td>
+      <td class="num tp">${fmt4(totCBM)}</td>
+    </tr></tfoot>
+  </table>
+
+  ${sinPrecio>0?`<div class="note">⚠ ${sinPrecio} producto${sinPrecio>1?'s':''} sin precio (marcado${sinPrecio>1?'s':''} en rojo) — no suma${sinPrecio>1?'n':''} al total. Verifica con el proveedor.</div>`:''}
+
+  <div class="footer">
+    <span>⚡ CalcNova Import · Precios China en ¥ Yuan · Conversión a $ USD a la tasa del día · Documento privado</span>
+    <span class="stamp">Generado: ${fechaLarga} · ${horaExacta}</span>
+  </div>
+</div>
+</body></html>`);
+    win.document.close();
+    _audit('FACTURA_PDF', prods.length+' productos · ¥'+Math.round(totCNY));
+    toast('✓ Factura PDF generada — usa "Descargar / Guardar como PDF"','ok');
+  }catch(e){ toast('Error generando factura: '+e.message,'err'); }
 }
 
 // ── BOX CALCULATOR ─────────────────────────────────────────
