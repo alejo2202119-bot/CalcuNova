@@ -1867,24 +1867,24 @@ table.cost td{padding:6px 10px;border-bottom:1px solid #f1f5f9}
   <div class="sec-h" style="margin-top:22px">Precios de Venta Estimados — 3 Escenarios</div>
   <div class="escenarios">
     <div class="esc-card blue">
-      <div class="esc-title">📈 Venta con +30% de ganancia</div>
-      <div class="esc-ingreso-lbl">Ingreso total estimado</div>
-      <div class="esc-ingreso">$${fmt2(totInvUSD*1.30)}</div>
-      <div class="esc-gan">Ganancia: $${fmt2(totInvUSD*0.30)}</div>
-      <div class="esc-sub">Costo total: $${fmt2(totInvUSD)}</div>
-    </div>
-    <div class="esc-card gold">
-      <div class="esc-title">🚀 Venta con +50% de ganancia</div>
+      <div class="esc-title">📈 Venta con +50% de ganancia</div>
       <div class="esc-ingreso-lbl">Ingreso total estimado</div>
       <div class="esc-ingreso">$${fmt2(totInvUSD*1.50)}</div>
       <div class="esc-gan">Ganancia: $${fmt2(totInvUSD*0.50)}</div>
       <div class="esc-sub">Costo total: $${fmt2(totInvUSD)}</div>
     </div>
-    <div class="esc-card green">
-      <div class="esc-title">💎 Venta con +70% de ganancia</div>
+    <div class="esc-card gold">
+      <div class="esc-title">🚀 Venta con +70% de ganancia</div>
       <div class="esc-ingreso-lbl">Ingreso total estimado</div>
       <div class="esc-ingreso">$${fmt2(totInvUSD*1.70)}</div>
       <div class="esc-gan">Ganancia: $${fmt2(totInvUSD*0.70)}</div>
+      <div class="esc-sub">Costo total: $${fmt2(totInvUSD)}</div>
+    </div>
+    <div class="esc-card green">
+      <div class="esc-title">💎 Venta con +100% de ganancia</div>
+      <div class="esc-ingreso-lbl">Ingreso total estimado</div>
+      <div class="esc-ingreso">$${fmt2(totInvUSD*2.00)}</div>
+      <div class="esc-gan">Ganancia: $${fmt2(totInvUSD*1.00)}</div>
       <div class="esc-sub">Costo total: $${fmt2(totInvUSD)}</div>
     </div>
   </div>
@@ -4237,9 +4237,9 @@ function _buildInvoicePDF(){
         (p.name||'-')+(p.brand?'\n'+p.brand:''),
         money(c.qty,0),
         np ? 's/p' : '$'+money(c.unit),
-        np ? '-'   : '$'+money(c.unit*1.30),
         np ? '-'   : '$'+money(c.unit*1.50),
-        np ? '-'   : '$'+money(c.unit*1.70)
+        np ? '-'   : '$'+money(c.unit*1.70),
+        np ? '-'   : '$'+money(c.unit*2.00)
       ];
     });
 
@@ -4251,20 +4251,20 @@ function _buildInvoicePDF(){
     doc.setFont('helvetica','bold'); doc.setFontSize(9); txt([16,185,129]);
     doc.text('PRECIOS DE VENTA ESTIMADOS — 3 ESCENARIOS', M+5, fy+6.6);
     doc.setFont('helvetica','normal'); doc.setFontSize(7.5); txt([100,116,139]);
-    doc.text('Sobre el costo final (mercancía + logística)  ·  +30% / +50% / +70%  ·  referencial', PW-M-4, fy+6.6, {align:'right'});
+    doc.text('Sobre el costo final (mercancía + logística)  ·  +50% / +70% / +100%  ·  referencial', PW-M-4, fy+6.6, {align:'right'});
     fy+=13;
 
     doc.autoTable({
       startY: fy,
       margin:{left:M, right:M, top:16, bottom:14},
-      head:[['#','Referencia','Descripción','Cant.','Costo final $/u','Venta +30% $/u','Venta +50% $/u','Venta +70% $/u']],
+      head:[['#','Referencia','Descripción','Cant.','Costo final $/u','Venta +50% $/u','Venta +70% $/u','Venta +100% $/u']],
       body: ventaBody,
       foot:[[
         {content:'MONTOS TOTALES  ·  '+prods.length+' productos', colSpan:4},
         '$'+money(totFinalUSD),
-        '$'+money(totFinalUSD*1.30),
         '$'+money(totFinalUSD*1.50),
-        '$'+money(totFinalUSD*1.70)
+        '$'+money(totFinalUSD*1.70),
+        '$'+money(totFinalUSD*2.00)
       ]],
       styles:{font:'helvetica', fontSize:7.5, cellPadding:{top:1.4,right:2,bottom:1.4,left:2},
               lineColor:[241,245,249], lineWidth:0.1, textColor:[30,41,59], overflow:'linebreak', valign:'middle'},
@@ -4313,9 +4313,9 @@ function _buildInvoicePDF(){
     if(gy>168){ doc.addPage(); gy=16; }
     else gy+=8;
     const escn=[
-      {m:30, top:[59,130,246], bg:[239,246,255], vc:[29,78,216]},
-      {m:50, top:[245,158,11], bg:[255,251,235], vc:[180,83,9]},
-      {m:70, top:[16,185,129], bg:[240,253,244], vc:[21,128,61]}
+      {m:50,  top:[59,130,246], bg:[239,246,255], vc:[29,78,216]},
+      {m:70,  top:[245,158,11], bg:[255,251,235], vc:[180,83,9]},
+      {m:100, top:[16,185,129], bg:[240,253,244], vc:[21,128,61]}
     ];
     const gGap=8, gW=(contentW-2*gGap)/3, gH=25;
     let gx=M;
